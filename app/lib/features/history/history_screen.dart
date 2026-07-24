@@ -89,7 +89,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: _filteredSnippets.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) =>
                       _buildSnippetCard(context, _filteredSnippets[index]),
                 ),
@@ -109,7 +109,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           itemCount: _tags.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          separatorBuilder: (_, _) => const SizedBox(width: 8),
           itemBuilder: (_, index) {
             final tag = _tags[index];
             final isActive = tag == _activeTag;
