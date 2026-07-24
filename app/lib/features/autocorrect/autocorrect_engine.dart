@@ -26,7 +26,13 @@ class AutocorrectEngine {
     Map<String, bool>? appOverrides,
   })  : _dictionary = Map.from(customDictionary ?? kDefaultEnglishDictionary),
         _learnedWords = Set.from(initialLearnedWords ?? {}),
-        _appOverrides = Map.from(appOverrides ?? {});
+        _appOverrides = Map.from(appOverrides ?? {}) {
+    for (final word in _learnedWords) {
+      final clean = word.trim().toLowerCase();
+      _dictionary[clean] = 2000;
+      _displayMap[clean] = word;
+    }
+  }
 
   final Map<String, int> _dictionary;
   final Set<String> _learnedWords;
@@ -58,7 +64,7 @@ class AutocorrectEngine {
     final trimmed = word.trim();
     final cleanWord = trimmed.toLowerCase();
     if (cleanWord.isEmpty) return;
-    _learnedWords.add(cleanWord);
+    _learnedWords.add(trimmed);
     _displayMap[cleanWord] = trimmed;
     _dictionary[cleanWord] = 2000; // High score for learned words
   }

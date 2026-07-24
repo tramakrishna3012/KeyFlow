@@ -17,7 +17,7 @@ void main() {
         'recieve',
         'problm',
         'meetiing',
-        'schedule',
+        'schedle',
         'profect',
         'keyboar',
         'applicaton',
