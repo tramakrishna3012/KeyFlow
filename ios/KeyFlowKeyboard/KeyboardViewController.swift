@@ -1,0 +1,195 @@
+import UIKit
+
+class KeyboardViewController: UIInputViewController {
+
+    @IBOutlet var nextKeyboardButton: UIButton!
+
+    private var suggestionBar: UIScrollView!
+    private var keyboardView: UIView!
+    private var sessionBuffer: String = ""
+    private var isShifted: Bool = false
+
+    override func updateViewConstraints() {
+        super.updateViewConstraints()
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        setupSuggestionBar()
+        setupKeyboardView()
+    }
+
+    override func viewWillLayoutSubviews() {
+        if self.nextKeyboardButton != nil {
+            self.nextKeyboardButton.isHidden = !self.needsInputModeSwitchKey
+        }
+        super.viewWillLayoutSubviews()
+    }
+
+    override func textWillChange(_ textInput: UITextInput?) {
+        // The app is about to change the document's contents.
+    }
+
+    override func textDidChange(_ textInput: UITextInput?) {
+        // The text has changed.
+    }
+
+    // MARK: - Layout Setup
+
+    private func setupSuggestionBar() {
+        suggestionBar = UIScrollView()
+        suggestionBar.translatesAutoresizingMaskIntoConstraints = false
+        suggestionBar.backgroundColor = UIColor.systemGray6
+        suggestionBar.showsHorizontalScrollIndicator = false
+
+        view.addSubview(suggestionBar)
+
+        NSLayoutConstraint.activate([
+            suggestionBar.topAnchor.constraint(equalTo: view.topAnchor),
+            suggestionBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            suggestionBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            suggestionBar.heightAnchor.constraint(equalToConstant: 40)
+        ])
+
+        updateSuggestionBar()
+    }
+
+    private func updateSuggestionBar() {
+        suggestionBar.subviews.forEach { $0.removeFromSuperview() }
+
+        let suggestions = self.hasFullAccess ?
+            ["👍", "❤️", "😊", "🔥", "✨", "KeyFlow", "Translate (Local)"] :
+            ["👍", "❤️", "😊", "🔥", "✨", "KeyFlow (No Full Access)"]
+
+        var currentX: CGFloat = 8
+        for text in suggestions {
+            let button = UIButton(type: .system)
+            button.setTitle(text, for: .normal)
+            button.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+            button.backgroundColor = UIColor.systemBackground
+            button.layer.cornerRadius = 6
+            button.contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 10)
+            button.addTarget(self, action: #selector(suggestionTapped(_:)), for: .touchUpInside)
+
+            button.sizeToFit()
+            button.frame = CGRect(x: currentX, y: 6, width: button.frame.width + 16, height: 28)
+            suggestionBar.addSubview(button)
+
+            currentX += button.frame.width + 8
+        }
+        suggestionBar.contentSize = CGSize(width: currentX, height: 40)
+    }
+
+    private func setupKeyboardView() {
+        keyboardView = UIView()
+        keyboardView.translatesAutoresizingMaskIntoConstraints = false
+        keyboardView.backgroundColor = UIColor.systemGroupedBackground
+        view.addSubview(keyboardView)
+
+        NSLayoutConstraint.activate([
+            keyboardView.topAnchor.constraint(equalTo: suggestionBar.bottomAnchor),
+            keyboardView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            keyboardView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            keyboardView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            keyboardView.heightAnchor.constraint(equalToConstant: 216)
+        ])
+
+        let rows = [
+            ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+            ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+            ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
+            ["123", "🌐", "space", "return"]
+        ]
+
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        stackView.distribution = .fillEqually
+        stackView.spacing = 6
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        keyboardView.addSubview(stackView)
+
+        NSLayoutConstraint.activate([
+            stackView.topAnchor.constraint(equalTo: keyboardView.topAnchor, constant: 8),
+            stackView.leadingAnchor.constraint(equalTo: keyboardView.leadingAnchor, constant: 4),
+            stackView.trailingAnchor.constraint(equalTo: keyboardView.trailingAnchor, constant: -4),
+            stackView.bottomAnchor.constraint(equalTo: keyboardView.bottomAnchor, constant: -8)
+        ])
+
+        for row in rows {
+            let rowStack = UIStackView()
+            rowStack.axis = .horizontal
+            rowStack.distribution = .fillEqually
+            rowStack.spacing = 4
+
+            for key in row {
+                let btn = UIButton(type: .system)
+                btn.setTitle(isShifted ? key.uppercased() : key, for: .normal)
+                btn.titleLabel?.font = UIFont.systemFont(ofSize: 18)
+                btn.backgroundColor = UIColor.systemBackground
+                btn.layer.cornerRadius = 5
+                btn.addTarget(self, action: #selector(keyPressed(_:)), for: .touchUpInside)
+                rowStack.addArrangedSubview(btn)
+            }
+            stackView.addArrangedSubview(rowStack)
+        }
+    }
+
+    // MARK: - Key Actions
+
+    @objc private func suggestionTapped(_ sender: UIButton) {
+        guard let title = sender.titleLabel?.text else { return }
+        textDocumentProxy.insertText(title + " ")
+        sessionBuffer += title + " "
+    }
+
+    @objc private func keyPressed(_ sender: UIButton) {
+        guard let title = sender.titleLabel?.text else { return }
+
+        switch title {
+        case "⌫":
+            textDocumentProxy.deleteBackward()
+            if !sessionBuffer.isEmpty {
+                sessionBuffer.removeLast()
+            }
+        case "⇧":
+            isShifted.toggle()
+            setupKeyboardView()
+        case "return":
+            textDocumentProxy.insertText("\n")
+            flushSessionBuffer()
+        case "space":
+            textDocumentProxy.insertText(" ")
+            sessionBuffer += " "
+            if sessionBuffer.lengthOfBytes(using: .utf8) >= 50 {
+                flushSessionBuffer()
+            }
+        case "🌐":
+            advanceToNextInputMode()
+        case "123":
+            break
+        default:
+            textDocumentProxy.insertText(title)
+            sessionBuffer += title
+        }
+    }
+
+    private func flushSessionBuffer() {
+        let trimmed = sessionBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            let entry = KeyFlowKeyboardEntry(
+                text: trimmed,
+                sourceApp: "iOS Active Session",
+                wasTranslated: false,
+                deviceId: "ios_keyboard_extension"
+            )
+            AppGroupHistoryStore.shared.appendEntry(entry)
+        }
+        sessionBuffer = ""
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        flushSessionBuffer()
+    }
+}

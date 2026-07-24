@@ -1,6 +1,6 @@
 # KeyFlow — iOS Custom Keyboard Extension
 
-> **Status:** Placeholder — no implementation yet
+> **Status:** Implemented (`KeyboardViewController`, `AppGroupHistoryStore`, `IosAppGroupReader`)
 
 ## Purpose
 
