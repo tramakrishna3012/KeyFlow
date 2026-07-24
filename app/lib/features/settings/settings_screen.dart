@@ -57,12 +57,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onChanged: (v) => setState(() => _hapticFeedback = v),
                   ),
                 ),
-                _SettingsTile(
+                const _SettingsTile(
                   icon: Icons.keyboard_rounded,
                   iconColor: AppColors.textMuted,
                   title: 'Keyboard Layout',
                   subtitle: 'QWERTY',
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right_rounded,
                     color: AppColors.textMuted,
                   ),
@@ -116,12 +116,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _buildSectionLabel(context, 'APPEARANCE'),
               const SizedBox(height: 8),
               _buildSection([
-                _SettingsTile(
+                const _SettingsTile(
                   icon: Icons.dark_mode_rounded,
                   iconColor: AppColors.secondary,
                   title: 'Dark Mode',
                   subtitle: 'Currently active',
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right_rounded,
                     color: AppColors.textMuted,
                   ),

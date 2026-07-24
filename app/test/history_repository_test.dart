@@ -22,11 +22,8 @@ class InMemoryHistoryRepository implements HistoryRepository {
 
   @override
   Future<HistoryEntry?> getEntry(String id) async {
-    try {
-      return _entries.firstWhere((e) => e.id == id);
-    } on StateError {
-      return null;
-    }
+    final matches = _entries.where((e) => e.id == id);
+    return matches.isEmpty ? null : matches.first;
   }
 
   @override

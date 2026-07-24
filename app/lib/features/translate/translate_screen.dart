@@ -76,7 +76,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
                 ),
                 const Spacer(),
                 GestureDetector(
-                  onTap: () => _sourceController.clear(),
+                  onTap: _sourceController.clear,
                   child: Text(
                     'Clear',
                     style: Theme.of(context)
@@ -187,7 +187,7 @@ class _TranslateScreenState extends State<TranslateScreen> {
         childAspectRatio: 1.4,
         children: _languages
             .map(
-              (lang) => _buildLanguageButton(lang),
+              _buildLanguageButton,
             )
             .toList(),
       );
