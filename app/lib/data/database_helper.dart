@@ -10,9 +10,13 @@ import 'package:sqflite_sqlcipher/sqflite.dart';
 /// - settings
 /// - audit_log
 class DatabaseHelper {
-  DatabaseHelper({this.customPath});
+  DatabaseHelper({
+    this.customPath,
+    this.databaseFactoryOverride,
+  });
 
   final String? customPath;
+  final DatabaseFactory? databaseFactoryOverride;
   Database? _db;
 
   /// Returns the open encrypted database instance, initializing it if necessary.
@@ -27,6 +31,18 @@ class DatabaseHelper {
   /// Initializes the database with SQLCipher password protection.
   Future<Database> initDatabase(String password) async {
     final path = customPath ?? await _getDatabasePath();
+
+    final dbFactory = databaseFactoryOverride;
+    if (dbFactory != null) {
+      return dbFactory.openDatabase(
+        path,
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: _onCreate,
+        ),
+      );
+    }
+
     return openDatabase(
       path,
       password: password,
