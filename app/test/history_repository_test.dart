@@ -50,6 +50,15 @@ class InMemoryHistoryRepository implements HistoryRepository {
   }
 
   @override
+  Future<List<HistoryEntry>> searchEntries(String query) => search(query);
+
+  @override
+  Future<void> addEntry(HistoryEntry entry) => insertEntry(entry);
+
+  @override
+  Future<void> clearAll() => deleteAllEntries();
+
+  @override
   Future<String> exportAll() async =>
       _entries.map((e) => '${e.capturedAt.toIso8601String()}\t${e.text}').join('\n');
 
