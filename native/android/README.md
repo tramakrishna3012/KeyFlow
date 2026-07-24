@@ -1,6 +1,6 @@
 # KeyFlow — Android Native Capture Module
 
-> **Status:** Placeholder — no implementation yet
+> **Status:** Implemented (`KeyflowAccessibilityService`, `KeyflowCapturePlugin`, `accessibility_service_config.xml`)
 
 ## Purpose
 
