@@ -1,6 +1,6 @@
 # KeyFlow — macOS Native Capture Module
 
-> **Status:** Placeholder — no implementation yet
+> **Status:** Implemented (`MacOSCaptureEngine`, `MacOSStatusItem`, `KeyflowMacOSCapturePlugin`)
 
 ## Purpose
 
