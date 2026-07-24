@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/emoji/emoji_screen.dart';
 import '../../features/history/history_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/translate/translate_screen.dart';
 import '../theme/app_colors.dart';
@@ -15,6 +16,10 @@ import '../theme/app_colors.dart';
 final GoRouter appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => _ScaffoldWithNavBar(
         navigationShell: navigationShell,
