@@ -1,0 +1,43 @@
+# KeyFlow — Translation Relay Service
+
+> **Status:** Placeholder — no implementation yet
+
+## Purpose
+
+A minimal, stateless backend service that proxies translation requests from the KeyFlow client to a third-party translation API (e.g., DeepL, Google Translate). This keeps API keys server-side and out of the distributed client binary.
+
+## Design (from Architecture §5)
+
+```
+User selects text ──► On-device translation available? ──Yes──► Local model ──► Result
+                                    │
+                                   No (opt-in per use)
+                                    ▼
+                            Relay Service ──► Third-party Translation API ──► Result (not persisted)
+```
+
+## Responsibilities
+
+- Hold the third-party translation API key server-side
+- Forward single translation requests, return the result
+- **Never persist** the request or response text content
+- Log only request metadata (timestamp, language pair, success/failure) — no text content in logs (Architecture §6)
+- Make translation providers swappable without a client update
+
+## Implementation Options
+
+- Cloudflare Worker
+- AWS Lambda
+- Google Cloud Function
+- Any lightweight serverless platform
+
+## Security Constraints (from TRD §4)
+
+- S-4: No captured text leaves the device except for explicit, user-initiated cloud translation
+- S-5: Crash/diagnostic logs must never contain captured text content
+
+## Related Docs
+
+- [Architecture §5 — Translation](../docs/KeyFlow_04_Architecture.md)
+- [Architecture §6 — Backend Footprint](../docs/KeyFlow_04_Architecture.md)
+- [TRD §8 — Third-Party Dependencies](../docs/KeyFlow_03_TRD.md)
