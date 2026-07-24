@@ -1,0 +1,75 @@
+import Foundation
+
+public struct KeyFlowKeyboardEntry: Codable {
+    public let id: String
+    public let text: String
+    public let sourceApp: String
+    public let capturedAt: Int64
+    public let language: String
+    public let wasTranslated: Bool
+    public let deviceId: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case text
+        case sourceApp = "source_app"
+        case capturedAt = "captured_at"
+        case language
+        case wasTranslated = "was_translated"
+        case deviceId = "device_id"
+    }
+
+    public init(id: String = UUID().uuidString, text: String, sourceApp: String = "iOS Keyboard", capturedAt: Int64 = Int64(Date().timeIntervalSince1970 * 1000), language: String = "en", wasTranslated: Bool = false, deviceId: String = "ios_keyboard") {
+        self.id = id
+        self.text = text
+        self.sourceApp = sourceApp
+        self.capturedAt = capturedAt
+        self.language = language
+        self.wasTranslated = wasTranslated
+        self.deviceId = deviceId
+    }
+}
+
+public class AppGroupHistoryStore {
+    public static let shared = AppGroupHistoryStore()
+    public static let appGroupId = "group.com.keyflow.app"
+    public static let filename = "keyflow_pending_entries.json"
+
+    private init() {}
+
+    private var sharedDirectoryURL: URL? {
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppGroupHistoryStore.appGroupId)
+    }
+
+    public func appendEntry(_ entry: KeyFlowKeyboardEntry) {
+        guard let dirURL = sharedDirectoryURL else {
+            print("AppGroup container directory not accessible")
+            return
+        }
+
+        let fileURL = dirURL.appendingPathComponent(AppGroupHistoryStore.filename)
+        var existingEntries = readEntries(from: fileURL)
+        existingEntries.append(entry)
+
+        do {
+            let data = try JSONEncoder().encode(existingEntries)
+            try data.write(to: fileURL, options: [.atomic])
+        } catch {
+            print("Failed to write to App Group container: \(error)")
+        }
+    }
+
+    private func readEntries(from url: URL) -> [KeyFlowKeyboardEntry] {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            return []
+        }
+
+        do {
+            let data = try Data(contentsOf: url)
+            return try JSONDecoder().decode([KeyFlowKeyboardEntry].self, from: data)
+        } catch {
+            print("Failed to decode App Group history entries: \(error)")
+            return []
+        }
+    }
+}
