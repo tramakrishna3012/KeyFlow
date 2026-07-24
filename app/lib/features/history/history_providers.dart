@@ -1,0 +1,57 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../data/models/history_entry.dart';
+import '../../data/providers.dart';
+
+/// State provider for the current search query string.
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+/// State provider for the active tag/app filter.
+final activeTagProvider = StateProvider<String>((ref) => 'All');
+
+/// Async provider yielding history entries based on search query and filter tag.
+final historyEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((ref) async {
+  final repository = ref.watch(historyRepositoryProvider);
+  final query = ref.watch(searchQueryProvider);
+  final tag = ref.watch(activeTagProvider);
+
+  final List<HistoryEntry> entries = await repository.search(query);
+
+  if (tag == 'All') {
+    return entries;
+  }
+
+  return entries.where((e) {
+    final lowerTag = tag.toLowerCase();
+    return e.sourceApp.toLowerCase().contains(lowerTag) ||
+        (e.category != null && e.category!.toLowerCase().contains(lowerTag));
+  }).toList();
+});
+
+/// Controller to perform history entry deletions.
+class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
+  HistoryNotifier(this.ref) : super(const AsyncValue.data(null));
+
+  final Ref ref;
+
+  Future<void> deleteEntry(String id) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(historyRepositoryProvider);
+      await repository.deleteEntry(id);
+      ref.invalidate(historyEntriesProvider);
+    });
+  }
+
+  Future<void> clearAll() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final repository = ref.read(historyRepositoryProvider);
+      await repository.clearAll();
+      ref.invalidate(historyEntriesProvider);
+    });
+  }
+}
+
+final historyNotifierProvider = StateNotifierProvider<HistoryNotifier, AsyncValue<void>>(
+  (ref) => HistoryNotifier(ref),
+);
