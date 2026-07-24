@@ -67,6 +67,18 @@ class HistoryEntry {
         useCount: useCount ?? this.useCount,
       );
 
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'text': text,
+        'sourceApp': sourceApp,
+        'capturedAt': capturedAt.toIso8601String(),
+        'language': language,
+        'wasTranslated': wasTranslated,
+        'deviceId': deviceId,
+        'category': category,
+        'useCount': useCount,
+      };
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

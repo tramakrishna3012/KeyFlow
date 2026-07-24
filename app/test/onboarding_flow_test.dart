@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/history_repository.dart';
 import 'package:keyflow_app/data/models/history_entry.dart';
 import 'package:keyflow_app/data/providers.dart';
-import 'package:keyflow_app/features/onboarding/onboarding_providers.dart';
 import 'package:keyflow_app/features/onboarding/onboarding_screen.dart';
 
 class MockOnboardingRepo implements HistoryRepository {

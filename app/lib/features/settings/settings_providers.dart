@@ -4,6 +4,7 @@ import '../../data/providers.dart';
 import '../../data/retention_service.dart';
 import '../../data/sqlite_history_repository.dart';
 import '../capture/capture_service.dart';
+import '../history/history_providers.dart';
 
 const String kKeyRetentionDays = 'retention_days';
 const String kKeyAutocorrect = 'autocorrect_enabled';
@@ -57,8 +58,9 @@ class SettingsController {
     ref.invalidate(exclusionListProvider);
 
     // Sync updated list to native platform channel
+    final list = await repo.getExclusionList();
     final captureService = CaptureService(repo);
-    await captureService.syncExclusionList();
+    await captureService.syncExclusionList(list);
   }
 
   Future<void> removeExclusion(String appIdentifier) async {
@@ -67,8 +69,9 @@ class SettingsController {
     ref.invalidate(exclusionListProvider);
 
     // Sync updated list to native platform channel
+    final list = await repo.getExclusionList();
     final captureService = CaptureService(repo);
-    await captureService.syncExclusionList();
+    await captureService.syncExclusionList(list);
   }
 
   Future<void> updateRetentionDays(int days) async {
@@ -79,7 +82,7 @@ class SettingsController {
 
       // Trigger immediate auto-purge with new retention window
       final retentionService = RetentionService(repository: repo);
-      await retentionService.runAutoPurge();
+      await retentionService.runPurge();
       ref.invalidate(historyEntriesProvider);
     }
   }
