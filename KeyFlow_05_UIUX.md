@@ -1,0 +1,74 @@
+# KeyFlow — UI/UX Specification
+
+**Version:** 1.0
+
+---
+
+## 1. Design Principles
+
+1. **Nothing hidden.** A visible status indicator is present any time capture is active, on every platform. This is a product principle, not just a technical requirement (TRD §2).
+2. **Consent before capability.** No capture, ever, before the user has completed the Consent Flow and granted the OS permission.
+3. **Fast to reuse, slow to intrude.** Search/reinsert should feel instant (Spotlight/Alfred-style); suggestions (autocorrect, emoji) should never block typing.
+4. **The user is always in control of their own data.** Every screen that shows captured history also offers delete; Settings always has an obvious "export" and "delete everything" action.
+
+## 2. Key Screens
+
+### 2.1 Onboarding & Consent Flow
+- Screen 1 — **What KeyFlow does**: plain-language explanation ("KeyFlow saves what you type on this device so you can search and reuse it later. It also offers autocorrect, translation, and emoji suggestions.").
+- Screen 2 — **What it does not do**: explicitly states no capture from password fields (where detectable), no cloud sync by default, no sharing with anyone else.
+- Screen 3 — **Permission request**: explains the specific OS permission about to be requested (Accessibility, Input Monitoring, etc.) before triggering the native OS dialog, so the OS prompt isn't a surprise.
+- Screen 4 — **Exclusion list setup**: pre-populated with sensible defaults (password managers, banking apps/domains), user can add more before finishing.
+- Screen 5 — **Confirmation**: "KeyFlow is now active" with a preview of the always-on status indicator so the user knows what to look for.
+
+### 2.2 Main History & Search
+- Global hotkey (desktop) or app-open (mobile) surfaces a quick-search palette.
+- Results ranked by recency + text relevance, grouped by source app.
+- Each result: preview snippet, source app icon, timestamp, one-click "insert," swipe/click-to-delete.
+- Empty state explains how history builds up over time.
+
+### 2.3 Snippet Detail
+- Full text view, source app, captured time, "insert," "delete," "copy," "translate this."
+
+### 2.4 Settings
+- **Exclusion List**: add/remove apps or domains, toggle "auto-exclude fields marked secure by the OS" (on by default, cannot be turned off — this one is a hard rule, not a preference).
+- **Retention**: slider/dropdown (7 / 30 / 90 days / "keep until I delete"); default 30.
+- **Autocorrect**: on/off, per-app override list.
+- **Translation**: default target language, on-device-only vs. allow cloud fallback prompt-per-use toggle.
+- **Data**: "View everything KeyFlow has stored," "Export," "Delete all."
+- **About**: permission status per platform, link to this documentation set.
+
+### 2.5 Status Indicator / Tray Menu (Desktop)
+- Always-visible tray/menu-bar icon while active; icon state changes (e.g., dimmed) if capture is paused.
+- Menu: Pause capture (1 hr / until re-enabled), Open History, Settings, Quit.
+
+### 2.6 Emoji Picker Overlay
+- Triggered by hotkey or inline suggestion tap; searchable grid; recently-used row at top.
+
+### 2.7 Translation Popup
+- Appears on selected text; shows source→target language, translated text, and a small label indicating "Translated on-device" or "Translated via cloud (you approved this)."
+
+## 3. Core User Flows
+
+1. **First run**: install → Onboarding & Consent (2.1) → status indicator appears → normal typing begins building history.
+2. **Everyday reuse**: user starts typing something familiar → hits search hotkey → finds past entry → inserts it.
+3. **Excluding an app**: user opens Settings → Exclusion List → adds an app → confirmation toast → future typing in that app is never captured.
+4. **Reviewing/deleting data**: Settings → "View everything KeyFlow has stored" → delete individual entries or "Delete all."
+5. **Translating on the fly**: user selects text → Translation Popup appears → reviews source/target → accepts or dismisses.
+6. **Uninstall**: standard OS uninstall triggers KeyFlow's cleanup routine (SRS FR-22) — local store and revocable permissions are cleared.
+
+## 4. Accessibility
+
+- All interactive elements reachable via keyboard navigation (desktop) and screen-reader labeled (all platforms).
+- Minimum 4.5:1 contrast ratio for text; status indicator states distinguishable by shape/label, not color alone.
+- Suggestion popups (autocorrect, emoji, translation) dismissible via keyboard (Esc) as well as click/tap.
+
+## 5. Visual Direction (for the design/agentic IDE handoff)
+
+- Neutral, low-attention palette for the ever-present status indicator and suggestion popups — this is a utility, not a marketing surface.
+- Consistent iconography for "captured," "excluded," and "paused" states across all four platforms.
+- History/search UI should feel closer to a command palette (fast, keyboard-first) than a document browser.
+
+## 6. Copy Guidelines
+
+- Consent and Settings copy must always be literal and specific ("KeyFlow stores text you type on this device, encrypted, for 30 days by default") — never vague reassurance ("your privacy matters to us") in place of a concrete fact.
+- Never use the word "monitor" or "track" in user-facing copy about the device's own owner — frame everything as "save," "search," "reuse," consistent with this being a tool *for* the user, not *on* them.
