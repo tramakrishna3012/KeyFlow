@@ -71,12 +71,6 @@ class MockHistoryRepository implements HistoryRepository {
   }
 }
 
-  @override
-  Future<void> removeExclusion(String appIdentifier) async {
-    exclusionList.remove(appIdentifier);
-  }
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

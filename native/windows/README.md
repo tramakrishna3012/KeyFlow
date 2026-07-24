@@ -1,6 +1,6 @@
 # KeyFlow — Windows Native Capture Module
 
-> **Status:** Placeholder — no implementation yet
+> **Status:** Implemented (`windows_capture_engine`, `windows_tray_icon`, `windows_startup_manager`, `keyflow_capture_plugin`)
 
 ## Purpose
 
