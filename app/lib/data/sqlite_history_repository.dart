@@ -169,6 +169,38 @@ class SqliteHistoryRepository implements HistoryRepository {
     );
   }
 
+  // ── Exclusion List Helpers ────────────────────────────────────────
+
+  @override
+  Future<List<String>> getExclusionList() async {
+    final db = await _getDb();
+    final maps = await db.query('exclusion_list', orderBy: 'added_at ASC');
+    return maps.map((m) => m['app_identifier'] as String).toList();
+  }
+
+  @override
+  Future<void> addExclusion(String appIdentifier) async {
+    final db = await _getDb();
+    await db.insert(
+      'exclusion_list',
+      {
+        'app_identifier': appIdentifier,
+        'added_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> removeExclusion(String appIdentifier) async {
+    final db = await _getDb();
+    await db.delete(
+      'exclusion_list',
+      where: 'app_identifier = ?',
+      whereArgs: [appIdentifier],
+    );
+  }
+
   // ── Mapping Helpers ───────────────────────────────────────────────
 
   HistoryEntry _mapToEntry(Map<String, dynamic> map) => HistoryEntry(

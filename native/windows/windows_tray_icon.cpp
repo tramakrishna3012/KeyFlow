@@ -1,0 +1,110 @@
+#include "windows_tray_icon.h"
+
+namespace keyflow {
+
+// Menu item identifiers
+static constexpr UINT kID_PAUSE_1HR = 1001;
+static constexpr UINT kID_PAUSE_UNTIL = 1002;
+static constexpr UINT kID_RESUME = 1003;
+static constexpr UINT kID_OPEN_HISTORY = 1004;
+static constexpr UINT kID_OPEN_SETTINGS = 1005;
+static constexpr UINT kID_QUIT = 1006;
+
+WindowsTrayIcon::WindowsTrayIcon() {
+  ZeroMemory(&nid_, sizeof(nid_));
+}
+
+WindowsTrayIcon::~WindowsTrayIcon() {
+  RemoveTrayIcon();
+}
+
+bool WindowsTrayIcon::CreateTrayIcon(HWND parent_hwnd, HICON hIcon, TrayCommandCallback callback) {
+  parent_hwnd_ = parent_hwnd;
+  callback_ = callback;
+
+  nid_.cbSize = sizeof(NOTIFYICONDATAW);
+  nid_.hWnd = parent_hwnd;
+  nid_.uID = 1;
+  nid_.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+  nid_.uCallbackMessage = kWM_TRAYICON;
+  nid_.hIcon = hIcon ? hIcon : LoadIcon(NULL, IDI_APPLICATION);
+  wcscpy_s(nid_.szTip, L"KeyFlow - Active");
+
+  return Shell_NotifyIconW(NIM_ADD, &nid_) == TRUE;
+}
+
+void WindowsTrayIcon::RemoveTrayIcon() {
+  if (nid_.hWnd != nullptr) {
+    Shell_NotifyIconW(NIM_DELETE, &nid_);
+    nid_.hWnd = nullptr;
+  }
+}
+
+void WindowsTrayIcon::UpdateStatus(bool is_paused, const std::wstring& tooltip_text) {
+  is_paused_ = is_paused;
+  wcscpy_s(nid_.szTip, tooltip_text.c_str());
+  Shell_NotifyIconW(NIM_MODIFY, &nid_);
+}
+
+void WindowsTrayIcon::ShowContextMenu() {
+  HMENU hMenu = CreatePopupMenu();
+  if (!hMenu) return;
+
+  if (is_paused_) {
+    AppendMenuW(hMenu, MF_STRING, kID_RESUME, L"Resume Capture");
+  } else {
+    AppendMenuW(hMenu, MF_STRING, kID_PAUSE_1HR, L"Pause (1 hour)");
+    AppendMenuW(hMenu, MF_STRING, kID_PAUSE_UNTIL, L"Pause (until re-enabled)");
+  }
+
+  AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+  AppendMenuW(hMenu, MF_STRING, kID_OPEN_HISTORY, L"Open History");
+  AppendMenuW(hMenu, MF_STRING, kID_OPEN_SETTINGS, L"Settings");
+  AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
+  AppendMenuW(hMenu, MF_STRING, kID_QUIT, L"Quit");
+
+  POINT pt;
+  GetCursorPos(&pt);
+  SetForegroundWindow(parent_hwnd_);
+
+  UINT cmd = TrackPopupMenu(hMenu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, 0, parent_hwnd_, NULL);
+  DestroyMenu(hMenu);
+
+  if (callback_ && cmd != 0) {
+    switch (cmd) {
+      case kID_PAUSE_1HR:
+        callback_(TrayMenuCommand::kPause1Hour);
+        break;
+      case kID_PAUSE_UNTIL:
+        callback_(TrayMenuCommand::kPauseUntilReenabled);
+        break;
+      case kID_RESUME:
+        callback_(TrayMenuCommand::kResume);
+        break;
+      case kID_OPEN_HISTORY:
+        callback_(TrayMenuCommand::kOpenHistory);
+        break;
+      case kID_OPEN_SETTINGS:
+        callback_(TrayMenuCommand::kOpenSettings);
+        break;
+      case kID_QUIT:
+        callback_(TrayMenuCommand::kQuit);
+        break;
+    }
+  }
+}
+
+bool WindowsTrayIcon::HandleWindowMessage(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
+  if (message == kWM_TRAYICON) {
+    if (lParam == WM_RBUTTONUP || lParam == WM_CONTEXTMENU) {
+      ShowContextMenu();
+      return true;
+    } else if (lParam == WM_LBUTTONDBLCLK) {
+      if (callback_) callback_(TrayMenuCommand::kOpenHistory);
+      return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace keyflow

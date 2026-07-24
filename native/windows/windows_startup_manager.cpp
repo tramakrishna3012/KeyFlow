@@ -1,0 +1,51 @@
+#include "windows_startup_manager.h"
+
+namespace keyflow {
+
+bool WindowsStartupManager::SetAutostart(bool enable) {
+  HKEY hKey;
+  LONG result = RegOpenKeyExW(HKEY_CURRENT_USER, kRegistrySubKey, 0, KEY_SET_VALUE, &hKey);
+  if (result != ERROR_SUCCESS) {
+    return false;
+  }
+
+  bool success = false;
+  if (enable) {
+    WCHAR exePath[MAX_PATH];
+    DWORD length = GetModuleFileNameW(NULL, exePath, MAX_PATH);
+    if (length > 0) {
+      // Wrap path in quotes
+      std::wstring command = L"\"" + std::wstring(exePath) + L"\"";
+      result = RegSetValueExW(
+          hKey,
+          kAppName,
+          0,
+          REG_SZ,
+          reinterpret_cast<const BYTE*>(command.c_str()),
+          static_cast<DWORD>((command.length() + 1) * sizeof(wchar_t))
+      );
+      success = (result == ERROR_SUCCESS);
+    }
+  } else {
+    result = RegDeleteValueW(hKey, kAppName);
+    success = (result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND);
+  }
+
+  RegCloseKey(hKey);
+  return success;
+}
+
+bool WindowsStartupManager::IsAutostartEnabled() {
+  HKEY hKey;
+  LONG result = RegOpenKeyExW(HKEY_CURRENT_USER, kRegistrySubKey, 0, KEY_QUERY_VALUE, &hKey);
+  if (result != ERROR_SUCCESS) {
+    return false;
+  }
+
+  result = RegQueryValueExW(hKey, kAppName, NULL, NULL, NULL, NULL);
+  RegCloseKey(hKey);
+
+  return result == ERROR_SUCCESS;
+}
+
+}  // namespace keyflow

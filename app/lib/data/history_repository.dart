@@ -46,4 +46,13 @@ abstract class HistoryRepository {
 
   /// Returns the total count of stored entries.
   Future<int> count();
+
+  /// Retrieves the list of excluded app package/executable identifiers.
+  Future<List<String>> getExclusionList();
+
+  /// Adds an app identifier to the exclusion list.
+  Future<void> addExclusion(String appIdentifier);
+
+  /// Removes an app identifier from the exclusion list.
+  Future<void> removeExclusion(String appIdentifier);
 }

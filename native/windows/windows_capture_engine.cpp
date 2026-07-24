@@ -1,0 +1,210 @@
+#include "windows_capture_engine.h"
+
+#include <psapi.h>
+#include <algorithm>
+#include <chrono>
+#include <cwctype>
+
+namespace keyflow {
+
+static WindowsCaptureEngine* g_capture_engine_instance = nullptr;
+
+WindowsCaptureEngine& WindowsCaptureEngine::GetInstance() {
+  static WindowsCaptureEngine instance;
+  return instance;
+}
+
+WindowsCaptureEngine::WindowsCaptureEngine() {
+  g_capture_engine_instance = this;
+}
+
+WindowsCaptureEngine::~WindowsCaptureEngine() {
+  StopCapture();
+  if (g_capture_engine_instance == this) {
+    g_capture_engine_instance = nullptr;
+  }
+}
+
+bool WindowsCaptureEngine::StartCapture(CaptureCallback callback) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  callback_ = callback;
+  is_running_ = true;
+  is_paused_ = false;
+
+  if (hook_handle_ == nullptr) {
+    hook_handle_ = SetWindowsHookExW(
+        WH_KEYBOARD_LL,
+        LowLevelKeyboardProc,
+        GetModuleHandle(NULL),
+        0
+    );
+  }
+
+  return hook_handle_ != nullptr;
+}
+
+void WindowsCaptureEngine::StopCapture() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (hook_handle_ != nullptr) {
+    UnhookWindowsHookEx(hook_handle_);
+    hook_handle_ = nullptr;
+  }
+  is_running_ = false;
+  callback_ = nullptr;
+}
+
+void WindowsCaptureEngine::PauseCapture() {
+  is_paused_ = true;
+}
+
+void WindowsCaptureEngine::ResumeCapture() {
+  is_paused_ = false;
+}
+
+bool WindowsCaptureEngine::IsPaused() const {
+  return is_paused_;
+}
+
+void WindowsCaptureEngine::SetExclusionList(const std::vector<std::wstring>& excluded_apps) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  exclusion_list_.clear();
+  for (const auto& app : excluded_apps) {
+    std::wstring lower_app = app;
+    std::transform(lower_app.begin(), lower_app.end(), lower_app.begin(), ::towlower);
+    exclusion_list_.push_back(lower_app);
+  }
+}
+
+std::vector<std::wstring> WindowsCaptureEngine::GetExclusionList() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  return exclusion_list_;
+}
+
+LRESULT CALLBACK WindowsCaptureEngine::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+  if (nCode == HC_ACTION && g_capture_engine_instance != nullptr) {
+    return g_capture_engine_instance->HandleKeyboardHook(nCode, wParam, lParam);
+  }
+  return CallNextHookEx(NULL, nCode, wParam, lParam);
+}
+
+LRESULT WindowsCaptureEngine::HandleKeyboardHook(int nCode, WPARAM wParam, LPARAM lParam) {
+  if (!is_running_ || is_paused_) {
+    return CallNextHookEx(hook_handle_, nCode, wParam, lParam);
+  }
+
+  if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
+    KBDLLHOOKSTRUCT* pKbd = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
+    HWND hwnd = GetForegroundWindow();
+    if (hwnd != NULL) {
+      std::wstring app_name = GetActiveProcessName(hwnd);
+      std::wstring window_title = GetActiveWindowTitle(hwnd);
+
+      // SECURITY & PRIVACY: Native level exclusion check before processing keystrokes
+      if (IsAppExcluded(app_name, window_title)) {
+        return CallNextHookEx(hook_handle_, nCode, wParam, lParam);
+      }
+
+      BYTE keyboard_state[256] = {0};
+      GetKeyboardState(keyboard_state);
+
+      if (GetAsyncKeyState(VK_SHIFT) & 0x8000) {
+        keyboard_state[VK_SHIFT] = 0x80;
+      }
+      if (GetKeyState(VK_CAPITAL) & 0x0001) {
+        keyboard_state[VK_CAPITAL] = 0x01;
+      }
+
+      WCHAR buffer[5] = {0};
+      HKL layout = GetKeyboardLayout(GetWindowThreadProcessId(hwnd, NULL));
+      int res = ToUnicodeEx(pKbd->vkCode, pKbd->scanCode, keyboard_state, buffer, 4, 0, layout);
+
+      std::wstring text_out;
+      if (res > 0) {
+        buffer[res] = L'\0';
+        text_out = buffer;
+      } else if (pKbd->vkCode == VK_RETURN) {
+        text_out = L"\n";
+      } else if (pKbd->vkCode == VK_TAB) {
+        text_out = L"\t";
+      } else if (pKbd->vkCode == VK_BACK) {
+        text_out = L"\b";
+      }
+
+      if (!text_out.empty() && callback_) {
+        uint64_t now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+
+        CapturedEvent event;
+        event.text = text_out;
+        event.app_name = app_name;
+        event.window_title = window_title;
+        event.timestamp_ms = now_ms;
+
+        callback_(event);
+      }
+    }
+  }
+
+  return CallNextHookEx(hook_handle_, nCode, wParam, lParam);
+}
+
+bool WindowsCaptureEngine::IsAppExcluded(const std::wstring& app_name, const std::wstring& window_title) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (exclusion_list_.empty()) {
+    return false;
+  }
+
+  std::wstring lower_app = app_name;
+  std::transform(lower_app.begin(), lower_app.end(), lower_app.begin(), ::towlower);
+
+  std::wstring lower_title = window_title;
+  std::transform(lower_title.begin(), lower_title.end(), lower_title.begin(), ::towlower);
+
+  for (const auto& item : exclusion_list_) {
+    if (!item.empty()) {
+      if (lower_app.find(item) != std::wstring::npos ||
+          lower_title.find(item) != std::wstring::npos) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+std::wstring WindowsCaptureEngine::GetActiveProcessName(HWND hwnd) {
+  DWORD process_id = 0;
+  GetWindowThreadProcessId(hwnd, &process_id);
+  if (process_id == 0) return L"";
+
+  HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, process_id);
+  if (hProcess == NULL) return L"";
+
+  WCHAR path_buffer[MAX_PATH] = {0};
+  DWORD size = MAX_PATH;
+  std::wstring result = L"";
+
+  if (QueryFullProcessImageNameW(hProcess, 0, path_buffer, &size)) {
+    std::wstring full_path(path_buffer);
+    size_t last_slash = full_path.find_last_of(L"\\/");
+    if (last_slash != std::wstring::npos) {
+      result = full_path.substr(last_slash + 1);
+    } else {
+      result = full_path;
+    }
+  }
+
+  CloseHandle(hProcess);
+  return result;
+}
+
+std::wstring WindowsCaptureEngine::GetActiveWindowTitle(HWND hwnd) {
+  WCHAR title_buffer[512] = {0};
+  int length = GetWindowTextW(hwnd, title_buffer, 512);
+  if (length > 0) {
+    return std::wstring(title_buffer, length);
+  }
+  return L"";
+}
+
+}  // namespace keyflow

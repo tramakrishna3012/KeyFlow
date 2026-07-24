@@ -1,0 +1,60 @@
+#ifndef NATIVE_WINDOWS_CAPTURE_ENGINE_H_
+#define NATIVE_WINDOWS_CAPTURE_ENGINE_H_
+
+#include <windows.h>
+#include <string>
+#include <vector>
+#include <mutex>
+#include <functional>
+#include <atomic>
+
+namespace keyflow {
+
+struct CapturedEvent {
+  std::wstring text;
+  std::wstring app_name;
+  std::wstring window_title;
+  uint64_t timestamp_ms;
+};
+
+using CaptureCallback = std::function<void(const CapturedEvent& event)>;
+
+class WindowsCaptureEngine {
+ public:
+  static WindowsCaptureEngine& GetInstance();
+
+  WindowsCaptureEngine();
+  ~WindowsCaptureEngine();
+
+  bool StartCapture(CaptureCallback callback);
+  void StopCapture();
+
+  void PauseCapture();
+  void ResumeCapture();
+  bool IsPaused() const;
+
+  void SetExclusionList(const std::vector<std::wstring>& excluded_apps);
+  std::vector<std::wstring> GetExclusionList() const;
+
+  // Internal hook handler called by Win32 WH_KEYBOARD_LL
+  LRESULT HandleKeyboardHook(int nCode, WPARAM wParam, LPARAM lParam);
+
+ private:
+  bool IsAppExcluded(const std::wstring& app_name, const std::wstring& window_title);
+  std::wstring GetActiveProcessName(HWND hwnd);
+  std::wstring GetActiveWindowTitle(HWND hwnd);
+
+  static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+
+  HHOOK hook_handle_{nullptr};
+  CaptureCallback callback_{nullptr};
+  std::atomic<bool> is_running_{false};
+  std::atomic<bool> is_paused_{false};
+
+  mutable std::mutex mutex_;
+  std::vector<std::wstring> exclusion_list_;
+};
+
+}  // namespace keyflow
+
+#endif  // NATIVE_WINDOWS_CAPTURE_ENGINE_H_

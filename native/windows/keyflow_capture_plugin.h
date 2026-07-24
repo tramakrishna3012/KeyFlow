@@ -1,0 +1,52 @@
+#ifndef NATIVE_WINDOWS_KEYFLOW_CAPTURE_PLUGIN_H_
+#define NATIVE_WINDOWS_KEYFLOW_CAPTURE_PLUGIN_H_
+
+#include <flutter/method_channel.h>
+#include <flutter/event_channel.h>
+#include <flutter/plugin_registrar_windows.h>
+#include <flutter/standard_method_codec.h>
+
+#include <memory>
+#include <mutex>
+#include <string>
+
+#include "windows_capture_engine.h"
+#include "windows_tray_icon.h"
+
+namespace keyflow {
+
+class KeyflowCapturePlugin : public flutter::Plugin {
+ public:
+  static void RegisterWithRegistrar(flutter::PluginRegistrarWindows* registrar);
+
+  KeyflowCapturePlugin(flutter::PluginRegistrarWindows* registrar);
+  virtual ~KeyflowCapturePlugin();
+
+  bool HandleWindowMessage(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+ private:
+  void HandleMethodCall(
+      const flutter::MethodCall<flutter::EncodableValue>& method_call,
+      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+
+  void OnCapturedEvent(const CapturedEvent& event);
+  void OnTrayCommand(TrayMenuCommand command);
+
+  static std::string Utf8FromWString(const std::wstring& wstr);
+  static std::wstring WStringFromUtf8(const std::string& str);
+
+  flutter::PluginRegistrarWindows* registrar_{nullptr};
+
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> method_channel_;
+  std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> event_channel_;
+
+  std::unique_ptr<flutter::EventSink<flutter::EncodableValue>> event_sink_;
+  std::mutex sink_mutex_;
+
+  WindowsTrayIcon tray_icon_;
+  int32_t window_proc_delegate_id_{-1};
+};
+
+}  // namespace keyflow
+
+#endif  // NATIVE_WINDOWS_KEYFLOW_CAPTURE_PLUGIN_H_
