@@ -10,36 +10,52 @@ class MockHistoryRepository implements HistoryRepository {
   List<String> exclusionList = ['1password.exe', 'bitwarden.exe'];
 
   @override
-  Future<int> addEntry(HistoryEntry entry) async {
+  Future<void> addEntry(HistoryEntry entry) async {
     entries.add(entry);
-    return entries.length;
+  }
+
+  @override
+  Future<void> insertEntry(HistoryEntry entry) async {
+    entries.add(entry);
   }
 
   @override
   Future<List<HistoryEntry>> getAllEntries() async => entries;
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) async {
+  Future<List<HistoryEntry>> search(String query) async {
     return entries.where((e) => e.text.contains(query)).toList();
   }
 
   @override
-  Future<HistoryEntry?> getEntry(int id) async => null;
+  Future<List<HistoryEntry>> searchEntries(String query) async {
+    return search(query);
+  }
 
   @override
-  Future<int> deleteEntry(int id) async => 0;
+  Future<HistoryEntry?> getEntry(String id) async => null;
 
   @override
-  Future<int> clearAll() async {
+  Future<void> deleteEntry(String id) async {}
+
+  @override
+  Future<void> deleteAllEntries() async {
     entries.clear();
-    return 0;
+  }
+
+  @override
+  Future<void> clearAll() async {
+    entries.clear();
   }
 
   @override
   Future<int> purgeOlderThan(int days) async => 0;
 
   @override
-  Future<List<HistoryEntry>> exportAll() async => entries;
+  Future<String> exportAll() async => '';
+
+  @override
+  Future<int> count() async => entries.length;
 
   @override
   Future<List<String>> getExclusionList() async => exclusionList;
@@ -48,6 +64,12 @@ class MockHistoryRepository implements HistoryRepository {
   Future<void> addExclusion(String appIdentifier) async {
     exclusionList.add(appIdentifier);
   }
+
+  @override
+  Future<void> removeExclusion(String appIdentifier) async {
+    exclusionList.remove(appIdentifier);
+  }
+}
 
   @override
   Future<void> removeExclusion(String appIdentifier) async {

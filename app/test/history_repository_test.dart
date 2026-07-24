@@ -64,6 +64,21 @@ class InMemoryHistoryRepository implements HistoryRepository {
 
   @override
   Future<int> count() async => _entries.length;
+
+  final List<String> _exclusions = [];
+
+  @override
+  Future<List<String>> getExclusionList() async => List.unmodifiable(_exclusions);
+
+  @override
+  Future<void> addExclusion(String appIdentifier) async {
+    _exclusions.add(appIdentifier);
+  }
+
+  @override
+  Future<void> removeExclusion(String appIdentifier) async {
+    _exclusions.remove(appIdentifier);
+  }
 }
 
 void main() {
