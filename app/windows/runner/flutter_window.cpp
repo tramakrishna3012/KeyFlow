@@ -26,8 +26,11 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
-  keyflow::KeyflowCapturePlugin::RegisterWithRegistrar(
+
+  flutter::PluginRegistrarWindows registrar(
       flutter_controller_->engine()->GetRegistrarForPlugin("KeyflowCapturePlugin"));
+  keyflow::KeyflowCapturePlugin::RegisterWithRegistrar(&registrar);
+
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -50,15 +53,13 @@ void FlutterWindow::OnDestroy() {
   Win32Window::OnDestroy();
 }
 
-LRESULT
-FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
-                              WPARAM const wparam,
-                              LPARAM const lparam) noexcept {
+LRESULT FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
+                                      WPARAM const wparam,
+                                      LPARAM const lparam) noexcept {
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =
-        flutter_controller_->HandleTopLevelWindowProc(hwnd, message, wparam,
-                                                      lparam);
+        flutter_controller_->HandleTopLevelWindowProc(hwnd, message, wparam, lparam);
     if (result) {
       return *result;
     }
@@ -67,7 +68,7 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   switch (message) {
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
-      break;
+      return 0;
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);
