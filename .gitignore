@@ -15,6 +15,7 @@ app/.flutter-plugins-dependencies
 app/android/build/
 app/android/app/build/
 app/android/.gradle/
+app/android/.kotlin/
 app/android/captures/
 *.apk
 *.aab

@@ -1,6 +1,6 @@
 import os
 import fitz  # PyMuPDF
-from PIL import Image
+from PIL import Image, ImageOps
 
 def generate_icons():
     svg_path = r'd:\Freelance\KeyFlow\AppLogo.svg'
@@ -16,9 +16,9 @@ def generate_icons():
     pix.save(master_png_path)
     print(f"Master PNG created at: {master_png_path}")
 
-    master_img = Image.open(master_png_path)
+    master_img = Image.open(master_png_path).convert("RGBA")
 
-    # 1. Android Mipmap Icons
+    # 1. Android Mipmap & Adaptive Icons
     android_res = os.path.join(base_out_dir, 'android', 'app', 'src', 'main', 'res')
     android_sizes = {
         'mipmap-mdpi': 48,
@@ -31,9 +31,40 @@ def generate_icons():
     for folder, size in android_sizes.items():
         folder_path = os.path.join(android_res, folder)
         os.makedirs(folder_path, exist_ok=True)
+
+        # Standard launcher icon
         resized = master_img.resize((size, size), Image.Resampling.LANCZOS)
         resized.save(os.path.join(folder_path, 'ic_launcher.png'))
-        print(f"Generated Android icon {size}x{size} in {folder}")
+        resized.save(os.path.join(folder_path, 'ic_launcher_round.png'))
+
+        # Adaptive foreground icon (scaled inside 108dp canvas with padding)
+        fg_size = int(size * 1.5)  # 108dp equivalent
+        fg_canvas = Image.new("RGBA", (fg_size, fg_size), (0, 0, 0, 0))
+        icon_draw_size = int(fg_size * 0.72)
+        inner_icon = master_img.resize((icon_draw_size, icon_draw_size), Image.Resampling.LANCZOS)
+        offset = (fg_size - icon_draw_size) // 2
+        fg_canvas.paste(inner_icon, (offset, offset), inner_icon)
+        fg_canvas.save(os.path.join(folder_path, 'ic_launcher_foreground.png'))
+
+        print(f"Generated Android legacy & adaptive icons {size}x{size} in {folder}")
+
+    # 1b. Create mipmap-anydpi-v26 adaptive XML manifests
+    v26_dir = os.path.join(android_res, 'mipmap-anydpi-v26')
+    os.makedirs(v26_dir, exist_ok=True)
+    
+    adaptive_xml_content = """<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:color="#0F1117" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
+"""
+    with open(os.path.join(v26_dir, 'ic_launcher.xml'), 'w', encoding='utf-8') as f:
+        f.write(adaptive_xml_content)
+
+    with open(os.path.join(v26_dir, 'ic_launcher_round.xml'), 'w', encoding='utf-8') as f:
+        f.write(adaptive_xml_content)
+
+    print("Generated Android v26 adaptive icon XMLs.")
 
     # 2. Windows Icon (.ico)
     windows_icon_path = os.path.join(base_out_dir, 'windows', 'runner', 'resources', 'app_icon.ico')
