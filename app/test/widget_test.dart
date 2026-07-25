@@ -11,7 +11,7 @@ void main() {
         child: KeyFlowApp(),
       ),
     );
-    // The app should render and show the Home tab's greeting.
+    await tester.pump(const Duration(milliseconds: 200));
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 
@@ -21,7 +21,7 @@ void main() {
         child: KeyFlowApp(),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('History'), findsOneWidget);

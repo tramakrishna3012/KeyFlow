@@ -27,6 +27,12 @@ final historyEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((r
   }).toList();
 });
 
+/// Async provider yielding ALL raw history entries for dashboard analytics.
+final allHistoryEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((ref) async {
+  final repository = ref.watch(historyRepositoryProvider);
+  return repository.getAllEntries();
+});
+
 /// Controller to perform history entry deletions.
 class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
   HistoryNotifier(this.ref) : super(const AsyncValue.data(null));
@@ -39,6 +45,7 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
       final repository = ref.read(historyRepositoryProvider);
       await repository.deleteEntry(id);
       ref.invalidate(historyEntriesProvider);
+      ref.invalidate(allHistoryEntriesProvider);
     });
   }
 
@@ -48,6 +55,7 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
       final repository = ref.read(historyRepositoryProvider);
       await repository.clearAll();
       ref.invalidate(historyEntriesProvider);
+      ref.invalidate(allHistoryEntriesProvider);
     });
   }
 }
