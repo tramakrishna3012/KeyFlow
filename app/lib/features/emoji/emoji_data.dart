@@ -1,0 +1,95 @@
+/// Represents a single emoji item in the KeyFlow dataset.
+class EmojiItem {
+  const EmojiItem({
+    required this.char,
+    required this.name,
+    required this.shortcode,
+    required this.category,
+    required this.keywords,
+  });
+
+  final String char;
+  final String name;
+  final String shortcode;
+  final String category;
+  final List<String> keywords;
+}
+
+/// Category list for the Emoji Picker UI.
+const List<String> kEmojiCategories = [
+  'Smileys & Emotion',
+  'Gestures & People',
+  'Animals & Nature',
+  'Food & Drink',
+  'Activities & Objects',
+  'Symbols & Flags',
+];
+
+/// Pre-packaged dataset of popular Unicode emojis with keywords and shortcodes.
+const List<EmojiItem> kDefaultEmojiDataset = [
+  // Smileys & Emotion
+  EmojiItem(char: '😀', name: 'Grinning Face', shortcode: ':grinning:', category: 'Smileys & Emotion', keywords: ['happy', 'smile', 'joy', 'grin', 'face']),
+  EmojiItem(char: '😃', name: 'Grinning Face with Big Eyes', shortcode: ':smiley:', category: 'Smileys & Emotion', keywords: ['happy', 'joy', 'smile', 'excited']),
+  EmojiItem(char: '😄', name: 'Grinning Face with Smiling Eyes', shortcode: ':smile:', category: 'Smileys & Emotion', keywords: ['happy', 'joy', 'laugh', 'smile']),
+  EmojiItem(char: '😁', name: 'Beaming Face with Smiling Eyes', shortcode: ':grin:', category: 'Smileys & Emotion', keywords: ['grin', 'happy', 'teeth']),
+  EmojiItem(char: '😆', name: 'Grinning Squinting Face', shortcode: ':laughing:', category: 'Smileys & Emotion', keywords: ['laugh', 'lol', 'haha', 'happy']),
+  EmojiItem(char: '😅', name: 'Grinning Face with Sweat', shortcode: ':sweat_smile:', category: 'Smileys & Emotion', keywords: ['sweat', 'phew', 'relief', 'nervous']),
+  EmojiItem(char: '🤣', name: 'Rolling on the Floor Laughing', shortcode: ':rofl:', category: 'Smileys & Emotion', keywords: ['rofl', 'lol', 'laughing', 'funny']),
+  EmojiItem(char: '😂', name: 'Face with Tears of Joy', shortcode: ':joy:', category: 'Smileys & Emotion', keywords: ['joy', 'crying', 'laughing', 'lol', 'haha']),
+  EmojiItem(char: '🙂', name: 'Slightly Smiling Face', shortcode: ':slightly_smiling_face:', category: 'Smileys & Emotion', keywords: ['smile', 'mild', 'nice']),
+  EmojiItem(char: '🙃', name: 'Upside-Down Face', shortcode: ':upside_down_face:', category: 'Smileys & Emotion', keywords: ['silly', 'sarcasm', 'funny']),
+  EmojiItem(char: '😉', name: 'Winking Face', shortcode: ':wink:', category: 'Smileys & Emotion', keywords: ['wink', 'flirt', 'joke']),
+  EmojiItem(char: '😊', name: 'Smiling Face with Smiling Eyes', shortcode: ':blush:', category: 'Smileys & Emotion', keywords: ['blush', 'blessed', 'happy', 'warm']),
+  EmojiItem(char: '😇', name: 'Smiling Face with Halo', shortcode: ':innocent:', category: 'Smileys & Emotion', keywords: ['angel', 'innocent', 'good', 'halo']),
+  EmojiItem(char: '🥰', name: 'Smiling Face with Hearts', shortcode: ':smiling_face_with_3_hearts:', category: 'Smileys & Emotion', keywords: ['love', 'hearts', 'adore', 'sweet']),
+  EmojiItem(char: '😍', name: 'Smiling Face with Heart-Eyes', shortcode: ':heart_eyes:', category: 'Smileys & Emotion', keywords: ['love', 'heart', 'eyes', 'crush']),
+  EmojiItem(char: '🤩', name: 'Star-Struck', shortcode: ':star_struck:', category: 'Smileys & Emotion', keywords: ['star', 'wow', 'amazed', 'excited']),
+  EmojiItem(char: '😘', name: 'Face Blowing a Kiss', shortcode: ':kissing_heart:', category: 'Smileys & Emotion', keywords: ['kiss', 'love', 'mwah', 'smooch']),
+  EmojiItem(char: '😋', name: 'Face Savoring Food', shortcode: ':yum:', category: 'Smileys & Emotion', keywords: ['yum', 'yummy', 'food', 'delicious', 'tongue']),
+  EmojiItem(char: '😛', name: 'Face with Tongue', shortcode: ':stuck_out_tongue:', category: 'Smileys & Emotion', keywords: ['tongue', 'playful', 'silly']),
+  EmojiItem(char: '😜', name: 'Winking Face with Tongue', shortcode: ':stuck_out_tongue_winking_eye:', category: 'Smileys & Emotion', keywords: ['wink', 'tongue', 'joke', 'crazy']),
+  EmojiItem(char: '🤪', name: 'Zany Face', shortcode: ':zany_face:', category: 'Smileys & Emotion', keywords: ['zany', 'goofy', 'wild', 'crazy']),
+  EmojiItem(char: '😎', name: 'Smiling Face with Sunglasses', shortcode: ':sunglasses:', category: 'Smileys & Emotion', keywords: ['cool', 'sunglasses', 'chill', 'boss']),
+  EmojiItem(char: '🤓', name: 'Nerd Face', shortcode: ':nerd_face:', category: 'Smileys & Emotion', keywords: ['nerd', 'geek', 'glasses', 'smart', 'tech']),
+  EmojiItem(char: '🧐', name: 'Face with Monocle', shortcode: ':monocle_face:', category: 'Smileys & Emotion', keywords: ['monocle', 'investigate', 'curious', 'hmmm']),
+  EmojiItem(char: '🥳', name: 'Partying Face', shortcode: ':partying_face:', category: 'Smileys & Emotion', keywords: ['party', 'celebrate', 'birthday', 'woohoo', 'hat']),
+
+  // Gestures & People
+  EmojiItem(char: '👍', name: 'Thumbs Up', shortcode: ':thumbsup:', category: 'Gestures & People', keywords: ['thumbsup', 'like', 'approve', 'ok', 'yes', 'good']),
+  EmojiItem(char: '👎', name: 'Thumbs Down', shortcode: ':thumbsdown:', category: 'Gestures & People', keywords: ['thumbsdown', 'dislike', 'no', 'bad']),
+  EmojiItem(char: '👏', name: 'Clapping Hands', shortcode: ':clap:', category: 'Gestures & People', keywords: ['clap', 'applause', 'bravo', 'congrats']),
+  EmojiItem(char: '🙌', name: 'Raising Hands', shortcode: ':raised_hands:', category: 'Gestures & People', keywords: ['praise', 'celebrate', 'hooray', 'hands']),
+  EmojiItem(char: '🙏', name: 'Folded Hands', shortcode: ':pray:', category: 'Gestures & People', keywords: ['pray', 'please', 'thanks', 'thankyou', 'namaste', 'hope']),
+  EmojiItem(char: '🤝', name: 'Handshake', shortcode: ':handshake:', category: 'Gestures & People', keywords: ['handshake', 'deal', 'agree', 'partner', 'welcome']),
+  EmojiItem(char: '✌️', name: 'Victory Hand', shortcode: ':v:', category: 'Gestures & People', keywords: ['peace', 'victory', 'two', 'v']),
+  EmojiItem(char: '🤞', name: 'Crossed Fingers', shortcode: ':crossed_fingers:', category: 'Gestures & People', keywords: ['luck', 'hope', 'fingers', 'crossed']),
+  EmojiItem(char: '💪', name: 'Flexed Biceps', shortcode: ':muscle:', category: 'Gestures & People', keywords: ['strong', 'muscle', 'flex', 'power', 'fitness']),
+  EmojiItem(char: '👋', name: 'Waving Hand', shortcode: ':wave:', category: 'Gestures & People', keywords: ['wave', 'hello', 'hi', 'bye', 'goodbye']),
+
+  // Hearts & Emotion
+  EmojiItem(char: '❤️', name: 'Red Heart', shortcode: ':heart:', category: 'Smileys & Emotion', keywords: ['heart', 'love', 'red', 'like', 'favorite']),
+  EmojiItem(char: '🧡', name: 'Orange Heart', shortcode: ':orange_heart:', category: 'Smileys & Emotion', keywords: ['heart', 'orange', 'love']),
+  EmojiItem(char: '💛', name: 'Yellow Heart', shortcode: ':yellow_heart:', category: 'Smileys & Emotion', keywords: ['heart', 'yellow', 'love', 'friendship']),
+  EmojiItem(char: '💚', name: 'Green Heart', shortcode: ':green_heart:', category: 'Smileys & Emotion', keywords: ['heart', 'green', 'love', 'nature']),
+  EmojiItem(char: '💙', name: 'Blue Heart', shortcode: ':blue_heart:', category: 'Smileys & Emotion', keywords: ['heart', 'blue', 'love']),
+  EmojiItem(char: '💜', name: 'Purple Heart', shortcode: ':purple_heart:', category: 'Smileys & Emotion', keywords: ['heart', 'purple', 'love']),
+  EmojiItem(char: '💔', name: 'Broken Heart', shortcode: ':broken_heart:', category: 'Smileys & Emotion', keywords: ['heartbreak', 'broken', 'sad', 'pain']),
+  EmojiItem(char: '🔥', name: 'Fire', shortcode: ':fire:', category: 'Activities & Objects', keywords: ['fire', 'flame', 'lit', 'hot', 'burn', 'trending']),
+  EmojiItem(char: '✨', name: 'Sparkles', shortcode: ':sparkles:', category: 'Activities & Objects', keywords: ['sparkles', 'magic', 'shine', 'star', 'clean', 'ai']),
+  EmojiItem(char: '🎉', name: 'Party Popper', shortcode: ':tada:', category: 'Activities & Objects', keywords: ['party', 'tada', 'celebrate', 'congrats', 'popper']),
+  EmojiItem(char: '💯', name: 'Hundred Points', shortcode: ':100:', category: 'Symbols & Flags', keywords: ['100', 'hundred', 'perfect', 'score', 'keepitreal']),
+
+  // Animals & Nature
+  EmojiItem(char: '🐶', name: 'Dog Face', shortcode: ':dog:', category: 'Animals & Nature', keywords: ['dog', 'puppy', 'pet', 'canine']),
+  EmojiItem(char: '🐱', name: 'Cat Face', shortcode: ':cat:', category: 'Animals & Nature', keywords: ['cat', 'kitten', 'pet', 'meow']),
+  EmojiItem(char: '🦁', name: 'Lion', shortcode: ':lion:', category: 'Animals & Nature', keywords: ['lion', 'king', 'wild', 'cat']),
+  EmojiItem(char: '🚀', name: 'Rocket', shortcode: ':rocket:', category: 'Activities & Objects', keywords: ['rocket', 'launch', 'space', 'ship', 'fast', 'moon']),
+  EmojiItem(char: '⭐', name: 'Star', shortcode: ':star:', category: 'Activities & Objects', keywords: ['star', 'favorite', 'rank', 'top']),
+  EmojiItem(char: '💡', name: 'Light Bulb', shortcode: ':bulb:', category: 'Activities & Objects', keywords: ['idea', 'bulb', 'light', 'think', 'smart']),
+
+  // Symbols & Flags
+  EmojiItem(char: '✅', name: 'Check Mark Button', shortcode: ':white_check_mark:', category: 'Symbols & Flags', keywords: ['check', 'done', 'yes', 'tick', 'approved', 'pass']),
+  EmojiItem(char: '❌', name: 'Cross Mark', shortcode: ':x:', category: 'Symbols & Flags', keywords: ['x', 'no', 'wrong', 'delete', 'cancel', 'fail']),
+  EmojiItem(char: '⚠️', name: 'Warning', shortcode: ':warning:', category: 'Symbols & Flags', keywords: ['warning', 'alert', 'caution', 'danger']),
+  EmojiItem(char: '⚡', name: 'High Voltage', shortcode: ':zap:', category: 'Symbols & Flags', keywords: ['lightning', 'bolt', 'zap', 'fast', 'electric', 'energy']),
+];
