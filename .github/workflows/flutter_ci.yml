@@ -1,18 +1,42 @@
-name: Flutter CI
+name: KeyFlow CI Pipeline
 
 on:
   push:
     branches: [main]
     paths:
       - 'app/**'
+      - 'relay/**'
   pull_request:
     branches: [main]
     paths:
       - 'app/**'
+      - 'relay/**'
 
 jobs:
-  build-and-test:
-    name: Analyze & Test (/app)
+  test-relay:
+    name: Test Relay Service (/relay)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: relay
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Relay dependencies
+        run: npm ci || npm install
+
+      - name: Run Relay tests
+        run: npm test
+
+  build-and-test-app:
+    name: Analyze & Test Flutter App (/app)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -33,5 +57,5 @@ jobs:
       - name: Analyze code
         run: flutter analyze --fatal-infos
 
-      - name: Run tests
+      - name: Run unit & integration tests
         run: flutter test --coverage
