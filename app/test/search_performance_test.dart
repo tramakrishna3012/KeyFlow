@@ -58,9 +58,9 @@ void main() {
       'Quick update on the project roadmap deliverable',
     ];
 
-    for (int i = 0; i < totalEntries; i += batchSize) {
+    for (var i = 0; i < totalEntries; i += batchSize) {
       final entriesBatch = <HistoryEntry>[];
-      for (int j = 0; j < batchSize; j++) {
+      for (var j = 0; j < batchSize; j++) {
         final idx = i + j;
         entriesBatch.add(
           HistoryEntry(

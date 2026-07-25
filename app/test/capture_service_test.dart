@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/history_repository.dart';
@@ -23,14 +22,10 @@ class MockHistoryRepository implements HistoryRepository {
   Future<List<HistoryEntry>> getAllEntries() async => entries;
 
   @override
-  Future<List<HistoryEntry>> search(String query) async {
-    return entries.where((e) => e.text.contains(query)).toList();
-  }
+  Future<List<HistoryEntry>> search(String query) async => entries.where((e) => e.text.contains(query)).toList();
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query) async {
-    return search(query);
-  }
+  Future<List<HistoryEntry>> searchEntries(String query) async => search(query);
 
   @override
   Future<HistoryEntry?> getEntry(String id) async => null;
@@ -76,9 +71,9 @@ void main() {
 
   late MockHistoryRepository mockRepository;
   late CaptureService captureService;
-  final List<MethodCall> log = [];
+  final log = <MethodCall>[];
 
-  setupMethodChannelMock() {
+  void setupMethodChannelMock() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(const MethodChannel('keyflow/capture'), (MethodCall methodCall) async {
       log.add(methodCall);

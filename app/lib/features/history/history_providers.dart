@@ -14,7 +14,7 @@ final historyEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((r
   final query = ref.watch(searchQueryProvider);
   final tag = ref.watch(activeTagProvider);
 
-  final List<HistoryEntry> entries = await repository.search(query);
+  final entries = await repository.search(query);
 
   if (tag == 'All') {
     return entries;
@@ -53,5 +53,5 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
 }
 
 final historyNotifierProvider = StateNotifierProvider<HistoryNotifier, AsyncValue<void>>(
-  (ref) => HistoryNotifier(ref),
+  HistoryNotifier.new,
 );

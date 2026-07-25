@@ -7,12 +7,12 @@ import '../../data/models/history_entry.dart';
 import 'history_providers.dart';
 
 class SnippetDetailScreen extends ConsumerWidget {
-  final HistoryEntry entry;
 
   const SnippetDetailScreen({
     super.key,
     required this.entry,
   });
+  final HistoryEntry entry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -122,8 +122,7 @@ class SnippetDetailScreen extends ConsumerWidget {
     required IconData icon,
     required String label,
     required String value,
-  }) {
-    return Padding(
+  }) => Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
@@ -148,7 +147,6 @@ class SnippetDetailScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
 
   void _insertAtCursor(BuildContext context) {
     Clipboard.setData(ClipboardData(text: entry.text));
@@ -196,7 +194,5 @@ class SnippetDetailScreen extends ConsumerWidget {
     );
   }
 
-  String _formatTimestamp(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-  }
+  String _formatTimestamp(DateTime dt) => '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 }

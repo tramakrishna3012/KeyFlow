@@ -27,7 +27,7 @@ void main() {
 
       final stopwatch = Stopwatch()..start();
 
-      for (int i = 0; i < 10; i++) {
+      for (var i = 0; i < 10; i++) {
         for (final typo in testTypos) {
           final suggestions = engine.getSuggestions(typo);
           expect(suggestions, isNotEmpty);

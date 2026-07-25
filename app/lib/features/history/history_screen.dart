@@ -83,7 +83,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                               alignment: Alignment.centerRight,
                               padding: const EdgeInsets.only(right: 20),
                               decoration: BoxDecoration(
-                                color: AppColors.destructive.withOpacity(0.2),
+                                color: AppColors.destructive.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(Icons.delete_outline, color: AppColors.destructive),
@@ -188,7 +188,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: categoryColor.withOpacity(0.15),
+                    color: categoryColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -239,26 +239,24 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
+  Widget _buildEmptyState() => Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.history_toggle_off, size: 48, color: AppColors.textMuted),
           const SizedBox(height: 12),
-          Text(
+          const Text(
             'No history entries found',
             style: TextStyle(color: AppColors.textMuted, fontSize: 14),
           ),
           const SizedBox(height: 4),
           Text(
             'Start typing in any app to build your history',
-            style: TextStyle(color: AppColors.textMuted.withOpacity(0.7), fontSize: 12),
+            style: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.7), fontSize: 12),
           ),
         ],
       ),
     );
-  }
 
   Color _colorForApp(String sourceApp) {
     final lower = sourceApp.toLowerCase();

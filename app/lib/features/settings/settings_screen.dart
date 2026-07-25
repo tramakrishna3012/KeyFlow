@@ -87,8 +87,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
+  Widget _buildSectionHeader(String title) => Text(
       title,
       style: const TextStyle(
         fontSize: 11,
@@ -97,11 +96,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         color: AppColors.textMuted,
       ),
     );
-  }
 
   // 1. Exclusion List Card
-  Widget _buildExclusionCard(AsyncValue<List<String>> exclusionAsync) {
-    return KeyFlowCard(
+  Widget _buildExclusionCard(AsyncValue<List<String>> exclusionAsync) => KeyFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -119,8 +116,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           exclusionAsync.when(
-            data: (exclusions) {
-              return Wrap(
+            data: (exclusions) => Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
@@ -141,17 +137,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     side: BorderSide.none,
                   ),
                 ],
-              );
-            },
+              ),
             loading: () => const CircularProgressIndicator(),
             error: (err, stack) => Text('Error: $err', style: const TextStyle(color: AppColors.destructive)),
           ),
           const Divider(height: 24, color: AppColors.cardBorder),
           // Locked Secure Field Toggle (UIUX §2.4 Rule)
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -164,14 +159,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Switch(
                 value: true,
                 onChanged: null, // Locked ON by default per UIUX §2.4
-                activeColor: AppColors.secondary,
+                activeThumbColor: AppColors.secondary,
               ),
             ],
           ),
         ],
       ),
     );
-  }
 
   void _showAddExclusionDialog() {
     _addExclusionController.clear();
@@ -206,8 +200,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   // 2. Retention Card
-  Widget _buildRetentionCard(AsyncValue<int> retentionAsync) {
-    return KeyFlowCard(
+  Widget _buildRetentionCard(AsyncValue<int> retentionAsync) => KeyFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -225,8 +218,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           const SizedBox(height: 12),
           retentionAsync.when(
-            data: (days) {
-              return DropdownButton<int>(
+            data: (days) => DropdownButton<int>(
                 value: days,
                 isExpanded: true,
                 dropdownColor: AppColors.scaffoldBackground,
@@ -241,19 +233,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ref.read(settingsControllerProvider).updateRetentionDays(val);
                   }
                 },
-              );
-            },
+              ),
             loading: () => const CircularProgressIndicator(),
             error: (err, stack) => Text('Error: $err', style: const TextStyle(color: AppColors.destructive)),
           ),
         ],
       ),
     );
-  }
 
   // 3. Autocorrect Card
-  Widget _buildAutocorrectCard(AsyncValue<bool> autocorrectAsync) {
-    return KeyFlowCard(
+  Widget _buildAutocorrectCard(AsyncValue<bool> autocorrectAsync) => KeyFlowCard(
       child: autocorrectAsync.when(
         data: (enabled) => Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -271,7 +260,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onChanged: (v) {
                 ref.read(settingsControllerProvider).setAutocorrectEnabled(v);
               },
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
             ),
           ],
         ),
@@ -279,11 +268,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         error: (err, stack) => Text('Error: $err', style: const TextStyle(color: AppColors.destructive)),
       ),
     );
-  }
 
   // 4. Translation Card
-  Widget _buildTranslationCard(AsyncValue<String> targetLangAsync) {
-    return KeyFlowCard(
+  Widget _buildTranslationCard(AsyncValue<String> targetLangAsync) => KeyFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -319,11 +306,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
-  }
 
   // 5. Data Management Card
-  Widget _buildDataManagementCard() {
-    return KeyFlowCard(
+  Widget _buildDataManagementCard() => KeyFlowCard(
       child: Column(
         children: [
           ListTile(
@@ -344,7 +329,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
-  }
 
   Future<void> _exportData() async {
     final jsonStr = await ref.read(settingsControllerProvider).exportHistoryData();
@@ -416,8 +400,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   // 6. About & Uninstall Card
-  Widget _buildAboutCard() {
-    return KeyFlowCard(
+  Widget _buildAboutCard() => KeyFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -445,7 +428,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
                   defaultTargetPlatform == TargetPlatform.windows
-                      ? 'Windows Cleanup: Run "Delete All Data" above, then uninstall via Settings → Installed Apps. Local database at %APPDATA%\\KeyFlow is wiped upon deletion.'
+                      ? r'Windows Cleanup: Run "Delete All Data" above, then uninstall via Settings → Installed Apps. Local database at %APPDATA%\KeyFlow is wiped upon deletion.'
                       : 'Platform Cleanup: Run "Delete All Data" above to wipe your local encrypted database prior to uninstalling the app bundle.',
                   style: const TextStyle(fontSize: 11, color: AppColors.textMuted, height: 1.4),
                 ),
@@ -455,5 +438,4 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
-  }
 }

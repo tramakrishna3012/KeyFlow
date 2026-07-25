@@ -142,8 +142,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   // Screen 1: What KeyFlow Does
-  Widget _buildScreen1() {
-    return Padding(
+  Widget _buildScreen1() => Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -168,11 +167,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       ),
     );
-  }
 
   // Screen 2: What KeyFlow Does NOT Do
-  Widget _buildScreen2() {
-    return Padding(
+  Widget _buildScreen2() => Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -195,10 +192,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       ),
     );
-  }
 
-  Widget _buildFactPoint(String title, String body) {
-    return Row(
+  Widget _buildFactPoint(String title, String body) => Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Icon(Icons.check_circle_outline, color: AppColors.secondary, size: 20),
@@ -215,11 +210,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
       ],
     );
-  }
 
   // Screen 3: Permission Request
   Widget _buildScreen3() {
-    String platformPermissionNote = 'Accessibility / Input Monitoring permission';
+    var platformPermissionNote = 'Accessibility / Input Monitoring permission';
     if (defaultTargetPlatform == TargetPlatform.windows) {
       platformPermissionNote = 'Windows Low-level Keyboard Hook & System Tray Integration';
     } else if (defaultTargetPlatform == TargetPlatform.macOS) {
@@ -279,8 +273,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   // Screen 4: Exclusion List Setup
-  Widget _buildScreen4() {
-    return Padding(
+  Widget _buildScreen4() => Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,8 +295,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: _exclusions.map((app) {
-              return Chip(
+            children: _exclusions.map((app) => Chip(
                 label: Text(app, style: const TextStyle(fontSize: 12)),
                 deleteIcon: const Icon(Icons.close, size: 14),
                 onDeleted: () {
@@ -313,8 +305,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 },
                 backgroundColor: AppColors.cardSurface,
                 side: const BorderSide(color: AppColors.cardBorder),
-              );
-            }).toList(),
+              )).toList(),
           ),
           const SizedBox(height: 16),
           // Custom Add Row
@@ -346,11 +337,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       ),
     );
-  }
 
   // Screen 5: Confirmation & Activation
-  Widget _buildScreen5() {
-    return Padding(
+  Widget _buildScreen5() => Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -404,5 +393,4 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ],
       ),
     );
-  }
 }

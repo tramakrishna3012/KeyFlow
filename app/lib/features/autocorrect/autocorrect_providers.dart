@@ -9,8 +9,8 @@ const String kKeyAppOverrides = 'autocorrect_app_overrides';
 
 final autocorrectEngineProvider = FutureProvider<AutocorrectEngine>((ref) async {
   final repo = ref.watch(historyRepositoryProvider);
-  Set<String> learnedWords = {};
-  Map<String, bool> appOverrides = {};
+  var learnedWords = <String>{};
+  var appOverrides = <String, bool>{};
 
   if (repo is SqliteHistoryRepository) {
     // Load learned words
@@ -69,6 +69,4 @@ class AutocorrectNotifier {
   }
 }
 
-final autocorrectNotifierProvider = Provider<AutocorrectNotifier>((ref) {
-  return AutocorrectNotifier(ref);
-});
+final autocorrectNotifierProvider = Provider<AutocorrectNotifier>(AutocorrectNotifier.new);

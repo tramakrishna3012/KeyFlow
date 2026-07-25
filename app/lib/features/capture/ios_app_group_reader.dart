@@ -7,12 +7,12 @@ import '../../data/models/history_entry.dart';
 /// Reads captured history entries written by the native iOS Swift keyboard extension
 /// into the shared App Group container (`group.com.keyflow.app`).
 class IosAppGroupReader {
+
+  IosAppGroupReader(this._repository);
   static const String appGroupId = 'group.com.keyflow.app';
   static const String pendingFilename = 'keyflow_pending_entries.json';
 
   final HistoryRepository _repository;
-
-  IosAppGroupReader(this._repository);
 
   /// Synchronizes pending history entries from the shared App Group container
   /// into the encrypted local [HistoryRepository].
@@ -22,7 +22,7 @@ class IosAppGroupReader {
     }
 
     try {
-      final File file = customGroupPath != null
+      final file = customGroupPath != null
           ? File('$customGroupPath/$pendingFilename')
           : File('/private/var/mobile/Containers/Shared/AppGroup/$appGroupId/$pendingFilename');
 
@@ -30,13 +30,13 @@ class IosAppGroupReader {
         return 0;
       }
 
-      final String content = await file.readAsString();
+      final content = await file.readAsString();
       if (content.trim().isEmpty) return 0;
 
       final dynamic decoded = jsonDecode(content);
       if (decoded is! List) return 0;
 
-      int importedCount = 0;
+      var importedCount = 0;
       for (final item in decoded) {
         if (item is Map<String, dynamic>) {
           final entry = HistoryEntry(

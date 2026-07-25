@@ -6,6 +6,10 @@ import '../../data/models/history_entry.dart';
 
 /// Service interfacing Flutter with the native Windows WH_KEYBOARD_LL capture engine.
 class CaptureService {
+
+  CaptureService(this._repository) {
+    _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
+  }
   static const MethodChannel _methodChannel = MethodChannel('keyflow/capture');
   static const EventChannel _eventChannel = EventChannel('keyflow/capture/stream');
 
@@ -19,10 +23,6 @@ class CaptureService {
   Timer? _flushTimer;
 
   void Function(String route)? onNavigate;
-
-  CaptureService(this._repository) {
-    _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
-  }
 
   bool get isCapturing => _isCapturing;
   bool get isPaused => _isPaused;
@@ -51,7 +51,7 @@ class CaptureService {
 
   Future<bool> startCapture() async {
     try {
-      final bool success = await _methodChannel.invokeMethod('startCapture') ?? false;
+      final success = await _methodChannel.invokeMethod('startCapture') ?? false;
       _isCapturing = success;
       _isPaused = false;
       return success;
@@ -63,7 +63,7 @@ class CaptureService {
 
   Future<bool> stopCapture() async {
     try {
-      final bool success = await _methodChannel.invokeMethod('stopCapture') ?? false;
+      final success = await _methodChannel.invokeMethod('stopCapture') ?? false;
       _isCapturing = !success;
       await _flushAllBuffers();
       return success;
@@ -75,7 +75,7 @@ class CaptureService {
 
   Future<bool> pauseCapture() async {
     try {
-      final bool success = await _methodChannel.invokeMethod('pauseCapture') ?? false;
+      final success = await _methodChannel.invokeMethod('pauseCapture') ?? false;
       _isPaused = success;
       return success;
     } on PlatformException catch (e) {
@@ -86,7 +86,7 @@ class CaptureService {
 
   Future<bool> resumeCapture() async {
     try {
-      final bool success = await _methodChannel.invokeMethod('resumeCapture') ?? false;
+      final success = await _methodChannel.invokeMethod('resumeCapture') ?? false;
       _isPaused = !success;
       return success;
     } on PlatformException catch (e) {
@@ -105,7 +105,7 @@ class CaptureService {
 
   Future<bool> setAutostart(bool enable) async {
     try {
-      final bool success = await _methodChannel.invokeMethod('setAutostart', enable) ?? false;
+      final success = await _methodChannel.invokeMethod('setAutostart', enable) ?? false;
       return success;
     } on PlatformException catch (e) {
       debugPrint('Failed to set autostart: ${e.message}');
@@ -115,7 +115,7 @@ class CaptureService {
 
   Future<bool> isAutostartEnabled() async {
     try {
-      final bool result = await _methodChannel.invokeMethod('isAutostartEnabled') ?? false;
+      final result = await _methodChannel.invokeMethod('isAutostartEnabled') ?? false;
       return result;
     } on PlatformException catch (e) {
       debugPrint('Failed to query autostart status: ${e.message}');
@@ -126,11 +126,11 @@ class CaptureService {
   void _onNativeCaptureEvent(dynamic rawEvent) {
     if (rawEvent is! Map) return;
 
-    final Map<dynamic, dynamic> data = rawEvent;
-    final String text = data['text']?.toString() ?? '';
-    final String appName = data['app_name']?.toString() ?? 'Unknown';
-    final String windowTitle = data['window_title']?.toString() ?? '';
-    final int timestamp = (data['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch;
+    final data = rawEvent;
+    final text = data['text']?.toString() ?? '';
+    final appName = data['app_name']?.toString() ?? 'Unknown';
+    final windowTitle = data['window_title']?.toString() ?? '';
+    final timestamp = (data['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch;
 
     if (text.isEmpty) return;
 
