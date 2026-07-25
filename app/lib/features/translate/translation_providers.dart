@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'translation_service.dart';
 
-final translationServiceProvider = Provider<TranslationService>((ref) {
-  return TranslationService();
-});
+final translationServiceProvider = Provider<TranslationService>((ref) => TranslationService());
 
 final sourceTextProvider = StateProvider<String>((ref) => 'Hello, how are you?');
 

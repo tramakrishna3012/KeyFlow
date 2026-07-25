@@ -102,8 +102,7 @@ class EmojiScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryTabs(WidgetRef ref, String? activeCategory) {
-    return SingleChildScrollView(
+  Widget _buildCategoryTabs(WidgetRef ref, String? activeCategory) => SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -138,14 +137,11 @@ class EmojiScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
 
-  Widget _buildRecentRow(BuildContext context, WidgetRef ref, List<String> recents) {
-    return SingleChildScrollView(
+  Widget _buildRecentRow(BuildContext context, WidgetRef ref, List<String> recents) => SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: recents.map((emoji) {
-          return InkWell(
+        children: recents.map((emoji) => InkWell(
             onTap: () => _onEmojiTapped(context, ref, emoji),
             borderRadius: BorderRadius.circular(12),
             child: Container(
@@ -164,46 +160,42 @@ class EmojiScreen extends ConsumerWidget {
                 ),
               ),
             ),
-          );
-        }).toList(),
+          )).toList(),
       ),
     );
-  }
 
-  Widget _buildEmojiGrid(BuildContext context, WidgetRef ref, List<EmojiItem> emojis) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 6,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 1.0,
-      ),
-      itemCount: emojis.length,
-      itemBuilder: (ctx, idx) {
-        final item = emojis[idx];
-        return InkWell(
-          onTap: () => _onEmojiTapped(context, ref, item.char),
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.cardSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: Center(
-              child: Tooltip(
-                message: '${item.name} (${item.shortcode})',
-                child: Text(
-                  item.char,
-                  style: const TextStyle(fontSize: 24),
+  Widget _buildEmojiGrid(BuildContext context, WidgetRef ref, List<EmojiItem> emojis) => GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 6,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1.0,
+        ),
+        itemCount: emojis.length,
+        itemBuilder: (ctx, idx) {
+          final item = emojis[idx];
+          return InkWell(
+            onTap: () => _onEmojiTapped(context, ref, item.char),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.cardSurface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.cardBorder),
+              ),
+              child: Center(
+                child: Tooltip(
+                  message: '${item.name} (${item.shortcode})',
+                  child: Text(
+                    item.char,
+                    style: const TextStyle(fontSize: 24),
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-      },
-    );
-  }
+          );
+        },
+      );
 }

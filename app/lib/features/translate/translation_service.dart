@@ -21,16 +21,16 @@ class TranslationResult {
 
 /// Exception thrown when cloud fallback requires per-use user approval (TRD S-4).
 class CloudApprovalRequiredException implements Exception {
-  final String message;
   const CloudApprovalRequiredException([this.message = 'Cloud translation requires per-use user approval.']);
+  final String message;
   @override
   String toString() => message;
 }
 
 /// Exception thrown when translation fails due to network or service unreachable.
 class TranslationException implements Exception {
-  final String message;
   const TranslationException(this.message);
+  final String message;
   @override
   String toString() => message;
 }

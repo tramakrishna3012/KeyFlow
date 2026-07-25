@@ -55,18 +55,19 @@ void main() {
       final logPattern = RegExp(r'print\(|debugPrint\(|console\.log');
       final sensitivePattern = RegExp(r'captured|text|entry\.text|payload');
 
-      int violations = 0;
+      var violations = 0;
 
       if (libDir.existsSync()) {
         for (final entity in libDir.listSync(recursive: true)) {
           if (entity is File && entity.path.endsWith('.dart')) {
             final lines = entity.readAsLinesSync();
-            for (int i = 0; i < lines.length; i++) {
+            for (var i = 0; i < lines.length; i++) {
               final line = lines[i];
               if (logPattern.hasMatch(line) && sensitivePattern.hasMatch(line)) {
                 // Ignore safe metadata length/count logs
                 if (!line.contains('length') && !line.contains('count') && !line.contains('status')) {
                   violations++;
+                  // ignore: avoid_print
                   print('Potential S-5 Violation in ${entity.path}:${i + 1}: $line');
                 }
               }
@@ -79,10 +80,11 @@ void main() {
         final serverFile = File('../relay/server.js');
         if (serverFile.existsSync()) {
           final lines = serverFile.readAsLinesSync();
-          for (int i = 0; i < lines.length; i++) {
+          for (var i = 0; i < lines.length; i++) {
             final line = lines[i];
             if (line.contains('console.log') && line.contains('text') && !line.contains('length')) {
               violations++;
+              // ignore: avoid_print
               print('Potential S-5 Violation in relay/server.js:${i + 1}: $line');
             }
           }

@@ -11,9 +11,7 @@ const List<String> kDefaultRecentEmojis = [
   '😊', '👍', '❤️', '🎉', '🔥', '💯', '😂', '🙏'
 ];
 
-final emojiServiceProvider = Provider<EmojiService>((ref) {
-  return const EmojiService();
-});
+final emojiServiceProvider = Provider<EmojiService>((ref) => const EmojiService());
 
 final emojiSearchQueryProvider = StateProvider<String>((ref) => '');
 
@@ -29,7 +27,7 @@ final recentEmojisProvider = FutureProvider<List<String>>((ref) async {
       try {
         final List<dynamic> decoded = jsonDecode(jsonStr);
         _inMemoryRecentEmojis = decoded.cast<String>();
-      } catch (_) {}
+      } on Object catch (_) {}
     }
   }
   return List.unmodifiable(_inMemoryRecentEmojis);
@@ -48,10 +46,9 @@ class EmojiNotifier {
 
   Future<void> useEmoji(String emojiChar) async {
     final currentList = await ref.read(recentEmojisProvider.future);
-    final newList = List<String>.from(currentList);
-
-    newList.remove(emojiChar);
-    newList.insert(0, emojiChar);
+    final newList = List<String>.from(currentList)
+      ..remove(emojiChar)
+      ..insert(0, emojiChar);
 
     // Keep top 12 recent emojis
     final trimmedList = newList.take(12).toList();
@@ -67,6 +64,4 @@ class EmojiNotifier {
   }
 }
 
-final emojiNotifierProvider = Provider<EmojiNotifier>((ref) {
-  return EmojiNotifier(ref);
-});
+final emojiNotifierProvider = Provider<EmojiNotifier>(EmojiNotifier.new);

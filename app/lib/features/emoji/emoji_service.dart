@@ -17,7 +17,7 @@ class EmojiService {
   }) {
     final cleanQuery = query.trim().toLowerCase().replaceAll(':', '');
 
-    List<EmojiItem> baseList = _dataset;
+    var baseList = _dataset;
     if (category != null && category.isNotEmpty && category != 'All') {
       baseList = baseList.where((e) => e.category == category).toList();
     }

@@ -44,8 +44,9 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
     state = await AsyncValue.guard(() async {
       final repository = ref.read(historyRepositoryProvider);
       await repository.deleteEntry(id);
-      ref.invalidate(historyEntriesProvider);
-      ref.invalidate(allHistoryEntriesProvider);
+      ref
+        ..invalidate(historyEntriesProvider)
+        ..invalidate(allHistoryEntriesProvider);
     });
   }
 
@@ -54,8 +55,9 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
     state = await AsyncValue.guard(() async {
       final repository = ref.read(historyRepositoryProvider);
       await repository.clearAll();
-      ref.invalidate(historyEntriesProvider);
-      ref.invalidate(allHistoryEntriesProvider);
+      ref
+        ..invalidate(historyEntriesProvider)
+        ..invalidate(allHistoryEntriesProvider);
     });
   }
 }

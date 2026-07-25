@@ -19,7 +19,7 @@ final autocorrectEngineProvider = FutureProvider<AutocorrectEngine>((ref) async 
       try {
         final List<dynamic> decoded = jsonDecode(learnedStr);
         learnedWords = decoded.cast<String>().toSet();
-      } catch (_) {}
+      } on Object catch (_) {}
     }
 
     // Load app overrides
@@ -28,7 +28,7 @@ final autocorrectEngineProvider = FutureProvider<AutocorrectEngine>((ref) async 
       try {
         final Map<String, dynamic> decoded = jsonDecode(overridesStr);
         appOverrides = decoded.map((k, v) => MapEntry(k, v as bool));
-      } catch (_) {}
+      } on Object catch (_) {}
     }
   }
 

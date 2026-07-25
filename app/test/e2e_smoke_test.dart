@@ -1,10 +1,10 @@
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/models/history_entry.dart';
 import 'package:keyflow_app/data/providers.dart';
 import 'package:keyflow_app/features/capture/capture_service.dart';
 import 'package:keyflow_app/features/history/history_providers.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'history_repository_test.dart';
 
 void main() {
@@ -59,7 +59,7 @@ void main() {
       container.read(searchQueryProvider.notifier).state = 'fox jumps';
 
       // 4. Query search results via history provider
-      final List<HistoryEntry> searchResults = await container.read(historyEntriesProvider.future);
+      final searchResults = await container.read(historyEntriesProvider.future);
 
       // 5. Verify E2E query returned captured entry
       expect(searchResults, isNotEmpty);

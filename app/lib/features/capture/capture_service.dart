@@ -44,7 +44,7 @@ class CaptureService {
 
       // Start capture on native side
       await startCapture();
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Error initializing CaptureService: $e');
     }
   }

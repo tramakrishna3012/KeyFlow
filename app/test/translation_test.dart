@@ -35,18 +35,16 @@ void main() {
     });
 
     test('Approved cloud translation returns "Translated via cloud (user approved)" badge', () async {
-      final mockHttpClient = MockClient((request) async {
-        return http.Response(
-          jsonEncode({
-            'translated_text': 'Hola, mundo',
-            'source_lang': 'en',
-            'target_lang': 'es',
-            'provider': 'relay-cloud-mock',
-          }),
-          200,
-          headers: {'Content-Type': 'application/json'},
-        );
-      });
+      final mockHttpClient = MockClient((request) async => http.Response(
+            jsonEncode({
+              'translated_text': 'Hola, mundo',
+              'source_lang': 'en',
+              'target_lang': 'es',
+              'provider': 'relay-cloud-mock',
+            }),
+            200,
+            headers: {'Content-Type': 'application/json'},
+          ));
 
       final service = TranslationService(
         relayEndpoint: 'http://localhost:3000/translate',

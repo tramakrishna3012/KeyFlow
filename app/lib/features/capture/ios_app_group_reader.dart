@@ -26,7 +26,7 @@ class IosAppGroupReader {
           ? File('$customGroupPath/$pendingFilename')
           : File('/private/var/mobile/Containers/Shared/AppGroup/$appGroupId/$pendingFilename');
 
-      if (!await file.exists()) {
+      if (!file.existsSync()) {
         return 0;
       }
 
@@ -61,7 +61,7 @@ class IosAppGroupReader {
       // Clear pending file after successful sync
       await file.writeAsString('[]');
       return importedCount;
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Error syncing iOS App Group pending entries: $e');
       return 0;
     }
@@ -87,7 +87,7 @@ class IosAppGroupReader {
           deviceId: map['device_id']?.toString() ?? 'ios_keyboard',
         );
       }).toList();
-    } catch (e) {
+    } on Object catch (_) {
       return [];
     }
   }

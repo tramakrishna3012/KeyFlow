@@ -151,8 +151,10 @@ void main() {
         final navigationRail = find.byType(NavigationRail);
         
         if (tester.any(bottomNavBar)) {
+          // ignore: avoid_print
           print('Counterexample documented: 600px width uses BottomNavigationBar');
         } else if (tester.any(navigationRail)) {
+          // ignore: avoid_print
           print('Counterexample documented: 600px width uses NavigationRail');
         }
         
@@ -187,6 +189,7 @@ void main() {
           final hasBottomNav = tester.any(find.byType(BottomNavigationBar));
           
           if (hasBottomNav) {
+            // ignore: avoid_print
             print('Counterexample: Width $width px uses BottomNavigationBar '
                   '(should use NavigationRail for desktop)');
           }

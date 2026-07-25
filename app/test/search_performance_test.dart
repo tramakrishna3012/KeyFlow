@@ -38,7 +38,7 @@ void main() {
 
   tearDown(() async {
     await dbHelper.close();
-    if (await tempDir.exists()) {
+    if (tempDir.existsSync()) {
       await tempDir.delete(recursive: true);
     }
   });
@@ -87,6 +87,7 @@ void main() {
     final results = await repository.searchEntries('roadmap');
     stopwatch.stop();
 
+    // ignore: avoid_print
     print('Search for "roadmap" returned ${results.length} results in ${stopwatch.elapsedMilliseconds} ms');
 
     // SRS §3.2 Requirement: Search must complete in under 200ms

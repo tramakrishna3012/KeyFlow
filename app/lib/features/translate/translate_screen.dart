@@ -122,8 +122,7 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
     );
   }
 
-  Widget _buildSourceInput(BuildContext context) {
-    return KeyFlowCard(
+  Widget _buildSourceInput(BuildContext context) => KeyFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -168,14 +167,12 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
         ],
       ),
     );
-  }
 
   Widget _buildTargetOutput(
     BuildContext context,
     AsyncValue<TranslationResult> translationAsync,
     Map<String, String> langObj,
-  ) {
-    return KeyFlowCard(
+  ) => KeyFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -209,7 +206,7 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: res.isCloud ? AppColors.primarySubtle : AppColors.secondary.withOpacity(0.2),
+                        color: res.isCloud ? AppColors.primarySubtle : AppColors.secondary.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: res.isCloud ? AppColors.primaryBorderActive : AppColors.secondary,
@@ -278,9 +275,9 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.destructive.withOpacity(0.1),
+                  color: AppColors.destructive.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -300,10 +297,8 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
         ],
       ),
     );
-  }
 
-  Widget _buildLanguageGrid(String activeLangCode) {
-    return GridView.builder(
+  Widget _buildLanguageGrid(String activeLangCode) => GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -350,5 +345,4 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
         );
       },
     );
-  }
 }

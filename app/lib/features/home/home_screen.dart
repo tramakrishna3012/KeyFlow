@@ -41,11 +41,10 @@ class HomeScreen extends ConsumerWidget {
     final totalSnippets = entries.length;
 
     // Filter today's entries
-    final todayEntries = entries.where((e) {
-      return e.capturedAt.year == now.year &&
-          e.capturedAt.month == now.month &&
-          e.capturedAt.day == now.day;
-    }).toList();
+    final todayEntries = entries.where((e) =>
+        e.capturedAt.year == now.year &&
+        e.capturedAt.month == now.month &&
+        e.capturedAt.day == now.day).toList();
 
     // Calculate total characters typed today
     final todayChars = todayEntries.fold<int>(

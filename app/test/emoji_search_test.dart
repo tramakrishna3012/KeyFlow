@@ -1,8 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/providers.dart';
-import 'package:keyflow_app/features/emoji/emoji_service.dart';
 import 'package:keyflow_app/features/emoji/emoji_providers.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keyflow_app/features/emoji/emoji_service.dart';
 import 'history_repository_test.dart';
 
 void main() {
@@ -14,7 +14,7 @@ void main() {
 
       final stopwatch = Stopwatch()..start();
 
-      for (int i = 0; i < 100; i++) {
+      for (var i = 0; i < 100; i++) {
         final results = service.searchEmojis('fire');
         expect(results, isNotEmpty);
         expect(results.first.char, equals('🔥'));
@@ -22,6 +22,7 @@ void main() {
 
       stopwatch.stop();
 
+      // ignore: avoid_print
       print('Total execution time for 100 emoji searches: ${stopwatch.elapsedMilliseconds} ms');
 
       // SRS Requirement: Search completes under 10ms per lookup
