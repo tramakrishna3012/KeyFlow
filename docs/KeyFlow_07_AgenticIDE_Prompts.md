@@ -1,0 +1,296 @@
+# KeyFlow — Agentic AI IDE Prompt Set
+
+**Version:** 1.0
+**How to use this file:** Feed the reference docs (PRD, SRS, TRD, Architecture, UI/UX, Test Plan) into your agentic IDE's project/context first (as files it can read), then run these prompts roughly in order. Each prompt is self-contained but assumes the others' output already exists in the repo. Adjust file paths to match your actual project structure.
+
+---
+
+## Guardrail note (keep this true across every prompt)
+
+Every prompt below assumes the app is transparent by design: a visible status indicator whenever capture is active, no suppression of any OS permission or disclosure mechanism, no network transmission of captured text outside the explicit translation opt-in, and no capture from excluded or secure fields. If a generated implementation ever drifts toward hiding the app's presence, intercepting more than the current platform's capture module is scoped for, or adding network calls beyond the translation relay, treat that as a bug to fix, not a feature to keep.
+
+---
+
+## Prompt 0 — Repository Bootstrap
+
+```
+Context: I'm building "KeyFlow," a local-first, cross-platform typing-history and typing-assist
+app for a small internal user group, using Flutter for the shared UI/business logic and
+native modules per platform for system capture. Full specs are in /docs (PRD, SRS, TRD,
+Architecture, UIUX, TestPlan — read all of them before starting).
+
+Task: Scaffold the monorepo with this structure:
+  /app                  Flutter app (shared UI, state, HistoryRepository)
+  /native/windows        placeholder for native capture module
+  /native/macos          placeholder for native capture module
+  /native/android        placeholder for AccessibilityService module
+  /ios/KeyFlowKeyboard    placeholder for custom keyboard extension target
+  /relay                 placeholder for the stateless translation relay
+  /docs                  (already contains the 6 spec docs — do not modify these)
+
+Set up the Flutter app with Riverpod for state management, a lint config, and a basic
+CI workflow (build + unit tests) for the /app package only at this stage.
+
+Acceptance criteria:
+- `flutter analyze` and `flutter test` run clean on a fresh checkout
+- README at repo root links to /docs and explains the module layout
+- No platform-specific capture code yet — this prompt is scaffolding only
+```
+
+## Prompt 1 — Local Encrypted History Store
+
+```
+Context: See /docs/KeyFlow_02_SRS.md §3.1 (FR-6 through FR-10) and
+/docs/KeyFlow_04_Architecture.md §3 for the schema and encryption requirements.
+
+Task: Implement the HistoryRepository in /app, backed by SQLite (sqflite or drift) with
+SQLCipher-equivalent encryption at rest. Implement:
+- history_entries, exclusion_list, settings, audit_log tables per the Architecture doc schema
+- Key generation on first run, stored via flutter_secure_storage (backed by
+  Keychain/Keystore/Credential Manager/DPAPI) — never written to the SQLite file itself
+- CRUD methods: addEntry, searchEntries(query), deleteEntry(id), clearAll(), purgeOlderThan(days)
+- A scheduled local job that runs purgeOlderThan() using the retention setting (default 30 days)
+
+Acceptance criteria (map to SRS FR-6, FR-9, FR-10):
+- Unit tests confirming entries are unreadable without the stored key
+- Unit tests confirming purge correctly removes only entries older than the configured window
+- No plaintext captured text ever written to disk outside the encrypted store
+```
+
+## Prompt 2 — Windows Native Capture Module
+
+```
+Context: See /docs/KeyFlow_03_TRD.md §2 and §6, and /docs/KeyFlow_04_Architecture.md §4
+(Windows section). This module must be visibly running at all times it's active —
+that's a hard requirement, not optional polish.
+
+Task: Implement /native/windows as a C++ (or C#) module that:
+- Installs a WH_KEYBOARD_LL hook (or Text Services Framework integration) to observe typed text
+- Checks each event's source window/process against the current Exclusion List *before*
+  forwarding anything to Flutter — excluded apps must never reach shared code
+- Exposes captured text to the Flutter app via MethodChannel/EventChannel named "keyflow/capture"
+- Runs a system tray icon the entire time capture is active, with a menu: Pause (1hr / until
+  re-enabled), Open History, Settings, Quit
+- Registers the app in Windows Startup Apps visibly (no hidden autostart tricks)
+
+Acceptance criteria (map to SRS FR-2, FR-3, TRD S-2, S-3):
+- Tray icon is present and accurate to capture state in manual testing
+- Text typed into an excluded app's window never appears in the Flutter-side stream
+- No hidden process, no unsigned binary — flag if code signing isn't yet wired up so it can be
+  tracked as a release blocker (see TestPlan §7)
+```
+
+## Prompt 3 — macOS Native Capture Module
+
+```
+Context: See /docs/KeyFlow_03_TRD.md §2, and /docs/KeyFlow_04_Architecture.md §4 (macOS section).
+
+Task: Implement /native/macos as a Swift module that:
+- Uses CGEventTap under the Accessibility permission to observe typed text
+- Requests Accessibility permission through the standard System Settings flow — do not attempt
+  any workaround to avoid this system prompt appearing
+- Filters events by source app against the current Exclusion List before forwarding to Flutter
+- Exposes a menu-bar icon, mirroring the Windows tray icon's states and menu options
+- Bridges to Flutter via the standard macOS platform channel
+
+Acceptance criteria (map to SRS FR-2, FR-3, FR-5, TRD S-2):
+- Accessibility permission prompt appears normally via System Settings, unmodified
+- Menu-bar icon accurately reflects capture state
+- Excluded-app text never reaches the Flutter layer
+```
+
+## Prompt 4 — Android AccessibilityService Module
+
+```
+Context: See /docs/KeyFlow_03_TRD.md §2 and §7, /docs/KeyFlow_04_Architecture.md §4 (Android section).
+
+Task: Implement /native/android as a Kotlin AccessibilityService that:
+- Observes text input events across apps once the user enables the service in
+  Settings → Accessibility
+- Relies on Android's mandatory persistent notification while the service is active — do not
+  attempt to suppress, minimize, or hide this notification in any way
+- Filters events against the Exclusion List and against any field flagged as password/secure
+  by the Accessibility API before forwarding to the Flutter plugin layer
+- Exposes captured events to Flutter via a MethodChannel-based plugin
+
+Acceptance criteria (map to SRS FR-2, FR-3, FR-5, TRD §2):
+- Persistent notification is present and unmodified for the full duration the service runs
+- Text from password-flagged fields never reaches the Flutter layer
+- Service survives app process restarts without losing the Exclusion List state
+```
+
+## Prompt 5 — iOS Custom Keyboard Extension
+
+```
+Context: See /docs/KeyFlow_03_TRD.md §2, /docs/KeyFlow_04_Architecture.md §4 (iOS section —
+read this carefully, the extension is native Swift, NOT Flutter, due to memory limits Apple
+imposes on keyboard extensions).
+
+Task: Implement /ios/KeyFlowKeyboard as a native Swift custom keyboard extension that:
+- Provides standard keyboard input plus KeyFlow's autocorrect/emoji-suggestion UI
+- Writes typed text to a shared App Group container (encrypted at rest), which the main
+  Flutter container app reads from for History/Search/Settings
+- Only ever sees text typed while this keyboard is the active input method — do not attempt
+  to read input from any other context; that's an iOS platform limit, not a bug to fix
+- Respects the "Allow Full Access" toggle: features requiring network (translation cloud
+  fallback) must gracefully degrade to on-device-only when Full Access isn't granted
+
+Acceptance criteria (map to SRS FR-5, Architecture §4):
+- Keyboard extension builds and runs within Apple's memory budget for extensions
+- History entries written by the keyboard appear correctly in the main app's History view
+- No attempt anywhere in this module to read text outside the keyboard's own active session
+```
+
+## Prompt 6 — Shared History & Search UI
+
+```
+Context: See /docs/KeyFlow_05_UIUX.md §2.2-2.3 for exact screen behavior, and SRS FR-7/FR-8.
+
+Task: Build the Flutter screens for History & Search and Snippet Detail:
+- Quick-access search (global hotkey on desktop; in-app entry point on mobile) querying
+  HistoryRepository.searchEntries()
+- Results ranked by recency + relevance, grouped by source app, each showing preview,
+  source icon, timestamp
+- One-click/tap "insert at cursor," swipe/click "delete"
+- Snippet Detail screen: full text, metadata, insert/delete/copy/translate actions
+
+Acceptance criteria:
+- Search returns results in under 200ms against a 100k-entry seeded test database
+  (SRS §3.2 performance requirement)
+- Reinsert correctly places text at the current cursor position in a test host app
+```
+
+## Prompt 7 — Onboarding & Consent Flow
+
+```
+Context: See /docs/KeyFlow_05_UIUX.md §2.1 for exact screen sequence and copy guidelines,
+and SRS FR-19.
+
+Task: Build the 5-screen onboarding flow (What KeyFlow does → What it doesn't do →
+Permission request → Exclusion list setup → Confirmation), gating any capture-engine
+activation until the flow completes and the OS permission is granted.
+
+Acceptance criteria:
+- No capture-related platform channel call fires before onboarding completion is recorded
+  in local settings
+- Copy matches the literal, specific tone required in UIUX §6 (no vague reassurance language)
+- Exclusion list screen ships with the default entries from TRD S-3 pre-populated
+```
+
+## Prompt 8 — Settings & Data Lifecycle
+
+```
+Context: See /docs/KeyFlow_05_UIUX.md §2.4, SRS FR-9, FR-10, FR-21, FR-22.
+
+Task: Build the Settings screen (Exclusion List, Retention, Autocorrect, Translation, Data,
+About sections) and wire up:
+- Export (writes a readable file of all History entries)
+- Delete All (clears History immediately, confirms with the user first)
+- Uninstall-hook cleanup where the platform allows a pre-uninstall callback, or documented
+  manual cleanup steps where it doesn't
+
+Acceptance criteria:
+- Export produces a complete, correct snapshot of current History
+- Delete All is irreversible and immediate, with a confirmation step
+- Retention setting changes take effect on the next scheduled purge run
+```
+
+## Prompt 9 — Autocorrect Engine
+
+```
+Context: See SRS FR-11 through FR-13, TRD §8 (local dictionary/model, no cloud dependency).
+
+Task: Integrate a local autocorrect engine that suggests corrections as text streams in from
+the active capture module, with accept/dismiss/permanently-ignore actions and a global +
+per-app on/off toggle.
+
+Acceptance criteria:
+- Suggestions appear within 50ms perceived latency (SRS §3.2)
+- No network call is made for autocorrect under any configuration
+```
+
+## Prompt 10 — Emoji Suggestions
+
+```
+Context: See SRS FR-17, FR-18, UIUX §2.6.
+
+Task: Implement contextual emoji suggestions during typing plus a searchable emoji picker
+overlay triggered by hotkey/UI control.
+
+Acceptance criteria:
+- Suggestions are relevant to at least the common-phrase test set in the Test Plan
+- Picker search returns results with no perceptible lag for the full emoji set
+```
+
+## Prompt 11 — Translation Feature + Relay Service
+
+```
+Context: See SRS FR-14 through FR-16, Architecture §5, TRD S-4 and §8.
+
+Task, part A (client): Implement translation UI (UIUX §2.7) that tries the on-device engine
+first (Apple Translation framework / Android ML Kit on-device models) and only offers the
+cloud fallback path, with an explicit per-use confirmation dialog, when the language pair
+isn't supported on-device.
+
+Task, part B (relay): Implement /relay as a minimal stateless service (e.g., Cloudflare
+Worker/AWS Lambda) that holds the third-party translation API key server-side, accepts a
+single text+language-pair request, forwards it, returns the result, and logs only metadata
+(timestamp, language pair, success/failure) — never request or response text content.
+
+Acceptance criteria:
+- On-device path never triggers a network call
+- Cloud fallback requires an explicit user tap/click every time — never a persistent setting
+- Relay logs contain zero instances of translated text content (verify via log inspection test)
+- Every translation result is labeled "on-device" or "via cloud" per FR-16
+```
+
+## Prompt 12 — Security Hardening Pass
+
+```
+Context: See /docs/KeyFlow_03_TRD.md §4 in full.
+
+Task: Run a hardening pass across the whole app:
+- Confirm encryption key never appears in logs, crash reports, or the SQLite file
+- Confirm secure/password-field detection is active on every platform where the API exposes it
+- Confirm no network call exists anywhere except the translation relay path
+- Add/verify the audit_log entries for every permission grant/revoke and exclusion-list change
+
+Acceptance criteria:
+- A full-session network capture (per TestPlan §4 scenario 15) shows zero unexpected traffic
+- Static analysis / manual review confirms no plaintext key material at rest
+```
+
+## Prompt 13 — Automated Test Suite
+
+```
+Context: See /docs/KeyFlow_06_TestPlan.md in full for scenarios and severity definitions.
+
+Task: Generate unit and integration tests covering:
+- HistoryRepository CRUD, encryption, and purge logic
+- Exclusion-list enforcement at the point captured text is received from each native module
+  (mock the native layer for this)
+- Search ranking/relevance
+- Settings persistence and retention-window changes
+
+Acceptance criteria:
+- Test suite covers every FR listed in SRS §3.1 with at least one automated test or an explicit
+  note that it requires the manual scenario in TestPlan §4 instead (e.g., real OS permission
+  prompts, real tray icon visibility)
+```
+
+## Prompt 14 — Build, Signing & Internal Distribution
+
+```
+Context: See /docs/KeyFlow_03_TRD.md §6-7 for the exact channel per platform.
+
+Task: Set up build/release scripts for:
+- Windows: signed MSIX (or EXE) via an Authenticode certificate
+- macOS: signed + notarized .dmg/.pkg
+- Android: signed APK for sideload, or Play Console Internal Testing track config
+- iOS: TestFlight Internal Testing configuration (named testers, no App Review needed)
+
+Acceptance criteria:
+- Each build artifact passes the AV/OS trust checks in TestPlan §7 before being handed to the
+  trusted user group
+- Release checklist includes the false-positive submission step as a hard gate, not optional
+```

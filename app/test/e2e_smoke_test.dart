@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/models/history_entry.dart';
 import 'package:keyflow_app/data/providers.dart';
@@ -9,6 +10,24 @@ import 'history_repository_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(const MethodChannel('keyflow/capture'), (MethodCall methodCall) async {
+      switch (methodCall.method) {
+        case 'startCapture':
+        case 'stopCapture':
+        case 'pauseCapture':
+        case 'resumeCapture':
+        case 'setExclusionList':
+        case 'setAutostart':
+        case 'isAutostartEnabled':
+          return true;
+        default:
+          return null;
+      }
+    });
+  });
+
   group('KeyFlow E2E Smoke Pipeline Tests', () {
     test('E2E Pipeline: Mock Capture Stream -> DB Write -> History Search -> UI Provider Result', () async {
       final mockRepo = InMemoryHistoryRepository();
@@ -19,10 +38,11 @@ void main() {
         ],
       );
 
-      final captureService = container.read(captureServiceProvider);
+      final captureService = CaptureService(mockRepo);
 
       // 1. Initialize capture engine and sync exclusions
       await captureService.initialize();
+      await captureService.startCapture();
       expect(captureService.isCapturing, isTrue);
 
       // 2. Simulate incoming text capture event from native layer
