@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/services/auto_update_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
 import '../../data/models/history_entry.dart';
@@ -88,6 +89,8 @@ class HomeScreen extends ConsumerWidget {
             children: [
               _buildHeader(context),
               const SizedBox(height: 16),
+              const _AutoUpdateBanner(),
+              const SizedBox(height: 12),
               if (defaultTargetPlatform == TargetPlatform.android) ...[
                 _KeyboardConnectionBanner(ref: ref),
                 const SizedBox(height: 16),
@@ -658,3 +661,87 @@ class _KeyboardConnectionBannerState extends State<_KeyboardConnectionBanner> {
     );
   }
 }
+
+class _AutoUpdateBanner extends StatefulWidget {
+  const _AutoUpdateBanner();
+
+  @override
+  State<_AutoUpdateBanner> createState() => _AutoUpdateBannerState();
+}
+
+class _AutoUpdateBannerState extends State<_AutoUpdateBanner> {
+  UpdateInfo? _updateInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  Future<void> _check() async {
+    final service = AutoUpdateService();
+    final info = await service.checkForUpdate();
+    if (mounted && info != null && info.hasUpdate) {
+      setState(() => _updateInfo = info);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final info = _updateInfo;
+    if (info == null || !info.hasUpdate) return const SizedBox.shrink();
+
+    final service = AutoUpdateService();
+
+    return KeyFlowCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.system_update_rounded, color: AppColors.primary, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Update Available (v${info.latestVersion})',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 18, color: AppColors.textMuted),
+                onPressed: () => setState(() => _updateInfo = null),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'A new version of KeyFlow (v${info.latestVersion}) is available. Tap below to download the latest APK directly.',
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: () async => service.launchDownloadUrl(info.downloadUrl),
+              icon: const Icon(Icons.download_rounded, size: 18),
+              label: Text('Download Update (v${info.latestVersion})'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

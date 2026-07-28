@@ -1,0 +1,54 @@
+name: Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release-apk:
+    name: Build & Publish Release APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      - name: Prepare APK Asset
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk ../KeyFlow.apk
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: KeyFlow.apk
+          name: KeyFlow Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
