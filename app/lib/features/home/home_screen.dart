@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
 import '../../data/models/history_entry.dart';
+import '../../data/providers.dart';
 import '../history/history_providers.dart';
 import '../history/snippet_detail_screen.dart';
 
@@ -85,7 +87,11 @@ class HomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             children: [
               _buildHeader(context),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+              if (defaultTargetPlatform == TargetPlatform.android) ...[
+                _KeyboardConnectionBanner(ref: ref),
+                const SizedBox(height: 16),
+              ],
               _buildStatsGrid(
                 gridAspectRatio: gridAspectRatio,
                 totalSnippets: totalSnippets,
@@ -564,4 +570,91 @@ class _SnippetCard extends StatelessWidget {
           ),
         ),
       );
+}
+
+class _KeyboardConnectionBanner extends StatefulWidget {
+  const _KeyboardConnectionBanner({required this.ref});
+  final WidgetRef ref;
+
+  @override
+  State<_KeyboardConnectionBanner> createState() => _KeyboardConnectionBannerState();
+}
+
+class _KeyboardConnectionBannerState extends State<_KeyboardConnectionBanner> {
+  bool _isEnabled = true;
+  bool _checking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkStatus();
+  }
+
+  Future<void> _checkStatus() async {
+    final captureService = widget.ref.read(captureServiceProvider);
+    final enabled = await captureService.isAccessibilityServiceEnabled();
+    if (mounted) {
+      setState(() {
+        _isEnabled = enabled;
+        _checking = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_checking || _isEnabled) return const SizedBox.shrink();
+
+    final captureService = widget.ref.read(captureServiceProvider);
+
+    return KeyFlowCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.keyboard_alt_outlined, color: AppColors.accentOrange, size: 22),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Keyboard Connection Required',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'KeyFlow requires Accessibility Service permission in Android Settings to observe typed text across your apps.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: () async {
+                await captureService.openAccessibilitySettings();
+                await Future.delayed(const Duration(seconds: 1));
+                await _checkStatus();
+              },
+              icon: const Icon(Icons.settings, size: 18),
+              label: const Text('Connect Keyboard in Settings'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

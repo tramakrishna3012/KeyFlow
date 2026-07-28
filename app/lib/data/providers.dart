@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/capture/capture_service.dart';
 import 'database_helper.dart';
 import 'history_repository.dart';
 import 'retention_service.dart';
@@ -30,4 +31,10 @@ final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
 final retentionServiceProvider = Provider<RetentionService>((ref) {
   final repo = ref.watch(historyRepositoryProvider) as SqliteHistoryRepository;
   return RetentionService(repository: repo);
+});
+
+/// Provider for [CaptureService].
+final captureServiceProvider = Provider<CaptureService>((ref) {
+  final repo = ref.watch(historyRepositoryProvider);
+  return CaptureService(repo);
 });

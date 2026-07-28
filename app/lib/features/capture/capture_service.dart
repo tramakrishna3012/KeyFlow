@@ -123,6 +123,26 @@ class CaptureService {
     }
   }
 
+  /// Checks if the Android Accessibility Service is enabled in system settings.
+  Future<bool> isAccessibilityServiceEnabled() async {
+    try {
+      final result = await _methodChannel.invokeMethod('isAccessibilityServiceEnabled') ?? false;
+      return result;
+    } on PlatformException catch (e) {
+      debugPrint('Failed to query accessibility service status: ${e.message}');
+      return false;
+    }
+  }
+
+  /// Opens the native system Accessibility Settings page so the user can enable KeyFlow.
+  Future<void> openAccessibilitySettings() async {
+    try {
+      await _methodChannel.invokeMethod('openAccessibilitySettings');
+    } on PlatformException catch (e) {
+      debugPrint('Failed to open accessibility settings: ${e.message}');
+    }
+  }
+
   void _onNativeCaptureEvent(dynamic rawEvent) {
     if (rawEvent is! Map) return;
 
