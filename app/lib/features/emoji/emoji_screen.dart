@@ -28,6 +28,7 @@ class EmojiScreen extends ConsumerWidget {
     final filteredEmojis = ref.watch(filteredEmojisProvider);
     final activeCategory = ref.watch(activeEmojiCategoryProvider);
     final searchQuery = ref.watch(emojiSearchQueryProvider);
+    final datasetAsync = ref.watch(supabaseEmojiDatasetProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -80,7 +81,31 @@ class EmojiScreen extends ConsumerWidget {
                         ),
                   ),
                   const SizedBox(height: 12),
-                  if (filteredEmojis.isEmpty)
+                  // Show loading / error states for the Supabase dataset fetch.
+                  if (datasetAsync.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (datasetAsync.hasError)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            const Icon(Icons.cloud_off, color: AppColors.textMuted, size: 28),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Using offline emoji data.',
+                              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                            ),
+                            const SizedBox(height: 12),
+                            _buildEmojiGrid(context, ref, filteredEmojis),
+                          ],
+                        ),
+                      ),
+                    )
+                  else if (filteredEmojis.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),
                       child: Center(

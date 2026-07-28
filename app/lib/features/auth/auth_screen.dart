@@ -75,7 +75,7 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         );
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -90,8 +90,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  Widget build(BuildContext context) => Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -244,5 +243,4 @@ class _AuthScreenState extends State<AuthScreen> {
         ),
       ),
     );
-  }
 }
