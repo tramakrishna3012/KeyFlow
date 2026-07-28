@@ -9,10 +9,10 @@ import 'core/theme/app_theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase — replace placeholders with your project credentials.
+  // Initialize Supabase — connected to KeyFlow project (nmvwjdtsgzttfrepqprr).
   await Supabase.initialize(
-    url: 'YOUR_SUPABASE_URL',
-    publishableKey: 'YOUR_SUPABASE_ANON_KEY',
+    url: 'https://nmvwjdtsgzttfrepqprr.supabase.co',
+    publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdndqZHRzZ3p0dGZyZXBxcHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxOTg4MTAsImV4cCI6MjEwMDc3NDgxMH0.93-OsJYSdfB32_Q0uNE1BVY-rtTJnN_8A06Go_yHsIQ',
   );
 
   // Request camera, storage, and notification permissions on mobile.
