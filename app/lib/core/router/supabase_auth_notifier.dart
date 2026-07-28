@@ -22,7 +22,7 @@ class SupabaseAuthNotifier extends ChangeNotifier {
           notifyListeners();
         },
       );
-    } catch (_) {
+    } on Object catch (_) {
       // Supabase is not initialized (e.g. in unit/widget tests)
     }
   }
@@ -32,7 +32,7 @@ class SupabaseAuthNotifier extends ChangeNotifier {
     try {
       final session = Supabase.instance.client.auth.currentSession;
       return session != null;
-    } catch (_) {
+    } on Object catch (_) {
       // If Supabase is not initialized (e.g. in tests), default to true
       return true;
     }
