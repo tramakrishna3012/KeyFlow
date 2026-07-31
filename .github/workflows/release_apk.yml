@@ -62,6 +62,7 @@ jobs:
           # compilation, asset bundling, and APK packaging — `flutter build apk`
           # is just a thin wrapper that adds a broken file-watcher on top.
           cd android
+          chmod +x ./gradlew
           ./gradlew assembleRelease
 
       - name: Determine Version Tag
