@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_service_description">KeyFlow uses this service to observe the text you type across apps so it can build your personal typing history, suggest snippets, and provide autocorrect. No passwords or secure fields are ever captured.</string>
+</resources>
