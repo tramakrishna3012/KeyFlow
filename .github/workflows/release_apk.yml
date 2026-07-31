@@ -40,6 +40,21 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Generate Debug Keystore (CI fallback)
+        run: |
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair \
+              -alias androiddebugkey \
+              -keypass android \
+              -keystore ~/.android/debug.keystore \
+              -storepass android \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000
+          fi
+
       - name: Build Release APK
         run: flutter build apk --release
 
