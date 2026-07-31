@@ -4,7 +4,12 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version tag (e.g. v1.0.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -38,15 +43,24 @@ jobs:
       - name: Build Release APK
         run: flutter build apk --release
 
-      - name: Prepare APK Asset
+      - name: Determine Version Tag
+        id: version
         run: |
-          cp build/app/outputs/flutter-apk/app-release.apk ../KeyFlow.apk
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Publish GitHub Release
+      - name: Prepare APK Asset
+        run: cp build/app/outputs/flutter-apk/app-release.apk "${{ github.workspace }}/KeyFlow.apk"
+
+      - name: Create & Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
           files: KeyFlow.apk
-          name: KeyFlow Release ${{ github.ref_name }}
+          name: KeyFlow ${{ steps.version.outputs.tag }}
           draft: false
           prerelease: false
           generate_release_notes: true
