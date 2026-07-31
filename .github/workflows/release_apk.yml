@@ -55,18 +55,14 @@ jobs:
               -validity 10000
           fi
 
-      - name: Prepare CI environment for Flutter build
+      - name: Build Release APK via Gradle
         run: |
-          # Disable Flutter analytics & telemetry to reduce inotify watcher usage
-          flutter config --no-analytics
-          dart --disable-analytics
-          # Raise the inotify watch limit — Ubuntu runners default is often too low
-          # for large Flutter+Gradle builds, causing "Already watching path" errors
-          echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
-          sudo sysctl -p
-
-      - name: Build Release APK
-        run: flutter build apk --release --no-pub
+          # Bypass Flutter CLI's file-watcher bug ("Already watching path") by
+          # invoking Gradle directly. The Flutter Gradle plugin handles Dart AOT
+          # compilation, asset bundling, and APK packaging — `flutter build apk`
+          # is just a thin wrapper that adds a broken file-watcher on top.
+          cd android
+          ./gradlew assembleRelease
 
       - name: Determine Version Tag
         id: version
@@ -78,7 +74,16 @@ jobs:
           fi
 
       - name: Prepare APK Asset
-        run: cp build/app/outputs/flutter-apk/app-release.apk "${{ github.workspace }}/KeyFlow.apk"
+        run: |
+          # Find the release APK — Gradle may place it in different paths
+          APK=$(find build android/app/build -name "app-release.apk" -type f 2>/dev/null | head -1)
+          if [ -z "$APK" ]; then
+            echo "::error::Release APK not found. Listing build outputs for debugging:"
+            find build android/app/build -name "*.apk" -type f 2>/dev/null || true
+            exit 1
+          fi
+          echo "Found APK at: $APK"
+          cp "$APK" "${{ github.workspace }}/KeyFlow.apk"
 
       - name: Create & Publish GitHub Release
         uses: softprops/action-gh-release@v2
