@@ -11,10 +11,9 @@ import 'models/history_entry.dart';
 /// `history_entries` table ensure user-scoped access.
 class SupabaseHistoryRepository {
   SupabaseHistoryRepository({
-    required SupabaseClient client,
+    required this._client,
     required EncryptionService encryptionService,
-  })  : _client = client,
-        _encryption = encryptionService;
+  })  : _encryption = encryptionService;
 
   final SupabaseClient _client;
   final EncryptionService _encryption;

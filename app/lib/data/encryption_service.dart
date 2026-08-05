@@ -15,10 +15,9 @@ import 'package:pointycastle/export.dart' as pc;
 /// - Supabase only ever stores ciphertext
 class EncryptionService {
   EncryptionService({
-    required String userId,
+    required this._userId,
     FlutterSecureStorage? storage,
-  })  : _userId = userId,
-        _storage = storage ?? const FlutterSecureStorage();
+  })  : _storage = storage ?? const FlutterSecureStorage();
 
   final String _userId;
   final FlutterSecureStorage _storage;

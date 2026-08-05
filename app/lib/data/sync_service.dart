@@ -16,8 +16,8 @@ import 'supabase_history_repository.dart';
 /// to fetch cloud entries not present locally (e.g., on a fresh install).
 class SyncService {
   SyncService({
-    required SupabaseHistoryRepository cloudRepo,
-  }) : _cloudRepo = cloudRepo;
+    required this._cloudRepo,
+  });
 
   final SupabaseHistoryRepository _cloudRepo;
 

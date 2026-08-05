@@ -8,8 +8,7 @@ import '../../data/sync_service.dart';
 /// Service interfacing Flutter with the native Windows WH_KEYBOARD_LL capture engine.
 class CaptureService {
 
-  CaptureService(this._repository, {SyncService? syncService})
-      : _syncService = syncService {
+  CaptureService(this._repository, {this._syncService}) {
     _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
   }
   static const MethodChannel _methodChannel = MethodChannel('keyflow/capture');
