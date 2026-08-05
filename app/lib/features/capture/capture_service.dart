@@ -3,17 +3,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../../data/history_repository.dart';
 import '../../data/models/history_entry.dart';
+import '../../data/sync_service.dart';
 
 /// Service interfacing Flutter with the native Windows WH_KEYBOARD_LL capture engine.
 class CaptureService {
 
-  CaptureService(this._repository) {
+  CaptureService(this._repository, {SyncService? syncService})
+      : _syncService = syncService {
     _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
   }
   static const MethodChannel _methodChannel = MethodChannel('keyflow/capture');
   static const EventChannel _eventChannel = EventChannel('keyflow/capture/stream');
 
   final HistoryRepository _repository;
+  final SyncService? _syncService;
   StreamSubscription<dynamic>? _subscription;
 
   bool _isCapturing = false;
@@ -186,6 +189,10 @@ class CaptureService {
         deviceId: 'windows_native',
       );
       await _repository.addEntry(entry);
+
+      // Fire-and-forget cloud sync — failures are queued for retry
+      // inside SyncService and never block local capture.
+      unawaited(_syncService?.syncEntry(entry));
     }
   }
 
