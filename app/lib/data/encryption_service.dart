@@ -32,14 +32,22 @@ class EncryptionService {
   Future<Uint8List> _getOrCreateKey() async {
     if (_cachedKey != null) return _cachedKey!;
 
-    final existingSalt = await _storage.read(key: _saltKeyName);
     Uint8List salt;
-
-    if (existingSalt != null && existingSalt.isNotEmpty) {
-      salt = base64Url.decode(existingSalt);
-    } else {
+    try {
+      final existingSalt = await _storage.read(key: _saltKeyName);
+      if (existingSalt != null && existingSalt.isNotEmpty) {
+        salt = base64Url.decode(existingSalt);
+      } else {
+        salt = _generateSecureRandom(_keyLengthBytes);
+        try {
+          await _storage.write(key: _saltKeyName, value: base64Url.encode(salt));
+        } on Object catch (_) {}
+      }
+    } on Object catch (_) {
       salt = _generateSecureRandom(_keyLengthBytes);
-      await _storage.write(key: _saltKeyName, value: base64Url.encode(salt));
+      try {
+        await _storage.write(key: _saltKeyName, value: base64Url.encode(salt));
+      } on Object catch (_) {}
     }
 
     _cachedKey = _deriveKey(Uint8List.fromList(utf8.encode(_userId)), salt);

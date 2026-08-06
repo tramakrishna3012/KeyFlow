@@ -43,12 +43,24 @@ class DatabaseHelper {
       );
     }
 
-    return openDatabase(
-      path,
-      password: password,
-      version: 1,
-      onCreate: _onCreate,
-    );
+    try {
+      return await openDatabase(
+        path,
+        password: password,
+        version: 1,
+        onCreate: _onCreate,
+      );
+    } on Object catch (_) {
+      try {
+        await deleteDatabase(path);
+      } on Object catch (_) {}
+      return openDatabase(
+        path,
+        password: password,
+        version: 1,
+        onCreate: _onCreate,
+      );
+    }
   }
 
   Future<String> _getDatabasePath() async {
