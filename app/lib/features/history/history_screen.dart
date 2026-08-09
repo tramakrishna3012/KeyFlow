@@ -83,10 +83,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                               alignment: Alignment.centerRight,
                               padding: const EdgeInsets.only(right: 20),
                               decoration: BoxDecoration(
-                                color: AppColors.destructive.withValues(alpha: 0.2),
+                                color: AppColors.error.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.delete_outline, color: AppColors.destructive),
+
+                              child: const Icon(Icons.delete_outline, color: AppColors.error),
                             ),
                             onDismissed: (_) {
                               ref.read(historyNotifierProvider.notifier).deleteEntry(entry.id);
@@ -103,7 +104,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) => Center(
-                  child: Text('Error loading history: $err', style: const TextStyle(color: AppColors.destructive)),
+                  child: Text('Error loading history: $err', style: const TextStyle(color: AppColors.error)),
                 ),
               ),
             ),
@@ -254,6 +255,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             'Start typing in any app to build your history',
             style: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.7), fontSize: 12),
           ),
+
         ],
       ),
     );

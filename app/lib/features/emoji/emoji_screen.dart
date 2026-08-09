@@ -28,7 +28,6 @@ class EmojiScreen extends ConsumerWidget {
     final filteredEmojis = ref.watch(filteredEmojisProvider);
     final activeCategory = ref.watch(activeEmojiCategoryProvider);
     final searchQuery = ref.watch(emojiSearchQueryProvider);
-    final datasetAsync = ref.watch(supabaseEmojiDatasetProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -81,31 +80,7 @@ class EmojiScreen extends ConsumerWidget {
                         ),
                   ),
                   const SizedBox(height: 12),
-                  // Show loading / error states for the Supabase dataset fetch.
-                  if (datasetAsync.isLoading)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 32),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (datasetAsync.hasError)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            const Icon(Icons.cloud_off, color: AppColors.textMuted, size: 28),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Using offline emoji data.',
-                              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-                            ),
-                            const SizedBox(height: 12),
-                            _buildEmojiGrid(context, ref, filteredEmojis),
-                          ],
-                        ),
-                      ),
-                    )
-                  else if (filteredEmojis.isEmpty)
+                  if (filteredEmojis.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 32),
                       child: Center(
@@ -190,37 +165,36 @@ class EmojiScreen extends ConsumerWidget {
     );
 
   Widget _buildEmojiGrid(BuildContext context, WidgetRef ref, List<EmojiItem> emojis) => GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 6,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 1.0,
-        ),
-        itemCount: emojis.length,
-        itemBuilder: (ctx, idx) {
-          final item = emojis[idx];
-          return InkWell(
-            onTap: () => _onEmojiTapped(context, ref, item.char),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.cardSurface,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: Center(
-                child: Tooltip(
-                  message: '${item.name} (${item.shortcode})',
-                  child: Text(
-                    item.char,
-                    style: const TextStyle(fontSize: 24),
-                  ),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 6,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+      ),
+      itemCount: emojis.length,
+      itemBuilder: (ctx, idx) {
+        final item = emojis[idx];
+        return InkWell(
+          onTap: () => _onEmojiTapped(context, ref, item.char),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: Center(
+              child: Tooltip(
+                message: '${item.name} (${item.shortcode})',
+                child: Text(
+                  item.char,
+                  style: const TextStyle(fontSize: 24),
                 ),
               ),
             ),
-          );
-        },
-      );
+          ),
+        );
+      },
+    );
 }

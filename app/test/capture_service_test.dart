@@ -7,6 +7,7 @@ import 'package:keyflow_app/features/capture/capture_service.dart';
 class MockHistoryRepository implements HistoryRepository {
   final List<HistoryEntry> entries = [];
   List<String> exclusionList = ['1password.exe', 'bitwarden.exe'];
+  final Map<String, String> settings = {};
 
   @override
   Future<void> addEntry(HistoryEntry entry) async {
@@ -14,28 +15,26 @@ class MockHistoryRepository implements HistoryRepository {
   }
 
   @override
-  Future<void> insertEntry(HistoryEntry entry) async {
-    entries.add(entry);
-  }
+  Future<void> insertEntry(HistoryEntry entry) => addEntry(entry);
 
   @override
   Future<List<HistoryEntry>> getAllEntries() async => entries;
 
   @override
-  Future<List<HistoryEntry>> search(String query) async => entries.where((e) => e.text.contains(query)).toList();
+  Future<List<HistoryEntry>> search(String query) async =>
+      entries.where((e) => e.text.contains(query)).toList();
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query) async => search(query);
+  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) =>
+      search(query);
 
   @override
-  Future<HistoryEntry?> getEntry(String id) async => null;
+  Future<HistoryEntry?> getEntry(String id) async =>
+      entries.where((e) => e.id == id).firstOrNull;
 
   @override
-  Future<void> deleteEntry(String id) async {}
-
-  @override
-  Future<void> deleteAllEntries() async {
-    entries.clear();
+  Future<void> deleteEntry(String id) async {
+    entries.removeWhere((e) => e.id == id);
   }
 
   @override
@@ -44,13 +43,25 @@ class MockHistoryRepository implements HistoryRepository {
   }
 
   @override
+  Future<void> deleteAllEntries() => clearAll();
+
+  @override
   Future<int> purgeOlderThan(int days) async => 0;
 
   @override
-  Future<String> exportAll() async => '';
+  Future<String> exportAll() async =>
+      entries.map((e) => '${e.capturedAt.toIso8601String()}\t${e.text}').join('\n');
 
   @override
   Future<int> count() async => entries.length;
+
+  @override
+  Future<String?> getSetting(String key) async => settings[key];
+
+  @override
+  Future<void> setSetting(String key, String value) async {
+    settings[key] = value;
+  }
 
   @override
   Future<List<String>> getExclusionList() async => exclusionList;
@@ -65,6 +76,7 @@ class MockHistoryRepository implements HistoryRepository {
     exclusionList.remove(appIdentifier);
   }
 }
+
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

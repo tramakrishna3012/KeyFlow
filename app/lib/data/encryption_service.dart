@@ -5,14 +5,6 @@ import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pointycastle/export.dart' as pc;
 
-/// Client-side AES-256-GCM encryption service for securing history data
-/// before uploading to Supabase.
-///
-/// Key derivation uses HKDF with the user's Supabase UID as input key material
-/// and a random salt persisted in [FlutterSecureStorage]. This ensures:
-/// - Each user gets a unique encryption key
-/// - The key never leaves the device
-/// - Supabase only ever stores ciphertext
 class EncryptionService {
   EncryptionService({
     required this._userId,
@@ -23,12 +15,11 @@ class EncryptionService {
   final FlutterSecureStorage _storage;
 
   static const String _saltKeyName = 'keyflow_encryption_salt';
-  static const int _keyLengthBytes = 32; // 256-bit
-  static const int _ivLengthBytes = 12; // 96-bit IV for GCM
+  static const int _keyLengthBytes = 32;
+  static const int _ivLengthBytes = 12;
 
   Uint8List? _cachedKey;
 
-  /// Returns the derived AES-256 key, generating the salt on first run.
   Future<Uint8List> _getOrCreateKey() async {
     if (_cachedKey != null) return _cachedKey!;
 
@@ -54,7 +45,6 @@ class EncryptionService {
     return _cachedKey!;
   }
 
-  /// Derives a 256-bit key using HKDF-SHA256.
   Uint8List _deriveKey(Uint8List inputKeyMaterial, Uint8List salt) {
     final hkdf = pc.HKDFKeyDerivator(pc.SHA256Digest());
     final params = pc.HkdfParameters(
@@ -70,10 +60,6 @@ class EncryptionService {
     return derivedKey;
   }
 
-  /// Encrypts [plaintext] using AES-256-GCM.
-  ///
-  /// Returns an [EncryptedPayload] containing base64-encoded ciphertext and IV.
-  /// Each call generates a fresh IV for semantic security.
   Future<EncryptedPayload> encryptText(String plaintext) async {
     final key = await _getOrCreateKey();
     final iv = _generateSecureRandom(_ivLengthBytes);
@@ -93,9 +79,6 @@ class EncryptionService {
     );
   }
 
-  /// Decrypts an [EncryptedPayload] back to plaintext using AES-256-GCM.
-  ///
-  /// Throws [ArgumentError] if decryption fails (wrong key, tampered data).
   Future<String> decryptText(EncryptedPayload payload) async {
     final key = await _getOrCreateKey();
     final iv = base64Url.decode(payload.iv);
@@ -114,13 +97,13 @@ class EncryptionService {
     }
   }
 
-  /// Deletes the stored salt (used during full account/data wipe).
   Future<void> deleteSalt() async {
-    await _storage.delete(key: _saltKeyName);
+    try {
+      await _storage.delete(key: _saltKeyName);
+    } on Object catch (_) {}
     _cachedKey = null;
   }
 
-  /// Generates [length] cryptographically secure random bytes.
   Uint8List _generateSecureRandom(int length) {
     final secureRandom = pc.FortunaRandom();
     final seedSource = pc.SecureRandom('Fortuna')
@@ -134,16 +117,12 @@ class EncryptionService {
   }
 }
 
-/// Holds the encrypted output: base64-encoded ciphertext and IV.
 class EncryptedPayload {
   const EncryptedPayload({
     required this.ciphertext,
     required this.iv,
   });
 
-  /// Base64-encoded AES-256-GCM ciphertext.
   final String ciphertext;
-
-  /// Base64-encoded initialization vector (unique per encryption).
   final String iv;
 }

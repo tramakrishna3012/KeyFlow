@@ -96,7 +96,6 @@ class KeyflowCapturePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
         context.startActivity(intent)
     }
 
-    // MARK: - EventChannel.StreamHandler
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         this.eventSink = events
         KeyflowAccessibilityService.eventListener = { eventMap ->

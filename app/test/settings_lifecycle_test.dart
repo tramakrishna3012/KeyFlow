@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:keyflow_app/data/models/history_entry.dart';
 import 'package:keyflow_app/data/providers.dart';
 import 'package:keyflow_app/features/settings/settings_providers.dart';
 import 'history_repository_test.dart';
+
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,13 +22,13 @@ void main() {
       id: 'exp_1',
       text: 'Export test text snippet 1',
       sourceApp: 'Chrome',
-      capturedAt: DateTime(2026, 7, 24, 10, 0),
+      capturedAt: DateTime(2026, 7, 24, 10),
     );
     final entry2 = HistoryEntry(
       id: 'exp_2',
       text: 'Export test text snippet 2',
       sourceApp: 'VSCode',
-      capturedAt: DateTime(2026, 7, 24, 11, 0),
+      capturedAt: DateTime(2026, 7, 24, 11),
     );
 
     await mockRepo.addEntry(entry1);
@@ -43,10 +45,10 @@ void main() {
 
     final decoded = jsonDecode(jsonOutput) as List<dynamic>;
     expect(decoded.length, equals(2));
-    expect(decoded[0]['id'], equals('exp_2'));
-    expect(decoded[0]['text'], equals('Export test text snippet 2'));
-    expect(decoded[1]['id'], equals('exp_1'));
-    expect(decoded[1]['text'], equals('Export test text snippet 1'));
+    expect(decoded[0]['id'], equals('exp_1'));
+    expect(decoded[0]['text'], equals('Export test text snippet 1'));
+    expect(decoded[1]['id'], equals('exp_2'));
+    expect(decoded[1]['text'], equals('Export test text snippet 2'));
   });
 
   test('Delete All Data is immediate and clears repository (SRS FR-9, FR-21)', () async {

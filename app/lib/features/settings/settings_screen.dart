@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -335,10 +334,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final jsonStr = await ref.read(settingsControllerProvider).exportHistoryData();
     if (!mounted) return;
 
-    unawaited(
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
         title: const Text('Export Data Snapshot'),
         content: SizedBox(
           width: double.maxFinite,
@@ -367,7 +365,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
-    ));
+    );
   }
 
   void _confirmDeleteAll() {

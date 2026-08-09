@@ -31,6 +31,16 @@ class AppColors {
   /// Destructive / clear action red
   static const Color destructive = Color(0xFFFF4D6A);
 
+  /// Error color alias for destructive
+  static const Color error = Color(0xFFFF4D6A);
+
+  /// Lighter shade of primary violet
+  static const Color primaryLight = Color(0xFF9E92FA);
+
+  /// Light surface color
+  static const Color surfaceLight = Color(0x1AFFFFFF);
+
+
   // ── Surfaces ────────────────────────────────────────────────────────
   /// Card surface: 5 % white opacity
   static const Color cardSurface = Color(0x0DFFFFFF);

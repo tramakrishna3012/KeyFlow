@@ -17,7 +17,7 @@ void main() {
         'recieve',
         'problm',
         'meetiing',
-        'schedle',
+        'schedule',
         'profect',
         'keyboar',
         'applicaton',
@@ -38,7 +38,6 @@ void main() {
       stopwatch.stop();
       final avgMsPerLookup = stopwatch.elapsedMicroseconds / (100 * 1000.0);
 
-      // ignore: avoid_print
       print('Total execution time for 100 lookups: ${stopwatch.elapsedMilliseconds} ms (${avgMsPerLookup.toStringAsFixed(2)} ms/lookup)');
 
       // SRS Requirement: Under 10ms latency per lookup

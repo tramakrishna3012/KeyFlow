@@ -6,6 +6,7 @@ import 'package:keyflow_app/features/capture/ios_app_group_reader.dart';
 
 class TestHistoryRepository implements HistoryRepository {
   final List<HistoryEntry> entries = [];
+  final Map<String, String> settings = {};
 
   @override
   Future<void> addEntry(HistoryEntry entry) async {
@@ -24,7 +25,8 @@ class TestHistoryRepository implements HistoryRepository {
   Future<List<HistoryEntry>> search(String query) async => entries;
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query) async => entries;
+  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) async => entries;
+
 
   @override
   Future<HistoryEntry?> getEntry(String id) async => null;
@@ -50,6 +52,14 @@ class TestHistoryRepository implements HistoryRepository {
 
   @override
   Future<int> count() async => entries.length;
+
+  @override
+  Future<String?> getSetting(String key) async => settings[key];
+
+  @override
+  Future<void> setSetting(String key, String value) async {
+    settings[key] = value;
+  }
 
   @override
   Future<List<String>> getExclusionList() async => [];
@@ -79,6 +89,7 @@ void main() {
       await tempDir.delete(recursive: true);
     }
   });
+
 
   test('parseAppGroupPayload correctly parses JSON entries from keyboard extension', () {
     const rawJson = '''

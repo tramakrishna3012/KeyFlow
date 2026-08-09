@@ -6,6 +6,16 @@ import 'package:keyflow_app/data/models/history_entry.dart';
 /// A simple in-memory implementation for testing purposes.
 class InMemoryHistoryRepository implements HistoryRepository {
   final List<HistoryEntry> _entries = [];
+  final Map<String, String> _settings = {};
+  final List<String> _exclusions = [];
+
+  @override
+  Future<void> addEntry(HistoryEntry entry) async {
+    _entries.add(entry);
+  }
+
+  @override
+  Future<void> insertEntry(HistoryEntry entry) => addEntry(entry);
 
   @override
   Future<List<HistoryEntry>> getAllEntries() async =>
@@ -21,14 +31,15 @@ class InMemoryHistoryRepository implements HistoryRepository {
       .toList();
 
   @override
-  Future<HistoryEntry?> getEntry(String id) async {
-    final matches = _entries.where((e) => e.id == id);
-    return matches.isEmpty ? null : matches.first;
-  }
+  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) =>
+      search(query);
 
   @override
-  Future<void> insertEntry(HistoryEntry entry) async {
-    _entries.add(entry);
+  Future<HistoryEntry?> getEntry(String id) async {
+    for (final e in _entries) {
+      if (e.id == id) return e;
+    }
+    return null;
   }
 
   @override
@@ -37,9 +48,12 @@ class InMemoryHistoryRepository implements HistoryRepository {
   }
 
   @override
-  Future<void> deleteAllEntries() async {
+  Future<void> clearAll() async {
     _entries.clear();
   }
+
+  @override
+  Future<void> deleteAllEntries() => clearAll();
 
   @override
   Future<int> purgeOlderThan(int retentionDays) async {
@@ -50,29 +64,28 @@ class InMemoryHistoryRepository implements HistoryRepository {
   }
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query) => search(query);
-
-  @override
-  Future<void> addEntry(HistoryEntry entry) => insertEntry(entry);
-
-  @override
-  Future<void> clearAll() => deleteAllEntries();
-
-  @override
   Future<String> exportAll() async =>
       _entries.map((e) => '${e.capturedAt.toIso8601String()}\t${e.text}').join('\n');
 
   @override
   Future<int> count() async => _entries.length;
 
-  final List<String> _exclusions = [];
+  @override
+  Future<String?> getSetting(String key) async => _settings[key];
+
+  @override
+  Future<void> setSetting(String key, String value) async {
+    _settings[key] = value;
+  }
 
   @override
   Future<List<String>> getExclusionList() async => List.unmodifiable(_exclusions);
 
   @override
   Future<void> addExclusion(String appIdentifier) async {
-    _exclusions.add(appIdentifier);
+    if (!_exclusions.contains(appIdentifier)) {
+      _exclusions.add(appIdentifier);
+    }
   }
 
   @override
@@ -80,6 +93,7 @@ class InMemoryHistoryRepository implements HistoryRepository {
     _exclusions.remove(appIdentifier);
   }
 }
+
 
 void main() {
   late InMemoryHistoryRepository repo;
@@ -203,7 +217,7 @@ void main() {
         id: '1',
         text: 'Entry one',
         sourceApp: 'app',
-        capturedAt: DateTime(2026, 7, 1),
+        capturedAt: DateTime(2026, 7),
       ));
       await repo.insertEntry(HistoryEntry(
         id: '2',
@@ -222,7 +236,7 @@ void main() {
         id: '1',
         text: 'First',
         sourceApp: 'app',
-        capturedAt: DateTime(2026, 7, 1),
+        capturedAt: DateTime(2026, 7),
       ));
       await repo.insertEntry(HistoryEntry(
         id: '2',
@@ -247,7 +261,7 @@ void main() {
         id: '1',
         text: 'Original',
         sourceApp: 'app',
-        capturedAt: DateTime(2026, 7, 1),
+        capturedAt: DateTime(2026, 7),
       );
 
       final modified = entry.copyWith(text: 'Modified');
@@ -261,7 +275,7 @@ void main() {
         id: '1',
         text: 'Text A',
         sourceApp: 'app',
-        capturedAt: DateTime(2026, 7, 1),
+        capturedAt: DateTime(2026, 7),
       );
       final b = HistoryEntry(
         id: '1',

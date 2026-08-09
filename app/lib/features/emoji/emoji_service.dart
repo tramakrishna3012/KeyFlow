@@ -10,18 +10,14 @@ class EmojiService {
   final List<EmojiItem> _dataset;
 
   /// Searches the emoji dataset by query (keyword, shortcode, or name) and optional category filter.
-  ///
-  /// If [dataset] is provided it overrides the service's constructor-injected
-  /// dataset for this call (used for Supabase-sourced data).
   List<EmojiItem> searchEmojis(
     String query, {
     String? category,
     int maxResults = 60,
-    List<EmojiItem>? dataset,
   }) {
     final cleanQuery = query.trim().toLowerCase().replaceAll(':', '');
 
-    var baseList = dataset ?? _dataset;
+    var baseList = _dataset;
     if (category != null && category.isNotEmpty && category != 'All') {
       baseList = baseList.where((e) => e.category == category).toList();
     }

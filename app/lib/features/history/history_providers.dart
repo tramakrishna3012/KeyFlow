@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/history_entry.dart';
 import '../../data/providers.dart';
@@ -35,7 +33,7 @@ final allHistoryEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>
   return repository.getAllEntries();
 });
 
-/// Controller to perform history entry deletions (local + cloud).
+/// Controller to perform history entry deletions.
 class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
   HistoryNotifier(this.ref) : super(const AsyncValue.data(null));
 
@@ -46,14 +44,8 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
     state = await AsyncValue.guard(() async {
       final repository = ref.read(historyRepositoryProvider);
       await repository.deleteEntry(id);
-
-      // Mirror delete to cloud (fire-and-forget)
-      final syncService = ref.read(syncServiceProvider);
-      unawaited(syncService?.deleteEntry(id));
-
-      ref
-        ..invalidate(historyEntriesProvider)
-        ..invalidate(allHistoryEntriesProvider);
+      ref.invalidate(historyEntriesProvider);
+      ref.invalidate(allHistoryEntriesProvider);
     });
   }
 
@@ -62,14 +54,8 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
     state = await AsyncValue.guard(() async {
       final repository = ref.read(historyRepositoryProvider);
       await repository.clearAll();
-
-      // Mirror clear-all to cloud (fire-and-forget)
-      final syncService = ref.read(syncServiceProvider);
-      unawaited(syncService?.deleteAllEntries());
-
-      ref
-        ..invalidate(historyEntriesProvider)
-        ..invalidate(allHistoryEntriesProvider);
+      ref.invalidate(historyEntriesProvider);
+      ref.invalidate(allHistoryEntriesProvider);
     });
   }
 }

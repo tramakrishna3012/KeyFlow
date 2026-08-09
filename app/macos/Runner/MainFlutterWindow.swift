@@ -9,8 +9,8 @@ class MainFlutterWindow: NSWindow {
     self.setFrame(windowFrame, display: true)
 
     RegisterGeneratedPlugins(registry: flutterViewController)
-    KeyflowMacOSCapturePlugin.register(with: flutterViewController.registrar(forPlugin: "KeyflowMacOSCapturePlugin"))
 
     super.awakeFromNib()
   }
 }
+

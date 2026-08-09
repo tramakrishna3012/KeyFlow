@@ -1,49 +1,55 @@
-/// A single captured text entry in the typing history.
-///
-/// Schema matches Architecture §3:
-/// `history_entries(id, text, source_app, captured_at, language,
-///  was_translated, device_id)`
 class HistoryEntry {
   const HistoryEntry({
     required this.id,
     required this.text,
     required this.sourceApp,
     required this.capturedAt,
-    this.language,
+    this.language = 'en',
     this.wasTranslated = false,
     this.deviceId,
     this.category,
     this.useCount = 0,
   });
 
-  /// Unique identifier for this entry.
+  factory HistoryEntry.fromMap(Map<String, dynamic> map) => HistoryEntry(
+        id: map['id'] as String,
+        text: map['text'] as String,
+        sourceApp: map['source_app'] as String,
+        capturedAt: DateTime.fromMillisecondsSinceEpoch(map['captured_at'] as int),
+        language: (map['language'] as String?) ?? 'en',
+        wasTranslated: (map['was_translated'] as int?) == 1,
+        deviceId: map['device_id'] as String?,
+        category: map['category'] as String?,
+        useCount: (map['use_count'] as int?) ?? 0,
+      );
+
+  factory HistoryEntry.fromJson(Map<String, dynamic> json) => HistoryEntry.fromMap(json);
+
+  Map<String, dynamic> toJson() => toMap();
+
+
   final String id;
-
-  /// The captured text content.
   final String text;
-
-  /// Identifier of the source application (e.g., package name, window title).
   final String sourceApp;
-
-  /// When this text was captured.
   final DateTime capturedAt;
-
-  /// Detected or tagged language code (e.g., 'en', 'es').
-  final String? language;
-
-  /// Whether this entry was the result of a translation.
+  final String language;
   final bool wasTranslated;
-
-  /// Device identifier (for multi-device awareness, even without sync).
   final String? deviceId;
-
-  /// User-assigned or auto-detected category tag.
   final String? category;
-
-  /// How many times this snippet has been reused.
   final int useCount;
 
-  /// Creates a copy with overridden fields.
+  Map<String, dynamic> toMap() => {
+      'id': id,
+      'text': text,
+      'source_app': sourceApp,
+      'captured_at': capturedAt.millisecondsSinceEpoch,
+      'language': language,
+      'was_translated': wasTranslated ? 1 : 0,
+      'device_id': deviceId,
+      'category': category,
+      'use_count': useCount,
+    };
+
   HistoryEntry copyWith({
     String? id,
     String? text,
@@ -54,41 +60,15 @@ class HistoryEntry {
     String? deviceId,
     String? category,
     int? useCount,
-  }) =>
-      HistoryEntry(
-        id: id ?? this.id,
-        text: text ?? this.text,
-        sourceApp: sourceApp ?? this.sourceApp,
-        capturedAt: capturedAt ?? this.capturedAt,
-        language: language ?? this.language,
-        wasTranslated: wasTranslated ?? this.wasTranslated,
-        deviceId: deviceId ?? this.deviceId,
-        category: category ?? this.category,
-        useCount: useCount ?? this.useCount,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'text': text,
-        'sourceApp': sourceApp,
-        'capturedAt': capturedAt.toIso8601String(),
-        'language': language,
-        'wasTranslated': wasTranslated,
-        'deviceId': deviceId,
-        'category': category,
-        'useCount': useCount,
-      };
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is HistoryEntry &&
-          runtimeType == other.runtimeType &&
-          id == other.id;
-
-  @override
-  int get hashCode => id.hashCode;
-
-  @override
-  String toString() => 'HistoryEntry(id: $id, text: "${text.length > 30 ? '${text.substring(0, 30)}...' : text}")';
+  }) => HistoryEntry(
+      id: id ?? this.id,
+      text: text ?? this.text,
+      sourceApp: sourceApp ?? this.sourceApp,
+      capturedAt: capturedAt ?? this.capturedAt,
+      language: language ?? this.language,
+      wasTranslated: wasTranslated ?? this.wasTranslated,
+      deviceId: deviceId ?? this.deviceId,
+      category: category ?? this.category,
+      useCount: useCount ?? this.useCount,
+    );
 }

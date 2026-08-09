@@ -10,37 +10,22 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// signs in, signs out, or the session token refreshes.
 class SupabaseAuthNotifier extends ChangeNotifier {
   SupabaseAuthNotifier() {
-    _init();
+    _subscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+      (data) {
+        notifyListeners();
+      },
+    );
   }
 
-  StreamSubscription<AuthState>? _subscription;
-
-  void _init() {
-    try {
-      _subscription = Supabase.instance.client.auth.onAuthStateChange.listen(
-        (data) {
-          notifyListeners();
-        },
-      );
-    } on Object catch (_) {
-      // Supabase is not initialized (e.g. in unit/widget tests)
-    }
-  }
+  late final StreamSubscription<AuthState> _subscription;
 
   /// Whether the user currently has an active Supabase session.
-  bool get isAuthenticated {
-    try {
-      final session = Supabase.instance.client.auth.currentSession;
-      return session != null;
-    } on Object catch (_) {
-      // If Supabase is not initialized (e.g. in tests), default to true
-      return true;
-    }
-  }
+  bool get isAuthenticated =>
+      Supabase.instance.client.auth.currentSession != null;
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _subscription.cancel();
     super.dispose();
   }
 }

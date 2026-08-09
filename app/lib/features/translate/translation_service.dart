@@ -40,102 +40,36 @@ class TranslationService {
   TranslationService({
     String? relayEndpoint,
     http.Client? httpClient,
-  })  : _relayEndpoint = relayEndpoint ??
-            (kIsWeb || defaultTargetPlatform != TargetPlatform.android
-                ? 'http://localhost:3000/translate'
-                : 'http://10.0.2.2:3000/translate'),
+  })  : _relayEndpoint = relayEndpoint ?? 'http://localhost:3000/translate',
         _client = httpClient ?? http.Client();
 
   final String _relayEndpoint;
   final http.Client _client;
 
-  // On-device local dictionary pairs for instant offline translation
+  // On-device local dictionary pairs
   static const Map<String, Map<String, String>> _onDeviceDictionary = {
     'es': {
-      'hello': 'Hola',
-      'hi': 'Hola',
       'hello, how are you?': 'Hola, ¿cómo estás?',
-      'how are you?': '¿Cómo estás?',
       'good morning': 'Buenos días',
-      'good night': 'Buenas noches',
       'thank you': 'Gracias',
-      'thanks': 'Gracias',
-      'yes': 'Sí',
-      'no': 'No',
-      'please': 'Por favor',
-      'goodbye': 'Adiós',
-      'bye': 'Adiós',
       'welcome to keyflow': 'Bienvenido a KeyFlow',
-      'welcome': 'Bienvenido',
       'project roadmap': 'Hoja de ruta del proyecto',
     },
     'fr': {
-      'hello': 'Bonjour',
-      'hi': 'Salut',
       'hello, how are you?': 'Bonjour, comment allez-vous?',
-      'how are you?': 'Comment allez-vous?',
       'good morning': 'Bonjour',
-      'good night': 'Bonne nuit',
       'thank you': 'Merci',
-      'thanks': 'Merci',
-      'yes': 'Oui',
-      'no': 'Non',
-      'please': 'S\'il vous plaît',
-      'goodbye': 'Au revoir',
       'welcome to keyflow': 'Bienvenue sur KeyFlow',
-      'welcome': 'Bienvenue',
     },
     'de': {
-      'hello': 'Hallo',
-      'hi': 'Hallo',
       'hello, how are you?': 'Hallo, wie geht es Ihnen?',
-      'how are you?': 'Wie geht es Ihnen?',
       'good morning': 'Guten Morgen',
-      'good night': 'Gute Nacht',
       'thank you': 'Danke',
-      'thanks': 'Danke',
-      'yes': 'Ja',
-      'no': 'Nein',
-      'please': 'Bitte',
-      'goodbye': 'Auf Wiedersehen',
     },
     'ja': {
-      'hello': 'こんにちは',
-      'hi': 'やあ',
       'hello, how are you?': 'こんにちは、お元気ですか？',
-      'how are you?': 'お元気ですか？',
       'good morning': 'おはようございます',
       'thank you': 'ありがとうございます',
-      'thanks': 'ありがとう',
-      'yes': 'はい',
-      'no': 'いいえ',
-      'goodbye': 'さようなら',
-    },
-    'zh': {
-      'hello': '你好',
-      'hi': '嗨',
-      'hello, how are you?': '你好，你好吗？',
-      'thank you': '谢谢',
-      'yes': '是',
-      'no': '不',
-    },
-    'ar': {
-      'hello': 'مرحبا',
-      'thank you': 'شكرا',
-      'yes': 'نعم',
-      'no': 'لا',
-    },
-    'pt': {
-      'hello': 'Olá',
-      'thank you': 'Obrigado',
-      'yes': 'Sim',
-      'no': 'Não',
-    },
-    'ko': {
-      'hello': '안녕하세요',
-      'thank you': '감사합니다',
-      'yes': '네',
-      'no': '아니요',
     },
   };
 
@@ -167,7 +101,7 @@ class TranslationService {
 
     final targetClean = targetLang.toLowerCase();
 
-    // 1. Try On-Device Dictionary Match
+    // 1. Try On-Device Translation
     if (isOnDeviceSupported(targetClean)) {
       final dict = _onDeviceDictionary[targetClean];
       final localMatch = dict?[cleanText.toLowerCase()];
@@ -217,7 +151,7 @@ class TranslationService {
         throw TranslationException('Cloud relay returned status ${response.statusCode}');
       }
     } catch (e) {
-      if (e is CloudApprovalRequiredException || e is TranslationException) rethrow;
+      if (e is CloudApprovalRequiredException) rethrow;
       debugPrint('Translation error: $e');
       throw const TranslationException(
         'Translation failed: Cloud relay service unreachable. Please check your internet connection.',

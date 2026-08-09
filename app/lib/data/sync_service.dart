@@ -1,50 +1,31 @@
 import 'dart:async';
-import 'dart:collection';
-
 import 'package:flutter/foundation.dart';
 
 import 'models/history_entry.dart';
 import 'supabase_history_repository.dart';
 
-/// Orchestrates local → cloud sync of history entries.
-///
-/// After a local insert succeeds, [SyncService.syncEntry] uploads the entry
-/// to Supabase in a fire-and-forget manner. If the upload fails (e.g., no
-/// network), the entry is queued and retried with exponential backoff.
-///
-/// Sync is **unidirectional by default** (local → cloud). Call [pullFromCloud]
-/// to fetch cloud entries not present locally (e.g., on a fresh install).
 class SyncService {
   SyncService({
     required this._cloudRepo,
   });
 
   final SupabaseHistoryRepository _cloudRepo;
-
-  /// In-memory retry queue for entries that failed to upload.
-  final Queue<_SyncTask> _retryQueue = Queue<_SyncTask>();
-
+  final List<HistoryEntry> _retryQueue = [];
   Timer? _retryTimer;
-  bool _isProcessingQueue = false;
-
+  int _retryCount = 0;
   static const int _maxRetries = 5;
-  static const Duration _baseRetryDelay = Duration(seconds: 2);
 
-  /// Uploads a single entry to Supabase (fire-and-forget).
-  ///
-  /// If the upload fails, the entry is added to the retry queue.
   Future<void> syncEntry(HistoryEntry entry) async {
     try {
       await _cloudRepo.upsertEntry(entry);
       debugPrint('SyncService: Entry ${entry.id} synced to cloud');
+      _retryCount = 0;
     } on Exception catch (e) {
       debugPrint('SyncService: Entry ${entry.id} failed to sync — queuing for retry: $e');
-      _retryQueue.add(_SyncTask(entry: entry, retryCount: 0));
-      _scheduleRetryProcessing();
+      _queueForRetry(entry);
     }
   }
 
-  /// Deletes a single entry from Supabase (fire-and-forget).
   Future<void> deleteEntry(String id) async {
     try {
       await _cloudRepo.deleteEntry(id);
@@ -54,7 +35,6 @@ class SyncService {
     }
   }
 
-  /// Deletes all cloud entries for the current user (fire-and-forget).
   Future<void> deleteAllEntries() async {
     try {
       await _cloudRepo.deleteAllEntries();
@@ -64,10 +44,6 @@ class SyncService {
     }
   }
 
-  /// Pulls all cloud entries for the current user.
-  ///
-  /// Returns a list of decrypted [HistoryEntry] objects. The caller is
-  /// responsible for merging these into the local database.
   Future<List<HistoryEntry>> pullFromCloud() async {
     try {
       final entries = await _cloudRepo.getAllEntries();
@@ -79,89 +55,64 @@ class SyncService {
     }
   }
 
-  /// Runs a cloud-side retention purge mirroring the local purge.
   Future<int> purgeCloudOlderThan(int retentionDays) async {
     try {
-      final purged = await _cloudRepo.purgeOlderThan(retentionDays);
-      debugPrint('SyncService: Purged $purged cloud entries older than $retentionDays days');
-      return purged;
+      final count = await _cloudRepo.purgeOlderThan(retentionDays);
+      debugPrint('SyncService: Purged $count cloud entries older than $retentionDays days');
+      return count;
     } on Exception catch (e) {
-      debugPrint('SyncService: Cloud purge failed: $e');
+      debugPrint('SyncService: Failed to purge cloud entries: $e');
       return 0;
     }
   }
 
-  /// Returns the number of entries currently queued for retry.
-  int get pendingRetryCount => _retryQueue.length;
+  void _queueForRetry(HistoryEntry entry) {
+    if (!_retryQueue.any((e) => e.id == entry.id)) {
+      _retryQueue.add(entry);
+    }
+    _scheduleRetry();
+  }
 
-  // ── Retry Queue Processing ────────────────────────────────────────
+  void _scheduleRetry() {
+    if (_retryTimer?.isActive ?? false) return;
+    if (_retryCount >= _maxRetries) {
+      debugPrint('SyncService: Max retries ($_maxRetries) reached, stopping retry loop');
+      return;
+    }
 
-  void _scheduleRetryProcessing() {
-    if (_retryTimer != null && _retryTimer!.isActive) return;
+    final delay = Duration(seconds: 1 << _retryCount);
+    _retryCount++;
+    debugPrint('SyncService: Scheduling retry #$_retryCount in ${delay.inSeconds}s');
 
-    _retryTimer = Timer(_baseRetryDelay, _processRetryQueue);
+    _retryTimer = Timer(delay, _processRetryQueue);
   }
 
   Future<void> _processRetryQueue() async {
-    if (_isProcessingQueue || _retryQueue.isEmpty) return;
+    if (_retryQueue.isEmpty) return;
 
-    _isProcessingQueue = true;
+    final pending = List<HistoryEntry>.from(_retryQueue);
+    _retryQueue.clear();
 
-    try {
-      final batch = <_SyncTask>[];
-      while (_retryQueue.isNotEmpty) {
-        batch.add(_retryQueue.removeFirst());
+    for (final entry in pending) {
+      try {
+        await _cloudRepo.upsertEntry(entry);
+        debugPrint('SyncService: Retried entry ${entry.id} synced successfully');
+      } on Exception catch (_) {
+        _retryQueue.add(entry);
       }
+    }
 
-      for (final task in batch) {
-        try {
-          await _cloudRepo.upsertEntry(task.entry);
-          debugPrint('SyncService: Retry succeeded for entry ${task.entry.id}');
-        } on Exception catch (e) {
-          if (task.retryCount < _maxRetries) {
-            final nextTask = _SyncTask(
-              entry: task.entry,
-              retryCount: task.retryCount + 1,
-            );
-            _retryQueue.add(nextTask);
-            debugPrint(
-              'SyncService: Retry ${task.retryCount + 1}/$_maxRetries '
-              'failed for ${task.entry.id}: $e',
-            );
-          } else {
-            debugPrint(
-              'SyncService: Giving up on entry ${task.entry.id} '
-              'after $_maxRetries retries: $e',
-            );
-          }
-        }
-      }
-
-      // If there are still items in the queue, schedule another round
-      // with exponential backoff
-      if (_retryQueue.isNotEmpty) {
-        final nextDelay = _baseRetryDelay * (1 << _retryQueue.first.retryCount);
-        _retryTimer = Timer(nextDelay, _processRetryQueue);
-      }
-    } finally {
-      _isProcessingQueue = false;
+    if (_retryQueue.isNotEmpty) {
+      _scheduleRetry();
+    } else {
+      _retryCount = 0;
     }
   }
 
-  /// Cancels any pending retry timers. Call when the service is disposed.
+  int get pendingRetryCount => _retryQueue.length;
+
   void dispose() {
     _retryTimer?.cancel();
     _retryQueue.clear();
   }
-}
-
-/// Internal task tracking an entry and its retry count.
-class _SyncTask {
-  const _SyncTask({
-    required this.entry,
-    required this.retryCount,
-  });
-
-  final HistoryEntry entry;
-  final int retryCount;
 }

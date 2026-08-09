@@ -26,13 +26,7 @@ class AutocorrectEngine {
     Map<String, bool>? appOverrides,
   })  : _dictionary = Map.from(customDictionary ?? kDefaultEnglishDictionary),
         _learnedWords = Set.from(initialLearnedWords ?? {}),
-        _appOverrides = Map.from(appOverrides ?? {}) {
-    for (final word in _learnedWords) {
-      final clean = word.trim().toLowerCase();
-      _dictionary[clean] = 2000;
-      _displayMap[clean] = word;
-    }
-  }
+        _appOverrides = Map.from(appOverrides ?? {});
 
   final Map<String, int> _dictionary;
   final Set<String> _learnedWords;
@@ -57,15 +51,11 @@ class AutocorrectEngine {
     _appOverrides[sourceApp] = enabled;
   }
 
-  final Map<String, String> _displayMap = {};
-
   /// Adds a user-accepted word to the local learned dictionary.
   void learnWord(String word) {
-    final trimmed = word.trim();
-    final cleanWord = trimmed.toLowerCase();
+    final cleanWord = word.trim().toLowerCase();
     if (cleanWord.isEmpty) return;
-    _learnedWords.add(trimmed);
-    _displayMap[cleanWord] = trimmed;
+    _learnedWords.add(cleanWord);
     _dictionary[cleanWord] = 2000; // High score for learned words
   }
 
@@ -73,7 +63,6 @@ class AutocorrectEngine {
   void unlearnWord(String word) {
     final cleanWord = word.trim().toLowerCase();
     _learnedWords.remove(cleanWord);
-    _displayMap.remove(cleanWord);
     _dictionary.remove(cleanWord);
   }
 
@@ -123,7 +112,7 @@ class AutocorrectEngine {
 
     return candidates
         .take(maxResults)
-        .map((c) => _displayMap[c.word] ?? _matchCase(inputWord, c.word))
+        .map((c) => _matchCase(inputWord, c.word))
         .toList();
   }
 

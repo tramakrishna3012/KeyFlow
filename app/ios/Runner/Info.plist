@@ -66,9 +66,6 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>KeyFlow uses the camera for OCR text capture.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>KeyFlow accesses photos for image-based text extraction.</string>
 </dict>
 </plist>
+

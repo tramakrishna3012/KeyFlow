@@ -34,7 +34,7 @@ class MockOnboardingRepo implements HistoryRepository {
   Future<List<HistoryEntry>> search(String query) async => [];
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query) async => [];
+  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) async => [];
 
   @override
   Future<HistoryEntry?> getEntry(String id) async => null;
@@ -56,6 +56,14 @@ class MockOnboardingRepo implements HistoryRepository {
 
   @override
   Future<int> count() async => 0;
+
+  @override
+  Future<String?> getSetting(String key) async => settings[key];
+
+  @override
+  Future<void> setSetting(String key, String value) async {
+    settings[key] = value;
+  }
 }
 
 void main() {

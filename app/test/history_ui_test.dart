@@ -22,6 +22,7 @@ class MockHistoryRepo implements HistoryRepository {
       capturedAt: DateTime.now(),
     ),
   ];
+  final Map<String, String> settings = {};
 
   @override
   Future<void> addEntry(HistoryEntry entry) async {
@@ -43,7 +44,7 @@ class MockHistoryRepo implements HistoryRepository {
   }
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query) async => search(query);
+  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) => search(query);
 
   @override
   Future<HistoryEntry?> getEntry(String id) async {
@@ -74,6 +75,14 @@ class MockHistoryRepo implements HistoryRepository {
 
   @override
   Future<int> count() async => items.length;
+
+  @override
+  Future<String?> getSetting(String key) async => settings[key];
+
+  @override
+  Future<void> setSetting(String key, String value) async {
+    settings[key] = value;
+  }
 
   @override
   Future<List<String>> getExclusionList() async => [];
@@ -114,8 +123,7 @@ void main() {
       id: 'd1',
       text: 'Detailed snippet content for testing',
       sourceApp: 'VSCode',
-      capturedAt: DateTime(2026, 7, 24, 12, 0),
-      language: 'en',
+      capturedAt: DateTime(2026, 7, 24, 12),
       deviceId: 'desktop_win',
     );
 

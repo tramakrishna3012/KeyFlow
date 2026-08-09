@@ -27,7 +27,6 @@ class AppTheme {
         secondary: AppColors.secondary,
         onSecondary: AppColors.textPrimary,
         surface: AppColors.scaffoldBackground,
-        onSurface: AppColors.textPrimary,
         error: AppColors.destructive,
         onError: AppColors.textPrimary,
       ),
@@ -112,7 +111,6 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(
             color: AppColors.primary,
-            width: 1,
           ),
         ),
         hintStyle: const TextStyle(

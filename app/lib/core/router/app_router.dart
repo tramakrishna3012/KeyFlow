@@ -1,60 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/auth/auth_screen.dart';
 import '../../features/emoji/emoji_screen.dart';
 import '../../features/history/history_screen.dart';
 import '../../features/home/home_screen.dart';
-import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/translate/translate_screen.dart';
 import '../theme/app_colors.dart';
-import 'supabase_auth_notifier.dart';
 
-/// Singleton [SupabaseAuthNotifier] used as `refreshListenable` for the router.
-///
-/// This notifies GoRouter to re-evaluate `redirect` whenever the Supabase
-/// auth state changes (sign-in, sign-out, token refresh).
-final SupabaseAuthNotifier _authNotifier = SupabaseAuthNotifier();
-
-/// Top-level GoRouter configuration with session-gated routing.
-///
-/// - Unauthenticated users are redirected to `/login`.
-/// - Authenticated users are redirected away from `/login` to `/home`.
-/// - Uses [SupabaseAuthNotifier] as a `refreshListenable` so that
-///   auth-state changes trigger an automatic redirect re-evaluation.
+/// Top-level GoRouter configuration with a 5-tab shell route.
 ///
 /// Tabs: Home, History, Translate, Emoji, Settings
 /// Uses [StatefulShellRoute.indexedStack] for tab persistence.
 final GoRouter appRouter = GoRouter(
   initialLocation: '/home',
-  refreshListenable: _authNotifier,
-  redirect: (context, state) {
-    final isAuthenticated = _authNotifier.isAuthenticated;
-    final isOnLoginPage = state.matchedLocation == '/login';
-
-    // Not logged in and not already heading to /login → send to /login.
-    if (!isAuthenticated && !isOnLoginPage) {
-      return '/login';
-    }
-
-    // Logged in but still on /login → send to /home.
-    if (isAuthenticated && isOnLoginPage) {
-      return '/home';
-    }
-
-    // No redirect needed.
-    return null;
-  },
   routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const AuthScreen(),
-    ),
-    GoRoute(
-      path: '/onboarding',
-      builder: (context, state) => const OnboardingScreen(),
-    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) => _ScaffoldWithNavBar(
         navigationShell: navigationShell,
@@ -160,4 +120,3 @@ class _ScaffoldWithNavBar extends StatelessWidget {
         ),
       );
 }
-

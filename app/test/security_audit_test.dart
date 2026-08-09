@@ -1,15 +1,10 @@
 import 'dart:io';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/secure_key_storage.dart';
 import 'package:keyflow_app/features/translate/translation_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUp(() {
-    FlutterSecureStorage.setMockInitialValues({});
-  });
 
   group('Security Hardening Pass Verification Tests (SRS S-1 through S-7)', () {
     test('S-1 Verification: SecureKeyStorage retrieves key from OS-native store without hardcoding', () async {
@@ -42,7 +37,6 @@ void main() {
         () => service.translate(
           text: 'Confidential corporate text',
           targetLang: 'es',
-          userApprovedCloud: false,
         ),
         throwsA(isA<CloudApprovalRequiredException>()),
       );
@@ -67,7 +61,6 @@ void main() {
                 // Ignore safe metadata length/count logs
                 if (!line.contains('length') && !line.contains('count') && !line.contains('status')) {
                   violations++;
-                  // ignore: avoid_print
                   print('Potential S-5 Violation in ${entity.path}:${i + 1}: $line');
                 }
               }
@@ -84,7 +77,6 @@ void main() {
             final line = lines[i];
             if (line.contains('console.log') && line.contains('text') && !line.contains('length')) {
               violations++;
-              // ignore: avoid_print
               print('Potential S-5 Violation in relay/server.js:${i + 1}: $line');
             }
           }

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
-import '../../data/supabase_providers.dart';
 import 'translation_providers.dart';
 import 'translation_service.dart';
 
@@ -17,8 +16,7 @@ class TranslateScreen extends ConsumerStatefulWidget {
 class _TranslateScreenState extends ConsumerState<TranslateScreen> {
   late final TextEditingController _sourceController;
 
-  /// Local fallback language list, used when the Supabase fetch fails.
-  static const List<Map<String, String>> _fallbackLanguages = [
+  static const List<Map<String, String>> _languages = [
     {'code': 'es', 'flag': '🇪🇸', 'name': 'Spanish'},
     {'code': 'fr', 'flag': '🇫🇷', 'name': 'French'},
     {'code': 'de', 'flag': '🇩🇪', 'name': 'German'},
@@ -85,31 +83,10 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
   Widget build(BuildContext context) {
     final translationAsync = ref.watch(translationResultProvider);
     final selectedLang = ref.watch(targetLangProvider);
-    final languagesAsync = ref.watch(supabaseLanguagesProvider);
 
-    // Resolve the language list: Supabase data → local fallback.
-    final List<Map<String, String>> languages;
-    final bool languagesLoading;
-    if (languagesAsync.isLoading) {
-      languages = _fallbackLanguages;
-      languagesLoading = true;
-    } else if (languagesAsync.hasError || !languagesAsync.hasValue || languagesAsync.value!.isEmpty) {
-      languages = _fallbackLanguages;
-      languagesLoading = false;
-    } else {
-      languages = languagesAsync.value!
-          .map((row) => <String, String>{
-                'code': row['code']?.toString() ?? '',
-                'flag': row['flag']?.toString() ?? '',
-                'name': row['name']?.toString() ?? '',
-              })
-          .toList();
-      languagesLoading = false;
-    }
-
-    final currentLangObj = languages.firstWhere(
+    final currentLangObj = _languages.firstWhere(
       (l) => l['code'] == selectedLang,
-      orElse: () => languages.first,
+      orElse: () => _languages.first,
     );
 
     return Scaffold(
@@ -138,13 +115,7 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            if (languagesLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else
-              _buildLanguageGrid(selectedLang, languages),
+            _buildLanguageGrid(selectedLang),
           ],
         ),
       ),
@@ -236,6 +207,7 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: res.isCloud ? AppColors.primarySubtle : AppColors.secondary.withValues(alpha: 0.2),
+
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: res.isCloud ? AppColors.primaryBorderActive : AppColors.secondary,
@@ -307,6 +279,7 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
                   color: AppColors.destructive.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
+
                 ),
                 child: Row(
                   children: [
@@ -327,7 +300,7 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
       ),
     );
 
-  Widget _buildLanguageGrid(String activeLangCode, List<Map<String, String>> languages) => GridView.builder(
+  Widget _buildLanguageGrid(String activeLangCode) => GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -336,9 +309,9 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
         crossAxisSpacing: 10,
         childAspectRatio: 2.5,
       ),
-      itemCount: languages.length,
+      itemCount: _languages.length,
       itemBuilder: (ctx, idx) {
-        final item = languages[idx];
+        final item = _languages[idx];
         final isSelected = item['code'] == activeLangCode;
 
         return InkWell(

@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/providers.dart';
 import 'package:keyflow_app/features/emoji/emoji_providers.dart';
 import 'package:keyflow_app/features/emoji/emoji_service.dart';
+
 import 'history_repository_test.dart';
+
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +24,6 @@ void main() {
 
       stopwatch.stop();
 
-      // ignore: avoid_print
       print('Total execution time for 100 emoji searches: ${stopwatch.elapsedMilliseconds} ms');
 
       // SRS Requirement: Search completes under 10ms per lookup

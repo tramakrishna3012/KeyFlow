@@ -26,10 +26,7 @@ void main() {
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('keyflow_perf_test');
-    dbHelper = DatabaseHelper(
-      customPath: '${tempDir.path}/perf_test.db',
-      databaseFactoryOverride: databaseFactoryFfi,
-    );
+    dbHelper = DatabaseHelper(customPath: '${tempDir.path}/perf_test.db');
     repository = SqliteHistoryRepository(
       dbHelper: dbHelper,
       keyStorage: TestKeyStorage(),
@@ -39,9 +36,10 @@ void main() {
   tearDown(() async {
     await dbHelper.close();
     if (tempDir.existsSync()) {
-      await tempDir.delete(recursive: true);
+      tempDir.deleteSync(recursive: true);
     }
   });
+
 
   test('SRS §3.2 Performance Requirement: searchEntries completes in < 200ms', () async {
     // Seed database with 2,000 history entries
@@ -68,7 +66,6 @@ void main() {
             text: '${samplePhrases[idx % samplePhrases.length]} #$idx',
             sourceApp: apps[idx % apps.length],
             capturedAt: now.subtract(Duration(minutes: idx)),
-            language: 'en',
             wasTranslated: idx % 10 == 0,
             deviceId: 'test_device',
           ),
@@ -87,7 +84,6 @@ void main() {
     final results = await repository.searchEntries('roadmap');
     stopwatch.stop();
 
-    // ignore: avoid_print
     print('Search for "roadmap" returned ${results.length} results in ${stopwatch.elapsedMilliseconds} ms');
 
     // SRS §3.2 Requirement: Search must complete in under 200ms

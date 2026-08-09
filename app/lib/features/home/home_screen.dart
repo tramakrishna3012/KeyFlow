@@ -1,14 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/services/auto_update_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
 import '../../data/models/history_entry.dart';
-import '../../data/providers.dart';
 import '../history/history_providers.dart';
 import '../history/snippet_detail_screen.dart';
 
@@ -44,10 +41,9 @@ class HomeScreen extends ConsumerWidget {
     final totalSnippets = entries.length;
 
     // Filter today's entries
-    final todayEntries = entries.where((e) =>
-        e.capturedAt.year == now.year &&
-        e.capturedAt.month == now.month &&
-        e.capturedAt.day == now.day).toList();
+    final todayEntries = entries.where((e) => e.capturedAt.year == now.year &&
+          e.capturedAt.month == now.month &&
+          e.capturedAt.day == now.day).toList();
 
     // Calculate total characters typed today
     final todayChars = todayEntries.fold<int>(
@@ -88,13 +84,7 @@ class HomeScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             children: [
               _buildHeader(context),
-              const SizedBox(height: 16),
-              const _AutoUpdateBanner(),
-              const SizedBox(height: 12),
-              if (defaultTargetPlatform == TargetPlatform.android) ...[
-                _KeyboardConnectionBanner(ref: ref),
-                const SizedBox(height: 16),
-              ],
+              const SizedBox(height: 20),
               _buildStatsGrid(
                 gridAspectRatio: gridAspectRatio,
                 totalSnippets: totalSnippets,
@@ -155,17 +145,14 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-        GestureDetector(
-          onTap: () => context.go('/settings'),
-          child: const CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary,
-            child: Text(
-              'K',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
+        const CircleAvatar(
+          radius: 20,
+          backgroundColor: AppColors.primary,
+          child: Text(
+            'K',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -318,8 +305,8 @@ class HomeScreen extends ConsumerWidget {
             begin: Alignment.bottomCenter,
             end: Alignment.topCenter,
             colors: isToday
-                ? [AppColors.primary, AppColors.secondary]
-                : [AppColors.cardSurface, AppColors.primary.withValues(alpha: 0.4)],
+                ? [AppColors.primary, AppColors.primaryLight]
+                : [AppColors.surfaceLight, AppColors.primary.withValues(alpha: 0.6)],
           ),
         ),
       );
@@ -577,174 +564,3 @@ class _SnippetCard extends StatelessWidget {
         ),
       );
 }
-
-class _KeyboardConnectionBanner extends StatefulWidget {
-  const _KeyboardConnectionBanner({required this.ref});
-  final WidgetRef ref;
-
-  @override
-  State<_KeyboardConnectionBanner> createState() => _KeyboardConnectionBannerState();
-}
-
-class _KeyboardConnectionBannerState extends State<_KeyboardConnectionBanner> {
-  bool _isEnabled = true;
-  bool _checking = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkStatus();
-  }
-
-  Future<void> _checkStatus() async {
-    final captureService = widget.ref.read(captureServiceProvider);
-    final enabled = await captureService.isAccessibilityServiceEnabled();
-    if (mounted) {
-      setState(() {
-        _isEnabled = enabled;
-        _checking = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_checking || _isEnabled) return const SizedBox.shrink();
-
-    final captureService = widget.ref.read(captureServiceProvider);
-
-    return KeyFlowCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.keyboard_alt_outlined, color: AppColors.accentOrange, size: 22),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Keyboard Connection Required',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'KeyFlow requires Accessibility Service permission in Android Settings to observe typed text across your apps.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () async {
-                await captureService.openAccessibilitySettings();
-                await Future.delayed(const Duration(seconds: 1));
-                await _checkStatus();
-              },
-              icon: const Icon(Icons.settings, size: 18),
-              label: const Text('Connect Keyboard in Settings'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AutoUpdateBanner extends StatefulWidget {
-  const _AutoUpdateBanner();
-
-  @override
-  State<_AutoUpdateBanner> createState() => _AutoUpdateBannerState();
-}
-
-class _AutoUpdateBannerState extends State<_AutoUpdateBanner> {
-  UpdateInfo? _updateInfo;
-
-  @override
-  void initState() {
-    super.initState();
-    _check();
-  }
-
-  Future<void> _check() async {
-    final service = AutoUpdateService();
-    final info = await service.checkForUpdate();
-    if (mounted && info != null && info.hasUpdate) {
-      setState(() => _updateInfo = info);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final info = _updateInfo;
-    if (info == null || !info.hasUpdate) return const SizedBox.shrink();
-
-    final service = AutoUpdateService();
-
-    return KeyFlowCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.system_update_rounded, color: AppColors.primary, size: 22),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Update Available (v${info.latestVersion})',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 18, color: AppColors.textMuted),
-                onPressed: () => setState(() => _updateInfo = null),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'A new version of KeyFlow (v${info.latestVersion}) is available. Tap below to download the latest APK directly.',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () async => service.launchDownloadUrl(info.downloadUrl),
-              icon: const Icon(Icons.download_rounded, size: 18),
-              label: Text('Download Update (v${info.latestVersion})'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-

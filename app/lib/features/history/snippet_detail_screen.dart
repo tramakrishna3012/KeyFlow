@@ -23,7 +23,7 @@ class SnippetDetailScreen extends ConsumerWidget {
         title: const Text('Snippet Details'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: AppColors.destructive),
+            icon: const Icon(Icons.delete_outline, color: AppColors.error),
             tooltip: 'Delete Snippet',
             onPressed: () => _confirmDelete(context, ref),
           ),
@@ -99,7 +99,8 @@ class SnippetDetailScreen extends ConsumerWidget {
               _buildMetadataTile(
                 icon: Icons.language,
                 label: 'Language',
-                value: entry.language ?? 'en (Auto)',
+                value: entry.language.isEmpty ? 'en (Auto)' : entry.language,
+
               ),
               _buildMetadataTile(
                 icon: Icons.devices,
@@ -187,7 +188,7 @@ class SnippetDetailScreen extends ConsumerWidget {
                 context.pop();
               }
             },
-            child: const Text('Delete', style: TextStyle(color: AppColors.destructive)),
+            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),

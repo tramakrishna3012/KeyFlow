@@ -2,13 +2,6 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
-/// Database helper managing the encrypted SQLite database via [sqflite_sqlcipher].
-///
-/// Implements all four tables specified in Architecture §3:
-/// - history_entries
-/// - exclusion_list
-/// - settings
-/// - audit_log
 class DatabaseHelper {
   DatabaseHelper({
     this.customPath,
@@ -19,7 +12,6 @@ class DatabaseHelper {
   final DatabaseFactory? databaseFactoryOverride;
   Database? _db;
 
-  /// Returns the open encrypted database instance, initializing it if necessary.
   Future<Database> getDatabase(String password) async {
     if (_db != null && _db!.isOpen) {
       return _db!;
@@ -28,7 +20,6 @@ class DatabaseHelper {
     return _db!;
   }
 
-  /// Initializes the database with SQLCipher password protection.
   Future<Database> initDatabase(String password) async {
     final path = customPath ?? await _getDatabasePath();
 
@@ -68,9 +59,7 @@ class DatabaseHelper {
     return p.join(docsDir.path, 'keyflow_encrypted.db');
   }
 
-  /// Creates all 4 required tables per Architecture §3.
   Future<void> _onCreate(Database db, int version) async {
-    // 1. history_entries
     await db.execute('''
       CREATE TABLE history_entries (
         id TEXT PRIMARY KEY,
@@ -85,12 +74,10 @@ class DatabaseHelper {
       )
     ''');
 
-    // Index for fast search and recency ordering
     await db.execute('''
       CREATE INDEX idx_history_captured_at ON history_entries(captured_at DESC)
     ''');
 
-    // 2. exclusion_list
     await db.execute('''
       CREATE TABLE exclusion_list (
         app_identifier TEXT PRIMARY KEY,
@@ -98,7 +85,6 @@ class DatabaseHelper {
       )
     ''');
 
-    // 3. settings
     await db.execute('''
       CREATE TABLE settings (
         key TEXT PRIMARY KEY,
@@ -106,12 +92,10 @@ class DatabaseHelper {
       )
     ''');
 
-    // Default retention setting: 30 days
     await db.execute('''
       INSERT INTO settings (key, value) VALUES ('retention_days', '30')
     ''');
 
-    // 4. audit_log
     await db.execute('''
       CREATE TABLE audit_log (
         id TEXT PRIMARY KEY,
@@ -122,7 +106,6 @@ class DatabaseHelper {
     ''');
   }
 
-  /// Closes the active database connection.
   Future<void> close() async {
     if (_db != null && _db!.isOpen) {
       await _db!.close();
