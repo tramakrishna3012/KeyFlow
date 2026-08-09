@@ -7,7 +7,9 @@ import 'autocorrect_engine.dart';
 const String kKeyLearnedWords = 'learned_words';
 const String kKeyAppOverrides = 'autocorrect_app_overrides';
 
-final autocorrectEngineProvider = FutureProvider<AutocorrectEngine>((ref) async {
+final autocorrectEngineProvider = FutureProvider<AutocorrectEngine>((
+  ref,
+) async {
   final repo = ref.watch(historyRepositoryProvider);
   var learnedWords = <String>{};
   var appOverrides = <String, bool>{};
@@ -69,5 +71,6 @@ class AutocorrectNotifier {
   }
 }
 
-final autocorrectNotifierProvider = Provider<AutocorrectNotifier>(AutocorrectNotifier.new);
-
+final autocorrectNotifierProvider = Provider<AutocorrectNotifier>(
+  AutocorrectNotifier.new,
+);

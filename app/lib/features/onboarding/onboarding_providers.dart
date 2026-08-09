@@ -44,6 +44,5 @@ class OnboardingController extends StateNotifier<int> {
   }
 }
 
-final onboardingControllerProvider = StateNotifierProvider<OnboardingController, int>(
-  OnboardingController.new,
-);
+final onboardingControllerProvider =
+    StateNotifierProvider<OnboardingController, int>(OnboardingController.new);

@@ -6,10 +6,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pointycastle/export.dart' as pc;
 
 class EncryptionService {
-  EncryptionService({
-    required this._userId,
-    FlutterSecureStorage? storage,
-  })  : _storage = storage ?? const FlutterSecureStorage();
+  EncryptionService({required this._userId, FlutterSecureStorage? storage})
+    : _storage = storage ?? const FlutterSecureStorage();
 
   final String _userId;
   final FlutterSecureStorage _storage;
@@ -31,7 +29,10 @@ class EncryptionService {
       } else {
         salt = _generateSecureRandom(_keyLengthBytes);
         try {
-          await _storage.write(key: _saltKeyName, value: base64Url.encode(salt));
+          await _storage.write(
+            key: _saltKeyName,
+            value: base64Url.encode(salt),
+          );
         } on Object catch (_) {}
       }
     } on Object catch (_) {
@@ -93,7 +94,9 @@ class EncryptionService {
     try {
       return encrypter.decrypt64(payload.ciphertext, iv: encryptIV);
     } on Exception catch (e) {
-      throw ArgumentError('Decryption failed — key mismatch or tampered data: $e');
+      throw ArgumentError(
+        'Decryption failed — key mismatch or tampered data: $e',
+      );
     }
   }
 
@@ -107,21 +110,23 @@ class EncryptionService {
   Uint8List _generateSecureRandom(int length) {
     final secureRandom = pc.FortunaRandom();
     final seedSource = pc.SecureRandom('Fortuna')
-      ..seed(pc.KeyParameter(
-        Uint8List.fromList(
-          List<int>.generate(32, (_) => DateTime.now().microsecondsSinceEpoch % 256),
+      ..seed(
+        pc.KeyParameter(
+          Uint8List.fromList(
+            List<int>.generate(
+              32,
+              (_) => DateTime.now().microsecondsSinceEpoch % 256,
+            ),
+          ),
         ),
-      ));
+      );
     secureRandom.seed(pc.KeyParameter(seedSource.nextBytes(32)));
     return secureRandom.nextBytes(length);
   }
 }
 
 class EncryptedPayload {
-  const EncryptedPayload({
-    required this.ciphertext,
-    required this.iv,
-  });
+  const EncryptedPayload({required this.ciphertext, required this.iv});
 
   final String ciphertext;
   final String iv;

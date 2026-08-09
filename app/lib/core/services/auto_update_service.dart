@@ -41,21 +41,23 @@ class AutoUpdateService {
         'https://api.github.com/repos/$_repoOwner/$_repoName/releases/latest',
       );
 
-      final response = await _client.get(
-        url,
-        headers: {'Accept': 'application/vnd.github.v3+json'},
-      ).timeout(const Duration(seconds: 5));
+      final response = await _client
+          .get(url, headers: {'Accept': 'application/vnd.github.v3+json'})
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
         final tagName = data['tag_name']?.toString() ?? '';
-        final body = data['body']?.toString() ?? 'Bug fixes and performance improvements.';
+        final body =
+            data['body']?.toString() ??
+            'Bug fixes and performance improvements.';
 
         // Clean version strings for comparison
         final latestVersion = tagName.replaceAll('v', '').trim();
 
         // Direct APK download URL from GitHub Release assets
-        var downloadUrl = 'https://github.com/$_repoOwner/$_repoName/releases/latest/download/KeyFlow.apk';
+        var downloadUrl =
+            'https://github.com/$_repoOwner/$_repoName/releases/latest/download/KeyFlow.apk';
         final assets = data['assets'] as List<dynamic>?;
         if (assets != null && assets.isNotEmpty) {
           final apkAsset = assets.firstWhere(
@@ -94,7 +96,11 @@ class AutoUpdateService {
 
   bool _isVersionNewer(String remote, String local) {
     try {
-      final remoteParts = remote.split('+')[0].split('.').map(int.parse).toList();
+      final remoteParts = remote
+          .split('+')[0]
+          .split('.')
+          .map(int.parse)
+          .toList();
       final localParts = local.split('+')[0].split('.').map(int.parse).toList();
 
       for (var i = 0; i < remoteParts.length && i < localParts.length; i++) {

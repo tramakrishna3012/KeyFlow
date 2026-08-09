@@ -21,7 +21,9 @@ class TranslationResult {
 
 /// Exception thrown when cloud fallback requires per-use user approval (TRD S-4).
 class CloudApprovalRequiredException implements Exception {
-  const CloudApprovalRequiredException([this.message = 'Cloud translation requires per-use user approval.']);
+  const CloudApprovalRequiredException([
+    this.message = 'Cloud translation requires per-use user approval.',
+  ]);
   final String message;
   @override
   String toString() => message;
@@ -37,11 +39,9 @@ class TranslationException implements Exception {
 
 /// On-Device & Cloud Relay Translation Service for KeyFlow (Architecture §5, SRS FR-15..18).
 class TranslationService {
-  TranslationService({
-    String? relayEndpoint,
-    http.Client? httpClient,
-  })  : _relayEndpoint = relayEndpoint ?? 'http://localhost:3000/translate',
-        _client = httpClient ?? http.Client();
+  TranslationService({String? relayEndpoint, http.Client? httpClient})
+    : _relayEndpoint = relayEndpoint ?? 'http://localhost:3000/translate',
+      _client = httpClient ?? http.Client();
 
   final String _relayEndpoint;
   final http.Client _client;
@@ -125,16 +125,18 @@ class TranslationService {
 
     // 3. Perform Cloud Relay POST Request
     try {
-      final response = await _client.post(
-        Uri.parse(_relayEndpoint),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'text': cleanText,
-          'source_lang': sourceLang,
-          'target_lang': targetLang,
-          'mock': true,
-        }),
-      ).timeout(const Duration(seconds: 4));
+      final response = await _client
+          .post(
+            Uri.parse(_relayEndpoint),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'text': cleanText,
+              'source_lang': sourceLang,
+              'target_lang': targetLang,
+              'mock': true,
+            }),
+          )
+          .timeout(const Duration(seconds: 4));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> body = jsonDecode(response.body);
@@ -148,7 +150,9 @@ class TranslationService {
           attributionBadge: 'Translated via cloud (user approved)',
         );
       } else {
-        throw TranslationException('Cloud relay returned status ${response.statusCode}');
+        throw TranslationException(
+          'Cloud relay returned status ${response.statusCode}',
+        );
       }
     } catch (e) {
       if (e is CloudApprovalRequiredException) rethrow;

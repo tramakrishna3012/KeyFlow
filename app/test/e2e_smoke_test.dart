@@ -13,60 +13,65 @@ void main() {
 
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(const MethodChannel('keyflow/capture'), (MethodCall methodCall) async {
-      switch (methodCall.method) {
-        case 'startCapture':
-        case 'stopCapture':
-        case 'pauseCapture':
-        case 'resumeCapture':
-        case 'setExclusionList':
-        case 'setAutostart':
-        case 'isAutostartEnabled':
-          return true;
-        default:
-          return null;
-      }
-    });
+        .setMockMethodCallHandler(const MethodChannel('keyflow/capture'), (
+          MethodCall methodCall,
+        ) async {
+          switch (methodCall.method) {
+            case 'startCapture':
+            case 'stopCapture':
+            case 'pauseCapture':
+            case 'resumeCapture':
+            case 'setExclusionList':
+            case 'setAutostart':
+            case 'isAutostartEnabled':
+              return true;
+            default:
+              return null;
+          }
+        });
   });
 
   group('KeyFlow E2E Smoke Pipeline Tests', () {
-    test('E2E Pipeline: Mock Capture Stream -> DB Write -> History Search -> UI Provider Result', () async {
-      final mockRepo = InMemoryHistoryRepository();
+    test(
+      'E2E Pipeline: Mock Capture Stream -> DB Write -> History Search -> UI Provider Result',
+      () async {
+        final mockRepo = InMemoryHistoryRepository();
 
-      final container = ProviderContainer(
-        overrides: [
-          historyRepositoryProvider.overrideWithValue(mockRepo),
-        ],
-      );
+        final container = ProviderContainer(
+          overrides: [historyRepositoryProvider.overrideWithValue(mockRepo)],
+        );
 
-      final captureService = CaptureService(mockRepo);
+        final captureService = CaptureService(mockRepo);
 
-      // 1. Initialize capture engine and sync exclusions
-      await captureService.initialize();
-      await captureService.startCapture();
-      expect(captureService.isCapturing, isTrue);
+        // 1. Initialize capture engine and sync exclusions
+        await captureService.initialize();
+        await captureService.startCapture();
+        expect(captureService.isCapturing, isTrue);
 
-      // 2. Simulate incoming text capture event from native layer
-      final capturedEntry = HistoryEntry(
-        id: 'e2e-test-entry-1',
-        text: 'The quick brown fox jumps over the lazy dog in KeyFlow E2E',
-        capturedAt: DateTime.now(),
-        sourceApp: 'code.exe',
-      );
+        // 2. Simulate incoming text capture event from native layer
+        final capturedEntry = HistoryEntry(
+          id: 'e2e-test-entry-1',
+          text: 'The quick brown fox jumps over the lazy dog in KeyFlow E2E',
+          capturedAt: DateTime.now(),
+          sourceApp: 'code.exe',
+        );
 
-      await mockRepo.addEntry(capturedEntry);
+        await mockRepo.addEntry(capturedEntry);
 
-      // 3. Set search query in history provider
-      container.read(searchQueryProvider.notifier).state = 'fox jumps';
+        // 3. Set search query in history provider
+        container.read(searchQueryProvider.notifier).state = 'fox jumps';
 
-      // 4. Query search results via history provider
-      final searchResults = await container.read(historyEntriesProvider.future);
+        // 4. Query search results via history provider
+        final searchResults = await container.read(
+          historyEntriesProvider.future,
+        );
 
-      // 5. Verify E2E query returned captured entry
-      expect(searchResults, isNotEmpty);
-      expect(searchResults.first.id, equals('e2e-test-entry-1'));
-      expect(searchResults.first.text, contains('fox jumps'));
-      expect(searchResults.first.sourceApp, equals('code.exe'));
-    });
+        // 5. Verify E2E query returned captured entry
+        expect(searchResults, isNotEmpty);
+        expect(searchResults.first.id, equals('e2e-test-entry-1'));
+        expect(searchResults.first.text, contains('fox jumps'));
+        expect(searchResults.first.sourceApp, equals('code.exe'));
+      },
+    );
   });
 }

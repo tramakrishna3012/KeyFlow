@@ -65,13 +65,12 @@ HistoryEntry _makeEntry({
   String id = 'test-id-1',
   String text = 'Hello world',
   String sourceApp = 'com.test.app',
-}) =>
-    HistoryEntry(
-      id: id,
-      text: text,
-      sourceApp: sourceApp,
-      capturedAt: DateTime(2024, 1, 15, 10, 30),
-    );
+}) => HistoryEntry(
+  id: id,
+  text: text,
+  sourceApp: sourceApp,
+  capturedAt: DateTime(2024, 1, 15, 10, 30),
+);
 
 void main() {
   group('SyncService', () {

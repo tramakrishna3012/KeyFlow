@@ -6,7 +6,6 @@ import 'package:keyflow_app/features/emoji/emoji_service.dart';
 
 import 'history_repository_test.dart';
 
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -25,11 +24,16 @@ void main() {
       stopwatch.stop();
 
       // ignore: avoid_print
-      print('Total execution time for 100 emoji searches: ${stopwatch.elapsedMilliseconds} ms');
-
+      print(
+        'Total execution time for 100 emoji searches: ${stopwatch.elapsedMilliseconds} ms',
+      );
 
       // SRS Requirement: Search completes under 10ms per lookup
-      expect(stopwatch.elapsedMilliseconds, lessThan(100), reason: 'Emoji search latency exceeded threshold');
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(100),
+        reason: 'Emoji search latency exceeded threshold',
+      );
     });
 
     test('Shortcode lookup returns matching emoji', () {
@@ -47,9 +51,7 @@ void main() {
     test('Recently used emoji updates immediately upon selection', () async {
       final mockRepo = InMemoryHistoryRepository();
       final container = ProviderContainer(
-        overrides: [
-          historyRepositoryProvider.overrideWithValue(mockRepo),
-        ],
+        overrides: [historyRepositoryProvider.overrideWithValue(mockRepo)],
       );
 
       final notifier = container.read(emojiNotifierProvider);

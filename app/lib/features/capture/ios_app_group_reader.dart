@@ -7,7 +7,6 @@ import '../../data/models/history_entry.dart';
 /// Reads captured history entries written by the native iOS Swift keyboard extension
 /// into the shared App Group container (`group.com.keyflow.app`).
 class IosAppGroupReader {
-
   IosAppGroupReader(this._repository);
   static const String appGroupId = 'group.com.keyflow.app';
   static const String pendingFilename = 'keyflow_pending_entries.json';
@@ -17,14 +16,17 @@ class IosAppGroupReader {
   /// Synchronizes pending history entries from the shared App Group container
   /// into the encrypted local [HistoryRepository].
   Future<int> syncPendingEntries({String? customGroupPath}) async {
-    if (defaultTargetPlatform != TargetPlatform.iOS && customGroupPath == null) {
+    if (defaultTargetPlatform != TargetPlatform.iOS &&
+        customGroupPath == null) {
       return 0;
     }
 
     try {
       final file = customGroupPath != null
           ? File('$customGroupPath/$pendingFilename')
-          : File('/private/var/mobile/Containers/Shared/AppGroup/$appGroupId/$pendingFilename');
+          : File(
+              '/private/var/mobile/Containers/Shared/AppGroup/$appGroupId/$pendingFilename',
+            );
 
       if (!file.existsSync()) {
         return 0;
@@ -40,11 +42,14 @@ class IosAppGroupReader {
       for (final item in decoded) {
         if (item is Map<String, dynamic>) {
           final entry = HistoryEntry(
-            id: item['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            id:
+                item['id']?.toString() ??
+                DateTime.now().millisecondsSinceEpoch.toString(),
             text: item['text']?.toString() ?? '',
             sourceApp: item['source_app']?.toString() ?? 'iOS Keyboard',
             capturedAt: DateTime.fromMillisecondsSinceEpoch(
-              (item['captured_at'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
+              (item['captured_at'] as int?) ??
+                  DateTime.now().millisecondsSinceEpoch,
             ),
             language: item['language']?.toString() ?? 'en',
             wasTranslated: item['was_translated'] == true,
@@ -80,7 +85,8 @@ class IosAppGroupReader {
           text: map['text']?.toString() ?? '',
           sourceApp: map['source_app']?.toString() ?? 'iOS Keyboard',
           capturedAt: DateTime.fromMillisecondsSinceEpoch(
-            (map['captured_at'] as int?) ?? DateTime.now().millisecondsSinceEpoch,
+            (map['captured_at'] as int?) ??
+                DateTime.now().millisecondsSinceEpoch,
           ),
           language: map['language']?.toString() ?? 'en',
           wasTranslated: map['was_translated'] == true,
@@ -91,5 +97,4 @@ class IosAppGroupReader {
       return [];
     }
   }
-
 }

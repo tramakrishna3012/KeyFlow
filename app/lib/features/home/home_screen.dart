@@ -41,9 +41,14 @@ class HomeScreen extends ConsumerWidget {
     final totalSnippets = entries.length;
 
     // Filter today's entries
-    final todayEntries = entries.where((e) => e.capturedAt.year == now.year &&
-          e.capturedAt.month == now.month &&
-          e.capturedAt.day == now.day).toList();
+    final todayEntries = entries
+        .where(
+          (e) =>
+              e.capturedAt.year == now.year &&
+              e.capturedAt.month == now.month &&
+              e.capturedAt.day == now.day,
+        )
+        .toList();
 
     // Calculate total characters typed today
     final todayChars = todayEntries.fold<int>(
@@ -133,15 +138,12 @@ class HomeScreen extends ConsumerWidget {
             children: [
               Text(
                 _formattedDate,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textMuted,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
               ),
               const SizedBox(height: 4),
-              Text(
-                greeting,
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
+              Text(greeting, style: Theme.of(context).textTheme.headlineMedium),
             ],
           ),
         ),
@@ -255,9 +257,9 @@ class HomeScreen extends ConsumerWidget {
               ),
               Text(
                 'This week',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textMuted,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
               ),
             ],
           ),
@@ -297,69 +299,70 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildBar(double heightFraction, {bool isToday = false}) => Container(
-        width: 22,
-        height: 64 * heightFraction.clamp(0.08, 1.0),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: isToday
-                ? [AppColors.primary, AppColors.primaryLight]
-                : [AppColors.surfaceLight, AppColors.primary.withValues(alpha: 0.6)],
-          ),
-        ),
-      );
+    width: 22,
+    height: 64 * heightFraction.clamp(0.08, 1.0),
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(4),
+      gradient: LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: isToday
+            ? [AppColors.primary, AppColors.primaryLight]
+            : [
+                AppColors.surfaceLight,
+                AppColors.primary.withValues(alpha: 0.6),
+              ],
+      ),
+    ),
+  );
 
   Widget _buildRecentSnippetsHeader(BuildContext context) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Recent Snippets',
-            style: Theme.of(context).textTheme.titleMedium,
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text('Recent Snippets', style: Theme.of(context).textTheme.titleMedium),
+      InkWell(
+        onTap: () => context.go('/history'),
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Text(
+            'See all',
+            style: Theme.of(
+              context,
+            ).textTheme.labelMedium?.copyWith(color: AppColors.primary),
           ),
-          InkWell(
-            onTap: () => context.go('/history'),
-            borderRadius: BorderRadius.circular(6),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: Text(
-                'See all',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.primary,
-                    ),
-              ),
-            ),
-          ),
-        ],
-      );
+        ),
+      ),
+    ],
+  );
 
   Widget _buildEmptySnippetsPrompt(BuildContext context) => KeyFlowCard(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const Icon(Icons.keyboard_alt_outlined, size: 36, color: AppColors.primary),
-            const SizedBox(height: 10),
-            Text(
-              'No snippets captured yet',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Start typing in any app or software to see your live snippets and history appear right here!',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textMuted,
-                  ),
-            ),
-          ],
+    padding: const EdgeInsets.all(20),
+    child: Column(
+      children: [
+        const Icon(
+          Icons.keyboard_alt_outlined,
+          size: 36,
+          color: AppColors.primary,
         ),
-      );
+        const SizedBox(height: 10),
+        Text(
+          'No snippets captured yet',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Start typing in any app or software to see your live snippets and history appear right here!',
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+        ),
+      ],
+    ),
+  );
 
-  List<int> _calculateWeeklyActivity(
-    List<HistoryEntry> entries,
-    DateTime now,
-  ) {
+  List<int> _calculateWeeklyActivity(List<HistoryEntry> entries, DateTime now) {
     // Determine Monday date of current week
     final monday = now.subtract(Duration(days: now.weekday - 1));
     final startOfMonday = DateTime(monday.year, monday.month, monday.day);
@@ -401,47 +404,47 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => KeyFlowCard(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(icon, style: const TextStyle(fontSize: 18)),
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: dotColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
+            Text(icon, style: const TextStyle(fontSize: 18)),
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textMuted,
-                  ),
             ),
           ],
         ),
-      );
+        const SizedBox(height: 6),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+        ),
+      ],
+    ),
+  );
 }
 
 class _SnippetCard extends StatelessWidget {
@@ -468,99 +471,94 @@ class _SnippetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => KeyFlowCard(
-        padding: const EdgeInsets.all(14),
-        child: InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => SnippetDetailScreen(entry: entry),
-              ),
-            );
-          },
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _categoryColor,
-                  borderRadius: BorderRadius.circular(2),
+    padding: const EdgeInsets.all(14),
+    child: InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => SnippetDetailScreen(entry: entry)),
+        );
+      },
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _categoryColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.text,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 6),
+                Row(
                   children: [
-                    Text(
-                      entry.text,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _categoryColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        entry.sourceApp,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: _categoryColor,
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _categoryColor.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            entry.sourceApp,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: _categoryColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _timeAgo,
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                      ],
+                    const SizedBox(width: 8),
+                    Text(
+                      _timeAgo,
+                      style: Theme.of(context).textTheme.labelSmall,
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: entry.text));
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Copied snippet to clipboard!'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGhost,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Copy',
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: entry.text));
+              ScaffoldMessenger.of(context).clearSnackBars();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Copied snippet to clipboard!'),
+                  duration: Duration(seconds: 1),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primaryGhost,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Copy',
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

@@ -87,10 +87,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
 
-                              child: const Icon(Icons.delete_outline, color: AppColors.error),
+                              child: const Icon(
+                                Icons.delete_outline,
+                                color: AppColors.error,
+                              ),
                             ),
                             onDismissed: (_) {
-                              ref.read(historyNotifierProvider.notifier).deleteEntry(entry.id);
+                              ref
+                                  .read(historyNotifierProvider.notifier)
+                                  .deleteEntry(entry.id);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Entry deleted'),
@@ -104,7 +109,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       ),
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) => Center(
-                  child: Text('Error loading history: $err', style: const TextStyle(color: AppColors.error)),
+                  child: Text(
+                    'Error loading history: $err',
+                    style: const TextStyle(color: AppColors.error),
+                  ),
                 ),
               ),
             ),
@@ -115,45 +123,42 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   Widget _buildTagFilters(String activeTag) => SizedBox(
-        height: 34,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: _tags.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (_, index) {
-            final tag = _tags[index];
-            final isActive = tag == activeTag;
-            return GestureDetector(
-              onTap: () {
-                ref.read(activeTagProvider.notifier).state = tag;
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: isActive ? AppColors.primary : AppColors.cardSurface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isActive ? AppColors.primary : AppColors.cardBorder,
-                    width: 0.8,
-                  ),
-                ),
-                child: Text(
-                  tag,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isActive ? AppColors.textPrimary : AppColors.textMuted,
-                  ),
-                ),
-              ),
-            );
+    height: 34,
+    child: ListView.separated(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _tags.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      itemBuilder: (_, index) {
+        final tag = _tags[index];
+        final isActive = tag == activeTag;
+        return GestureDetector(
+          onTap: () {
+            ref.read(activeTagProvider.notifier).state = tag;
           },
-        ),
-      );
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: isActive ? AppColors.primary : AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isActive ? AppColors.primary : AppColors.cardBorder,
+                width: 0.8,
+              ),
+            ),
+            child: Text(
+              tag,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isActive ? AppColors.textPrimary : AppColors.textMuted,
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 
   Widget _buildSnippetCard(BuildContext context, HistoryEntry entry) {
     final categoryColor = _colorForApp(entry.sourceApp);
@@ -174,9 +179,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           children: [
             Text(
               entry.text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -241,28 +246,36 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   Widget _buildEmptyState() => Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.history_toggle_off, size: 48, color: AppColors.textMuted),
-          const SizedBox(height: 12),
-          const Text(
-            'No history entries found',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.history_toggle_off,
+          size: 48,
+          color: AppColors.textMuted,
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'No history entries found',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Start typing in any app to build your history',
+          style: TextStyle(
+            color: AppColors.textMuted.withValues(alpha: 0.7),
+            fontSize: 12,
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Start typing in any app to build your history',
-            style: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.7), fontSize: 12),
-          ),
-
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
 
   Color _colorForApp(String sourceApp) {
     final lower = sourceApp.toLowerCase();
-    if (lower.contains('chrome') || lower.contains('browser') || lower.contains('safari')) {
+    if (lower.contains('chrome') ||
+        lower.contains('browser') ||
+        lower.contains('safari')) {
       return AppColors.tagEmail;
     } else if (lower.contains('code') || lower.contains('terminal')) {
       return AppColors.tagMeeting;

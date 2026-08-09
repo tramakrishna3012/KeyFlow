@@ -25,8 +25,10 @@ class TestHistoryRepository implements HistoryRepository {
   Future<List<HistoryEntry>> search(String query) async => entries;
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) async => entries;
-
+  Future<List<HistoryEntry>> searchEntries(
+    String query, {
+    String? appName,
+  }) async => entries;
 
   @override
   Future<HistoryEntry?> getEntry(String id) async => null;
@@ -90,9 +92,10 @@ void main() {
     }
   });
 
-
-  test('parseAppGroupPayload correctly parses JSON entries from keyboard extension', () {
-    const rawJson = '''
+  test(
+    'parseAppGroupPayload correctly parses JSON entries from keyboard extension',
+    () {
+      const rawJson = '''
     [
       {
         "id": "test_1",
@@ -106,16 +109,21 @@ void main() {
     ]
     ''';
 
-    final parsed = IosAppGroupReader.parseAppGroupPayload(rawJson);
-    expect(parsed.length, equals(1));
-    expect(parsed.first.id, equals('test_1'));
-    expect(parsed.first.text, equals('Hello from iOS Keyboard'));
-    expect(parsed.first.sourceApp, equals('Safari'));
-  });
+      final parsed = IosAppGroupReader.parseAppGroupPayload(rawJson);
+      expect(parsed.length, equals(1));
+      expect(parsed.first.id, equals('test_1'));
+      expect(parsed.first.text, equals('Hello from iOS Keyboard'));
+      expect(parsed.first.sourceApp, equals('Safari'));
+    },
+  );
 
-  test('syncPendingEntries reads file from App Group directory and inserts into repository', () async {
-    final pendingFile = File('${tempDir.path}/${IosAppGroupReader.pendingFilename}');
-    const rawJson = '''
+  test(
+    'syncPendingEntries reads file from App Group directory and inserts into repository',
+    () async {
+      final pendingFile = File(
+        '${tempDir.path}/${IosAppGroupReader.pendingFilename}',
+      );
+      const rawJson = '''
     [
       {
         "id": "entry_ios_1",
@@ -128,15 +136,18 @@ void main() {
       }
     ]
     ''';
-    await pendingFile.writeAsString(rawJson);
+      await pendingFile.writeAsString(rawJson);
 
-    final count = await reader.syncPendingEntries(customGroupPath: tempDir.path);
-    expect(count, equals(1));
-    expect(repository.entries.length, equals(1));
-    expect(repository.entries.first.text, equals('Typed in Messages app'));
+      final count = await reader.syncPendingEntries(
+        customGroupPath: tempDir.path,
+      );
+      expect(count, equals(1));
+      expect(repository.entries.length, equals(1));
+      expect(repository.entries.first.text, equals('Typed in Messages app'));
 
-    // File content should be reset to empty array after sync
-    final remaining = await pendingFile.readAsString();
-    expect(remaining, equals('[]'));
-  });
+      // File content should be reset to empty array after sync
+      final remaining = await pendingFile.readAsString();
+      expect(remaining, equals('[]'));
+    },
+  );
 }

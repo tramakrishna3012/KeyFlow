@@ -40,11 +40,14 @@ class MockHistoryRepo implements HistoryRepository {
   @override
   Future<List<HistoryEntry>> search(String query) async {
     if (query.isEmpty) return items;
-    return items.where((e) => e.text.toLowerCase().contains(query.toLowerCase())).toList();
+    return items
+        .where((e) => e.text.toLowerCase().contains(query.toLowerCase()))
+        .toList();
   }
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) => search(query);
+  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) =>
+      search(query);
 
   @override
   Future<HistoryEntry?> getEntry(String id) async {
@@ -97,17 +100,15 @@ class MockHistoryRepo implements HistoryRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('HistoryScreen renders entries from repository', (WidgetTester tester) async {
+  testWidgets('HistoryScreen renders entries from repository', (
+    WidgetTester tester,
+  ) async {
     final mockRepo = MockHistoryRepo();
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          historyRepositoryProvider.overrideWithValue(mockRepo),
-        ],
-        child: const MaterialApp(
-          home: HistoryScreen(),
-        ),
+        overrides: [historyRepositoryProvider.overrideWithValue(mockRepo)],
+        child: const MaterialApp(home: HistoryScreen()),
       ),
     );
 
@@ -118,7 +119,9 @@ void main() {
     expect(find.text('Second captured snippet text'), findsOneWidget);
   });
 
-  testWidgets('SnippetDetailScreen renders full text and metadata', (WidgetTester tester) async {
+  testWidgets('SnippetDetailScreen renders full text and metadata', (
+    WidgetTester tester,
+  ) async {
     final entry = HistoryEntry(
       id: 'd1',
       text: 'Detailed snippet content for testing',
@@ -129,9 +132,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        child: MaterialApp(
-          home: SnippetDetailScreen(entry: entry),
-        ),
+        child: MaterialApp(home: SnippetDetailScreen(entry: entry)),
       ),
     );
 

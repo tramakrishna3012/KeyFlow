@@ -5,9 +5,7 @@ import 'models/history_entry.dart';
 import 'supabase_history_repository.dart';
 
 class SyncService {
-  SyncService({
-    required this._cloudRepo,
-  });
+  SyncService({required this._cloudRepo});
 
   final SupabaseHistoryRepository _cloudRepo;
   final List<HistoryEntry> _retryQueue = [];
@@ -21,7 +19,9 @@ class SyncService {
       debugPrint('SyncService: Entry ${entry.id} synced to cloud');
       _retryCount = 0;
     } on Exception catch (e) {
-      debugPrint('SyncService: Entry ${entry.id} failed to sync — queuing for retry: $e');
+      debugPrint(
+        'SyncService: Entry ${entry.id} failed to sync — queuing for retry: $e',
+      );
       _queueForRetry(entry);
     }
   }
@@ -58,7 +58,9 @@ class SyncService {
   Future<int> purgeCloudOlderThan(int retentionDays) async {
     try {
       final count = await _cloudRepo.purgeOlderThan(retentionDays);
-      debugPrint('SyncService: Purged $count cloud entries older than $retentionDays days');
+      debugPrint(
+        'SyncService: Purged $count cloud entries older than $retentionDays days',
+      );
       return count;
     } on Exception catch (e) {
       debugPrint('SyncService: Failed to purge cloud entries: $e');
@@ -76,13 +78,17 @@ class SyncService {
   void _scheduleRetry() {
     if (_retryTimer?.isActive ?? false) return;
     if (_retryCount >= _maxRetries) {
-      debugPrint('SyncService: Max retries ($_maxRetries) reached, stopping retry loop');
+      debugPrint(
+        'SyncService: Max retries ($_maxRetries) reached, stopping retry loop',
+      );
       return;
     }
 
     final delay = Duration(seconds: 1 << _retryCount);
     _retryCount++;
-    debugPrint('SyncService: Scheduling retry #$_retryCount in ${delay.inSeconds}s');
+    debugPrint(
+      'SyncService: Scheduling retry #$_retryCount in ${delay.inSeconds}s',
+    );
 
     _retryTimer = Timer(delay, _processRetryQueue);
   }
@@ -96,7 +102,9 @@ class SyncService {
     for (final entry in pending) {
       try {
         await _cloudRepo.upsertEntry(entry);
-        debugPrint('SyncService: Retried entry ${entry.id} synced successfully');
+        debugPrint(
+          'SyncService: Retried entry ${entry.id} synced successfully',
+        );
       } on Exception catch (_) {
         _retryQueue.add(entry);
       }

@@ -3,10 +3,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
 class DatabaseHelper {
-  DatabaseHelper({
-    this.customPath,
-    this.databaseFactoryOverride,
-  });
+  DatabaseHelper({this.customPath, this.databaseFactoryOverride});
 
   final String? customPath;
   final DatabaseFactory? databaseFactoryOverride;
@@ -27,10 +24,7 @@ class DatabaseHelper {
     if (dbFactory != null) {
       return dbFactory.openDatabase(
         path,
-        options: OpenDatabaseOptions(
-          version: 1,
-          onCreate: _onCreate,
-        ),
+        options: OpenDatabaseOptions(version: 1, onCreate: _onCreate),
       );
     }
 

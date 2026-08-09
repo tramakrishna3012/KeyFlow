@@ -34,10 +34,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           children: [
-            Text(
-              'Settings',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+            Text('Settings', style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 20),
 
             // 1. EXCLUSION LIST SECTION
@@ -88,84 +85,107 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildSectionHeader(String title) => Text(
-      title,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
-        color: AppColors.textMuted,
-      ),
-    );
+    title,
+    style: const TextStyle(
+      fontSize: 11,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 1.2,
+      color: AppColors.textMuted,
+    ),
+  );
 
   // 1. Exclusion List Card
-  Widget _buildExclusionCard(AsyncValue<List<String>> exclusionAsync) => KeyFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
+  Widget _buildExclusionCard(
+    AsyncValue<List<String>> exclusionAsync,
+  ) => KeyFlowCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.block, size: 20, color: AppColors.primary),
+            SizedBox(width: 10),
+            Text(
+              'Excluded Applications',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Text typed in excluded applications is discarded immediately.',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
+        const SizedBox(height: 12),
+        exclusionAsync.when(
+          data: (exclusions) => Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              Icon(Icons.block, size: 20, color: AppColors.primary),
-              SizedBox(width: 10),
-              Text('Excluded Applications', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              ...exclusions.map(
+                (app) => Chip(
+                  label: Text(app, style: const TextStyle(fontSize: 12)),
+                  deleteIcon: const Icon(Icons.close, size: 14),
+                  onDeleted: () {
+                    ref.read(settingsControllerProvider).removeExclusion(app);
+                  },
+                  backgroundColor: AppColors.cardSurface,
+                  side: const BorderSide(color: AppColors.cardBorder),
+                ),
+              ),
+              ActionChip(
+                avatar: const Icon(
+                  Icons.add,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+                label: const Text(
+                  'Add App',
+                  style: TextStyle(fontSize: 12, color: AppColors.primary),
+                ),
+                onPressed: _showAddExclusionDialog,
+                backgroundColor: AppColors.primaryGhost,
+                side: BorderSide.none,
+              ),
             ],
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Text typed in excluded applications is discarded immediately.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          loading: () => const CircularProgressIndicator(),
+          error: (err, stack) => Text(
+            'Error: $err',
+            style: const TextStyle(color: AppColors.destructive),
           ),
-          const SizedBox(height: 12),
-          exclusionAsync.when(
-            data: (exclusions) => Wrap(
-                spacing: 8,
-                runSpacing: 8,
+        ),
+        const Divider(height: 24, color: AppColors.cardBorder),
+        // Locked Secure Field Toggle (UIUX §2.4 Rule)
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ...exclusions.map((app) => Chip(
-                        label: Text(app, style: const TextStyle(fontSize: 12)),
-                        deleteIcon: const Icon(Icons.close, size: 14),
-                        onDeleted: () {
-                          ref.read(settingsControllerProvider).removeExclusion(app);
-                        },
-                        backgroundColor: AppColors.cardSurface,
-                        side: const BorderSide(color: AppColors.cardBorder),
-                      )),
-                  ActionChip(
-                    avatar: const Icon(Icons.add, size: 16, color: AppColors.primary),
-                    label: const Text('Add App', style: TextStyle(fontSize: 12, color: AppColors.primary)),
-                    onPressed: _showAddExclusionDialog,
-                    backgroundColor: AppColors.primaryGhost,
-                    side: BorderSide.none,
+                  Text(
+                    'Auto-exclude secure password fields',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Mandatory OS privacy policy (Locked ON)',
+                    style: TextStyle(fontSize: 11, color: AppColors.textMuted),
                   ),
                 ],
               ),
-            loading: () => const CircularProgressIndicator(),
-            error: (err, stack) => Text('Error: $err', style: const TextStyle(color: AppColors.destructive)),
-          ),
-          const Divider(height: 24, color: AppColors.cardBorder),
-          // Locked Secure Field Toggle (UIUX §2.4 Rule)
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Auto-exclude secure password fields', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-                    SizedBox(height: 2),
-                    Text('Mandatory OS privacy policy (Locked ON)', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                  ],
-                ),
-              ),
-              Switch(
-                value: true,
-                onChanged: null, // Locked ON by default per UIUX §2.4
-                activeThumbColor: AppColors.secondary,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+            ),
+            Switch(
+              value: true,
+              onChanged: null, // Locked ON by default per UIUX §2.4
+              activeThumbColor: AppColors.secondary,
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 
   void _showAddExclusionDialog() {
     _addExclusionController.clear();
@@ -201,137 +221,185 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   // 2. Retention Card
   Widget _buildRetentionCard(AsyncValue<int> retentionAsync) => KeyFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.timer_outlined, size: 20, color: AppColors.accentOrange),
-              SizedBox(width: 10),
-              Text('Retention Period', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Automatically purge history entries older than the configured duration.',
-            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 12),
-          retentionAsync.when(
-            data: (days) => DropdownButton<int>(
-                value: days,
-                isExpanded: true,
-                dropdownColor: AppColors.scaffoldBackground,
-                items: const [
-                  DropdownMenuItem(value: 7, child: Text('7 Days')),
-                  DropdownMenuItem(value: 30, child: Text('30 Days (Default)')),
-                  DropdownMenuItem(value: 90, child: Text('90 Days')),
-                  DropdownMenuItem(value: 365, child: Text('365 Days (1 Year)')),
-                ],
-                onChanged: (val) {
-                  if (val != null) {
-                    ref.read(settingsControllerProvider).updateRetentionDays(val);
-                  }
-                },
-              ),
-            loading: () => const CircularProgressIndicator(),
-            error: (err, stack) => Text('Error: $err', style: const TextStyle(color: AppColors.destructive)),
-          ),
-        ],
-      ),
-    );
-
-  // 3. Autocorrect Card
-  Widget _buildAutocorrectCard(AsyncValue<bool> autocorrectAsync) => KeyFlowCard(
-      child: autocorrectAsync.when(
-        data: (enabled) => Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
           children: [
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Enable Autocorrect Suggestions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                SizedBox(height: 2),
-                Text('Context-aware typing corrections', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-              ],
-            ),
-            Switch(
-              value: enabled,
-              onChanged: (v) {
-                ref.read(settingsControllerProvider).setAutocorrectEnabled(v);
-              },
-              activeThumbColor: AppColors.primary,
+            Icon(Icons.timer_outlined, size: 20, color: AppColors.accentOrange),
+            SizedBox(width: 10),
+            Text(
+              'Retention Period',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
           ],
         ),
-        loading: () => const CircularProgressIndicator(),
-        error: (err, stack) => Text('Error: $err', style: const TextStyle(color: AppColors.destructive)),
-      ),
-    );
+        const SizedBox(height: 6),
+        const Text(
+          'Automatically purge history entries older than the configured duration.',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
+        const SizedBox(height: 12),
+        retentionAsync.when(
+          data: (days) => DropdownButton<int>(
+            value: days,
+            isExpanded: true,
+            dropdownColor: AppColors.scaffoldBackground,
+            items: const [
+              DropdownMenuItem(value: 7, child: Text('7 Days')),
+              DropdownMenuItem(value: 30, child: Text('30 Days (Default)')),
+              DropdownMenuItem(value: 90, child: Text('90 Days')),
+              DropdownMenuItem(value: 365, child: Text('365 Days (1 Year)')),
+            ],
+            onChanged: (val) {
+              if (val != null) {
+                ref.read(settingsControllerProvider).updateRetentionDays(val);
+              }
+            },
+          ),
+          loading: () => const CircularProgressIndicator(),
+          error: (err, stack) => Text(
+            'Error: $err',
+            style: const TextStyle(color: AppColors.destructive),
+          ),
+        ),
+      ],
+    ),
+  );
 
-  // 4. Translation Card
-  Widget _buildTranslationCard(AsyncValue<String> targetLangAsync) => KeyFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
+  // 3. Autocorrect Card
+  Widget _buildAutocorrectCard(AsyncValue<bool> autocorrectAsync) =>
+      KeyFlowCard(
+        child: autocorrectAsync.when(
+          data: (enabled) => Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.translate, size: 20, color: AppColors.accentPink),
-              SizedBox(width: 10),
-              Text('Default Target Language', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Enable Autocorrect Suggestions',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Context-aware typing corrections',
+                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+              Switch(
+                value: enabled,
+                onChanged: (v) {
+                  ref.read(settingsControllerProvider).setAutocorrectEnabled(v);
+                },
+                activeThumbColor: AppColors.primary,
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          targetLangAsync.when(
-            data: (lang) => DropdownButton<String>(
-              value: lang,
-              isExpanded: true,
-              dropdownColor: AppColors.scaffoldBackground,
-              items: const [
-                DropdownMenuItem(value: 'es', child: Text('Spanish (Español)')),
-                DropdownMenuItem(value: 'fr', child: Text('French (Français)')),
-                DropdownMenuItem(value: 'de', child: Text('German (Deutsch)')),
-                DropdownMenuItem(value: 'ja', child: Text('Japanese (日本語)')),
-                DropdownMenuItem(value: 'zh', child: Text('Chinese (中文)')),
-              ],
-              onChanged: (val) {
-                if (val != null) {
-                  ref.read(settingsControllerProvider).setTargetLanguage(val);
-                }
-              },
-            ),
-            loading: () => const CircularProgressIndicator(),
-            error: (err, stack) => Text('Error: $err', style: const TextStyle(color: AppColors.destructive)),
+          loading: () => const CircularProgressIndicator(),
+          error: (err, stack) => Text(
+            'Error: $err',
+            style: const TextStyle(color: AppColors.destructive),
           ),
-        ],
-      ),
-    );
+        ),
+      );
+
+  // 4. Translation Card
+  Widget _buildTranslationCard(
+    AsyncValue<String> targetLangAsync,
+  ) => KeyFlowCard(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.translate, size: 20, color: AppColors.accentPink),
+            SizedBox(width: 10),
+            Text(
+              'Default Target Language',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        targetLangAsync.when(
+          data: (lang) => DropdownButton<String>(
+            value: lang,
+            isExpanded: true,
+            dropdownColor: AppColors.scaffoldBackground,
+            items: const [
+              DropdownMenuItem(value: 'es', child: Text('Spanish (Español)')),
+              DropdownMenuItem(value: 'fr', child: Text('French (Français)')),
+              DropdownMenuItem(value: 'de', child: Text('German (Deutsch)')),
+              DropdownMenuItem(value: 'ja', child: Text('Japanese (日本語)')),
+              DropdownMenuItem(value: 'zh', child: Text('Chinese (中文)')),
+            ],
+            onChanged: (val) {
+              if (val != null) {
+                ref.read(settingsControllerProvider).setTargetLanguage(val);
+              }
+            },
+          ),
+          loading: () => const CircularProgressIndicator(),
+          error: (err, stack) => Text(
+            'Error: $err',
+            style: const TextStyle(color: AppColors.destructive),
+          ),
+        ),
+      ],
+    ),
+  );
 
   // 5. Data Management Card
   Widget _buildDataManagementCard() => KeyFlowCard(
-      child: Column(
-        children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.download_rounded, color: AppColors.secondary),
-            title: const Text('Export My Data', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            subtitle: const Text('Export full history snapshot as JSON (SRS FR-21)', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-            onTap: _exportData,
+    child: Column(
+      children: [
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(
+            Icons.download_rounded,
+            color: AppColors.secondary,
           ),
-          const Divider(height: 1, color: AppColors.cardBorder),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.delete_forever_rounded, color: AppColors.destructive),
-            title: const Text('Delete All Data', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.destructive)),
-            subtitle: const Text('Irreversibly clear all stored history entries immediately', style: TextStyle(fontSize: 12, color: AppColors.textMuted)),
-            onTap: _confirmDeleteAll,
+          title: const Text(
+            'Export My Data',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
-        ],
-      ),
-    );
+          subtitle: const Text(
+            'Export full history snapshot as JSON (SRS FR-21)',
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          onTap: _exportData,
+        ),
+        const Divider(height: 1, color: AppColors.cardBorder),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(
+            Icons.delete_forever_rounded,
+            color: AppColors.destructive,
+          ),
+          title: const Text(
+            'Delete All Data',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.destructive,
+            ),
+          ),
+          subtitle: const Text(
+            'Irreversibly clear all stored history entries immediately',
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          onTap: _confirmDeleteAll,
+        ),
+      ],
+    ),
+  );
 
   Future<void> _exportData() async {
-    final jsonStr = await ref.read(settingsControllerProvider).exportHistoryData();
+    final jsonStr = await ref
+        .read(settingsControllerProvider)
+        .exportHistoryData();
     if (!mounted) return;
 
     await showDialog(
@@ -354,7 +422,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: jsonStr));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Export JSON copied to clipboard!')),
+                const SnackBar(
+                  content: Text('Export JSON copied to clipboard!'),
+                ),
               );
               Navigator.of(ctx).pop();
             },
@@ -383,7 +453,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.destructive),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.destructive,
+            ),
             onPressed: () async {
               Navigator.of(ctx).pop();
               await ref.read(settingsControllerProvider).deleteAllHistoryData();
@@ -393,7 +465,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 );
               }
             },
-            child: const Text('Delete All', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Delete All',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -402,41 +477,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   // 6. About & Uninstall Card
   Widget _buildAboutCard() => KeyFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.info_outline, size: 20, color: AppColors.primary),
-              const SizedBox(width: 10),
-              Text(
-                'KeyFlow v1.0.0 (${defaultTargetPlatform.name})',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-            ],
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.info_outline, size: 20, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Text(
+              'KeyFlow v1.0.0 (${defaultTargetPlatform.name})',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Status: Active & Transparently Running',
+          style: TextStyle(fontSize: 12, color: AppColors.secondary),
+        ),
+        const SizedBox(height: 12),
+        ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          title: const Text(
+            'Uninstall & Data Cleanup Instructions',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Status: Active & Transparently Running',
-            style: TextStyle(fontSize: 12, color: AppColors.secondary),
-          ),
-          const SizedBox(height: 12),
-          ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            title: const Text('Uninstall & Data Cleanup Instructions', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  defaultTargetPlatform == TargetPlatform.windows
-                      ? r'Windows Cleanup: Run "Delete All Data" above, then uninstall via Settings → Installed Apps. Local database at %APPDATA%\KeyFlow is wiped upon deletion.'
-                      : 'Platform Cleanup: Run "Delete All Data" above to wipe your local encrypted database prior to uninstalling the app bundle.',
-                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted, height: 1.4),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                defaultTargetPlatform == TargetPlatform.windows
+                    ? r'Windows Cleanup: Run "Delete All Data" above, then uninstall via Settings → Installed Apps. Local database at %APPDATA%\KeyFlow is wiped upon deletion.'
+                    : 'Platform Cleanup: Run "Delete All Data" above to wipe your local encrypted database prior to uninstalling the app bundle.',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textMuted,
+                  height: 1.4,
                 ),
               ),
-            ],
-          ),
-        ],
-      ),
-    );
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 }

@@ -9,7 +9,9 @@ final searchQueryProvider = StateProvider<String>((ref) => '');
 final activeTagProvider = StateProvider<String>((ref) => 'All');
 
 /// Async provider yielding history entries based on search query and filter tag.
-final historyEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((ref) async {
+final historyEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((
+  ref,
+) async {
   final repository = ref.watch(historyRepositoryProvider);
   final query = ref.watch(searchQueryProvider);
   final tag = ref.watch(activeTagProvider);
@@ -28,10 +30,11 @@ final historyEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((r
 });
 
 /// Async provider yielding ALL raw history entries for dashboard analytics.
-final allHistoryEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((ref) async {
-  final repository = ref.watch(historyRepositoryProvider);
-  return repository.getAllEntries();
-});
+final allHistoryEntriesProvider =
+    FutureProvider.autoDispose<List<HistoryEntry>>((ref) async {
+      final repository = ref.watch(historyRepositoryProvider);
+      return repository.getAllEntries();
+    });
 
 /// Controller to perform history entry deletions.
 class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
@@ -60,9 +63,9 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
         ..invalidate(allHistoryEntriesProvider);
     });
   }
-
 }
 
-final historyNotifierProvider = StateNotifierProvider<HistoryNotifier, AsyncValue<void>>(
-  HistoryNotifier.new,
-);
+final historyNotifierProvider =
+    StateNotifierProvider<HistoryNotifier, AsyncValue<void>>(
+      HistoryNotifier.new,
+    );

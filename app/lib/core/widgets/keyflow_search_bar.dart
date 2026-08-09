@@ -19,19 +19,16 @@ class KeyFlowSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TextField(
-        controller: controller,
-        onChanged: onChanged,
-        style: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 12,
-        ),
-        decoration: InputDecoration(
-          hintText: hintText,
-          prefixIcon: const Icon(
-            Icons.search_rounded,
-            color: AppColors.textMuted,
-            size: 18,
-          ),
-        ),
-      );
+    controller: controller,
+    onChanged: onChanged,
+    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+    decoration: InputDecoration(
+      hintText: hintText,
+      prefixIcon: const Icon(
+        Icons.search_rounded,
+        color: AppColors.textMuted,
+        size: 18,
+      ),
+    ),
+  );
 }

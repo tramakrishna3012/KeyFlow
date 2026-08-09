@@ -17,4 +17,3 @@ class RetentionService {
     return executePurge(days);
   }
 }
-

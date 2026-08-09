@@ -24,9 +24,9 @@ class AutocorrectEngine {
     Map<String, int>? customDictionary,
     Set<String>? initialLearnedWords,
     Map<String, bool>? appOverrides,
-  })  : _dictionary = Map.from(customDictionary ?? kDefaultEnglishDictionary),
-        _learnedWords = Set.from(initialLearnedWords ?? {}),
-        _appOverrides = Map.from(appOverrides ?? {}) {
+  }) : _dictionary = Map.from(customDictionary ?? kDefaultEnglishDictionary),
+       _learnedWords = Set.from(initialLearnedWords ?? {}),
+       _appOverrides = Map.from(appOverrides ?? {}) {
     for (final word in _learnedWords) {
       final cleanWord = word.trim().toLowerCase();
       if (cleanWord.isNotEmpty) {
@@ -34,7 +34,6 @@ class AutocorrectEngine {
       }
     }
   }
-
 
   final Map<String, int> _dictionary;
   final Set<String> _learnedWords;
@@ -102,11 +101,13 @@ class AutocorrectEngine {
 
       final dist = _levenshteinDistance(word, dictWord);
       if (dist <= maxDistance) {
-        candidates.add(CorrectionCandidate(
-          word: dictWord,
-          editDistance: dist,
-          frequencyScore: score,
-        ));
+        candidates.add(
+          CorrectionCandidate(
+            word: dictWord,
+            editDistance: dist,
+            frequencyScore: score,
+          ),
+        );
       }
     });
 

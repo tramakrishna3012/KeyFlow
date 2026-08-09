@@ -1,0 +1,83 @@
+name: Release Android
+
+on:
+  workflow_dispatch:
+  release:
+    types: [created]
+
+env:
+  FLUTTER_VERSION: '3.44.7'
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
+        cache-key: flutter-${{ env.FLUTTER_VERSION }}
+        cache-path: ${{ github.workspace }}/.pub-cache
+        
+    - name: Get Flutter dependencies
+      run: |
+        cd app
+        flutter pub get
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Decode signing keystore
+      run: |
+        echo "${{ secrets.ANDROID_KEYSTORE }}" | base64 --decode > android_keystore.jks
+        
+    - name: Create key.properties
+      run: |
+        cat > app/android/key.properties <<EOF
+        storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+        keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+        storeFile=../../android_keystore.jks
+        EOF
+        
+    - name: Build Android App Bundle
+      run: |
+        cd app
+        flutter build appbundle --release
+        
+    - name: Build Android APK
+      run: |
+        cd app
+        flutter build apk --release --split-per-abi
+        
+    - name: Upload AAB artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-app-bundle
+        path: app/build/app/outputs/bundle/release/app-release.aab
+        retention-days: 30
+        
+    - name: Upload APK artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apks
+        path: app/build/app/outputs/flutter-apk/*.apk
+        retention-days: 30
+        
+    - name: Upload to GitHub Release
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          app/build/app/outputs/bundle/release/app-release.aab
+          app/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+          app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          app/build/app/outputs/flutter-apk/app-x86_64-release.apk

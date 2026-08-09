@@ -7,11 +7,7 @@ import '../../data/models/history_entry.dart';
 import 'history_providers.dart';
 
 class SnippetDetailScreen extends ConsumerWidget {
-
-  const SnippetDetailScreen({
-    super.key,
-    required this.entry,
-  });
+  const SnippetDetailScreen({super.key, required this.entry});
   final HistoryEntry entry;
 
   @override
@@ -100,7 +96,6 @@ class SnippetDetailScreen extends ConsumerWidget {
                 icon: Icons.language,
                 label: 'Language',
                 value: entry.language.isEmpty ? 'en (Auto)' : entry.language,
-
               ),
               _buildMetadataTile(
                 icon: Icons.devices,
@@ -124,30 +119,27 @@ class SnippetDetailScreen extends ConsumerWidget {
     required String label,
     required String value,
   }) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.textMuted),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textMuted,
-            ),
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Row(
+      children: [
+        Icon(icon, size: 20, color: AppColors.textMuted),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
 
   void _insertAtCursor(BuildContext context) {
     Clipboard.setData(ClipboardData(text: entry.text));
@@ -183,17 +175,23 @@ class SnippetDetailScreen extends ConsumerWidget {
           TextButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
-              await ref.read(historyNotifierProvider.notifier).deleteEntry(entry.id);
+              await ref
+                  .read(historyNotifierProvider.notifier)
+                  .deleteEntry(entry.id);
               if (context.mounted) {
                 context.pop();
               }
             },
-            child: const Text('Delete', style: TextStyle(color: AppColors.error)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
     );
   }
 
-  String _formatTimestamp(DateTime dt) => '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  String _formatTimestamp(DateTime dt) =>
+      '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 }

@@ -18,8 +18,7 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
     WebOptions? webOptions,
     MacOsOptions? mOptions,
     WindowsOptions? wOptions,
-  }) async =>
-      _store[key];
+  }) async => _store[key];
 
   @override
   Future<void> write({
@@ -48,8 +47,7 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
     WebOptions? webOptions,
     MacOsOptions? mOptions,
     WindowsOptions? wOptions,
-  }) async =>
-      _store.remove(key);
+  }) async => _store.remove(key);
 
   @override
   Future<bool> containsKey({
@@ -60,8 +58,7 @@ class FakeSecureStorage extends Fake implements FlutterSecureStorage {
     WebOptions? webOptions,
     MacOsOptions? mOptions,
     WindowsOptions? wOptions,
-  }) async =>
-      _store.containsKey(key);
+  }) async => _store.containsKey(key);
 }
 
 void main() {

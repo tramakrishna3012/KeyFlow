@@ -34,7 +34,10 @@ class MockOnboardingRepo implements HistoryRepository {
   Future<List<HistoryEntry>> search(String query) async => [];
 
   @override
-  Future<List<HistoryEntry>> searchEntries(String query, {String? appName}) async => [];
+  Future<List<HistoryEntry>> searchEntries(
+    String query, {
+    String? appName,
+  }) async => [];
 
   @override
   Future<HistoryEntry?> getEntry(String id) async => null;
@@ -69,59 +72,59 @@ class MockOnboardingRepo implements HistoryRepository {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('OnboardingScreen displays Screen 1: What KeyFlow Does', (WidgetTester tester) async {
+  testWidgets('OnboardingScreen displays Screen 1: What KeyFlow Does', (
+    WidgetTester tester,
+  ) async {
     final mockRepo = MockOnboardingRepo();
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          historyRepositoryProvider.overrideWithValue(mockRepo),
-        ],
-        child: const MaterialApp(
-          home: OnboardingScreen(),
-        ),
+        overrides: [historyRepositoryProvider.overrideWithValue(mockRepo)],
+        child: const MaterialApp(home: OnboardingScreen()),
       ),
     );
 
     await tester.pumpAndSettle();
 
     expect(find.text('What KeyFlow Does'), findsOneWidget);
-    expect(find.textContaining('KeyFlow saves text you type on this device'), findsOneWidget);
+    expect(
+      find.textContaining('KeyFlow saves text you type on this device'),
+      findsOneWidget,
+    );
     expect(find.text('Continue'), findsOneWidget);
   });
 
-  testWidgets('Navigating through onboarding steps to Exclusion Setup displays default exclusions', (WidgetTester tester) async {
-    final mockRepo = MockOnboardingRepo();
+  testWidgets(
+    'Navigating through onboarding steps to Exclusion Setup displays default exclusions',
+    (WidgetTester tester) async {
+      final mockRepo = MockOnboardingRepo();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          historyRepositoryProvider.overrideWithValue(mockRepo),
-        ],
-        child: const MaterialApp(
-          home: OnboardingScreen(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [historyRepositoryProvider.overrideWithValue(mockRepo)],
+          child: const MaterialApp(home: OnboardingScreen()),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    // Step 1 -> Step 2
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(find.text('What KeyFlow Does NOT Do'), findsOneWidget);
+      // Step 1 -> Step 2
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('What KeyFlow Does NOT Do'), findsOneWidget);
 
-    // Step 2 -> Step 3
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(find.text('System Permission Request'), findsOneWidget);
+      // Step 2 -> Step 3
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('System Permission Request'), findsOneWidget);
 
-    // Step 3 -> Step 4 (Exclusion Setup)
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    expect(find.text('Exclusion List Setup'), findsOneWidget);
-    expect(find.text('1password.exe'), findsOneWidget);
-    expect(find.text('bitwarden.exe'), findsOneWidget);
-    expect(find.text('keepass.exe'), findsOneWidget);
-  });
+      // Step 3 -> Step 4 (Exclusion Setup)
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('Exclusion List Setup'), findsOneWidget);
+      expect(find.text('1password.exe'), findsOneWidget);
+      expect(find.text('bitwarden.exe'), findsOneWidget);
+      expect(find.text('keepass.exe'), findsOneWidget);
+    },
+  );
 }

@@ -8,11 +8,12 @@ import 'features/history/history_providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     await Supabase.initialize(
       url: 'https://nmvwjdtsgzttfrepqprr.supabase.co',
-      publishableKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdndqZHRzZ3p0dGZyZXBxcHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg3NTUyMDAsImV4cCI6MjA1NDMzMTIwMH0.sampleKey',
+      publishableKey:
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdndqZHRzZ3p0dGZyZXBxcHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg3NTUyMDAsImV4cCI6MjA1NDMzMTIwMH0.sampleKey',
     );
   } on Exception catch (e) {
     debugPrint('Supabase init skipped/error: $e');
@@ -22,16 +23,15 @@ void main() async {
 }
 
 class KeyFlowApp extends StatelessWidget {
-
   const KeyFlowApp({super.key});
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
-        title: 'KeyFlow',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.dark,
-        routerConfig: appRouter,
-      );
+    title: 'KeyFlow',
+    debugShowCheckedModeBanner: false,
+    theme: AppTheme.dark,
+    routerConfig: appRouter,
+  );
 }
 
 class MainHomeScreen extends ConsumerStatefulWidget {
@@ -42,8 +42,6 @@ class MainHomeScreen extends ConsumerStatefulWidget {
 }
 
 class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
-
-
   @override
   void initState() {
     super.initState();
@@ -72,17 +70,24 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
                 context: context,
                 builder: (c) => AlertDialog(
                   title: const Text('Clear All History'),
-                  content: const Text('Are you sure you want to clear all local and cloud history entries?'),
+                  content: const Text(
+                    'Are you sure you want to clear all local and cloud history entries?',
+                  ),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
-                    TextButton(onPressed: () => Navigator.pop(c, true), child: const Text('Clear All')),
+                    TextButton(
+                      onPressed: () => Navigator.pop(c, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(c, true),
+                      child: const Text('Clear All'),
+                    ),
                   ],
                 ),
               );
               if (confirm ?? false) {
                 await ref.read(historyNotifierProvider.notifier).clearAll();
               }
-
             },
           ),
         ],
@@ -102,7 +107,9 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
-                    onPressed: () => ref.read(captureServiceProvider).openAccessibilitySettings(),
+                    onPressed: () => ref
+                        .read(captureServiceProvider)
+                        .openAccessibilitySettings(),
                     icon: const Icon(Icons.settings_accessibility),
                     label: const Text('Enable Accessibility Service'),
                     style: ElevatedButton.styleFrom(
@@ -130,8 +137,14 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
                     style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
                   ),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete, size: 20, color: Colors.redAccent),
-                    onPressed: () => ref.read(historyNotifierProvider.notifier).deleteEntry(entry.id),
+                    icon: const Icon(
+                      Icons.delete,
+                      size: 20,
+                      color: Colors.redAccent,
+                    ),
+                    onPressed: () => ref
+                        .read(historyNotifierProvider.notifier)
+                        .deleteEntry(entry.id),
                   ),
                 ),
               );
@@ -153,5 +166,6 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
     );
   }
 
-  String _formatTimestamp(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} ${dt.day}/${dt.month}/${dt.year}';
+  String _formatTimestamp(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} ${dt.day}/${dt.month}/${dt.year}';
 }

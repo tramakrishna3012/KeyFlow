@@ -11,7 +11,9 @@ class CaptureService {
   }
 
   static const MethodChannel _methodChannel = MethodChannel('keyflow/capture');
-  static const EventChannel _eventChannel = EventChannel('keyflow/capture/stream');
+  static const EventChannel _eventChannel = EventChannel(
+    'keyflow/capture/stream',
+  );
 
   final HistoryRepository _repository;
   final SyncService? _syncService;
@@ -36,9 +38,9 @@ class CaptureService {
     try {
       final result = await _methodChannel.invokeMethod('startCapture');
       _subscription = _eventChannel.receiveBroadcastStream().listen(
-            _onNativeEvent,
-            onError: (error) => debugPrint('CaptureService stream error: $error'),
-          );
+        _onNativeEvent,
+        onError: (error) => debugPrint('CaptureService stream error: $error'),
+      );
       _isCapturing = true;
       return result == true || true;
     } on PlatformException catch (e) {
@@ -85,7 +87,9 @@ class CaptureService {
 
   Future<bool> isAccessibilityServiceEnabled() async {
     try {
-      final bool enabled = await _methodChannel.invokeMethod('isAccessibilityServiceEnabled');
+      final bool enabled = await _methodChannel.invokeMethod(
+        'isAccessibilityServiceEnabled',
+      );
       return enabled;
     } on PlatformException catch (_) {
       return false;
@@ -96,7 +100,9 @@ class CaptureService {
     try {
       await _methodChannel.invokeMethod('openAccessibilitySettings');
     } on PlatformException catch (e) {
-      debugPrint('CaptureService openAccessibilitySettings error: ${e.message}');
+      debugPrint(
+        'CaptureService openAccessibilitySettings error: ${e.message}',
+      );
     }
   }
 
@@ -143,7 +149,8 @@ class CaptureService {
     final appName = (event['appName'] as String?) ?? 'Unknown App';
     final windowTitle = (event['windowTitle'] as String?) ?? '';
     final text = (event['text'] as String?) ?? '';
-    final timestamp = (event['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch;
+    final timestamp =
+        (event['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch;
 
     if (text.isNotEmpty) {
       _inputBuffers[appName] = text;
@@ -151,7 +158,11 @@ class CaptureService {
     }
   }
 
-  Future<void> _flushBufferForApp(String appName, String windowTitle, int timestamp) async {
+  Future<void> _flushBufferForApp(
+    String appName,
+    String windowTitle,
+    int timestamp,
+  ) async {
     final textToSave = _inputBuffers[appName]?.trim();
     _inputBuffers.remove(appName);
 
@@ -178,4 +189,3 @@ class CaptureService {
     }
   }
 }
-

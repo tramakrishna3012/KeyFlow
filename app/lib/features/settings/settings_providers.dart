@@ -117,5 +117,6 @@ class SettingsController {
   }
 }
 
-final settingsControllerProvider = Provider<SettingsController>(SettingsController.new);
-
+final settingsControllerProvider = Provider<SettingsController>(
+  SettingsController.new,
+);

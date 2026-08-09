@@ -78,10 +78,7 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(
-            color: AppColors.cardBorder,
-            width: 0.8,
-          ),
+          side: const BorderSide(color: AppColors.cardBorder, width: 0.8),
         ),
       ),
 
@@ -109,14 +106,9 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(
-            color: AppColors.primary,
-          ),
+          borderSide: const BorderSide(color: AppColors.primary),
         ),
-        hintStyle: const TextStyle(
-          color: AppColors.textDisabled,
-          fontSize: 12,
-        ),
+        hintStyle: const TextStyle(color: AppColors.textDisabled, fontSize: 12),
       ),
 
       // ── Bottom Nav ────────────────────────────────────────────────

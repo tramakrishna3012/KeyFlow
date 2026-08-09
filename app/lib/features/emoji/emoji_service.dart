@@ -5,7 +5,7 @@ import 'emoji_data.dart';
 /// Guarantees query execution latency under 10ms.
 class EmojiService {
   const EmojiService({List<EmojiItem>? dataset})
-      : _dataset = dataset ?? kDefaultEmojiDataset;
+    : _dataset = dataset ?? kDefaultEmojiDataset;
 
   final List<EmojiItem> _dataset;
 
@@ -31,7 +31,8 @@ class EmojiService {
     // Priority 1: Exact or prefix shortcode / name matches
     for (final emoji in baseList) {
       final shortcodeClean = emoji.shortcode.replaceAll(':', '').toLowerCase();
-      if (shortcodeClean == cleanQuery || emoji.name.toLowerCase() == cleanQuery) {
+      if (shortcodeClean == cleanQuery ||
+          emoji.name.toLowerCase() == cleanQuery) {
         results.add(emoji);
       }
     }
@@ -43,7 +44,9 @@ class EmojiService {
       final shortcodeClean = emoji.shortcode.replaceAll(':', '').toLowerCase();
       final nameClean = emoji.name.toLowerCase();
 
-      final matchesKeyword = emoji.keywords.any((k) => k.toLowerCase().contains(cleanQuery));
+      final matchesKeyword = emoji.keywords.any(
+        (k) => k.toLowerCase().contains(cleanQuery),
+      );
       final matchesShortcode = shortcodeClean.contains(cleanQuery);
       final matchesName = nameClean.contains(cleanQuery);
 

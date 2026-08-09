@@ -16,9 +16,8 @@ final GoRouter appRouter = GoRouter(
   initialLocation: '/home',
   routes: [
     StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) => _ScaffoldWithNavBar(
-        navigationShell: navigationShell,
-      ),
+      builder: (context, state, navigationShell) =>
+          _ScaffoldWithNavBar(navigationShell: navigationShell),
       branches: [
         StatefulShellBranch(
           routes: [
@@ -73,50 +72,47 @@ class _ScaffoldWithNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        body: navigationShell,
-        bottomNavigationBar: Container(
-          decoration: const BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: AppColors.cardBorder,
-                width: 0.8,
-              ),
-            ),
-          ),
-          child: BottomNavigationBar(
-            currentIndex: navigationShell.currentIndex,
-            onTap: (index) => navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
-            ),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_rounded),
-                activeIcon: Icon(Icons.home_rounded),
-                label: 'Home',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.history_rounded),
-                activeIcon: Icon(Icons.history_rounded),
-                label: 'History',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.translate_rounded),
-                activeIcon: Icon(Icons.translate_rounded),
-                label: 'Translate',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.emoji_emotions_rounded),
-                activeIcon: Icon(Icons.emoji_emotions_rounded),
-                label: 'Emoji',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.settings_rounded),
-                activeIcon: Icon(Icons.settings_rounded),
-                label: 'Settings',
-              ),
-            ],
-          ),
+    body: navigationShell,
+    bottomNavigationBar: Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          top: BorderSide(color: AppColors.cardBorder, width: 0.8),
         ),
-      );
+      ),
+      child: BottomNavigationBar(
+        currentIndex: navigationShell.currentIndex,
+        onTap: (index) => navigationShell.goBranch(
+          index,
+          initialLocation: index == navigationShell.currentIndex,
+        ),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            activeIcon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_rounded),
+            activeIcon: Icon(Icons.history_rounded),
+            label: 'History',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.translate_rounded),
+            activeIcon: Icon(Icons.translate_rounded),
+            label: 'Translate',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.emoji_emotions_rounded),
+            activeIcon: Icon(Icons.emoji_emotions_rounded),
+            label: 'Emoji',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings_rounded),
+            activeIcon: Icon(Icons.settings_rounded),
+            label: 'Settings',
+          ),
+        ],
+      ),
+    ),
+  );
 }

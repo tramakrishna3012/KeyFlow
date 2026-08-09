@@ -8,10 +8,19 @@ import 'emoji_service.dart';
 const String kKeyRecentEmojis = 'recent_emojis';
 
 const List<String> kDefaultRecentEmojis = [
-  '😊', '👍', '❤️', '🎉', '🔥', '💯', '😂', '🙏'
+  '😊',
+  '👍',
+  '❤️',
+  '🎉',
+  '🔥',
+  '💯',
+  '😂',
+  '🙏',
 ];
 
-final emojiServiceProvider = Provider<EmojiService>((ref) => const EmojiService());
+final emojiServiceProvider = Provider<EmojiService>(
+  (ref) => const EmojiService(),
+);
 
 final emojiSearchQueryProvider = StateProvider<String>((ref) => '');
 
@@ -62,4 +71,3 @@ class EmojiNotifier {
 }
 
 final emojiNotifierProvider = Provider<EmojiNotifier>(EmojiNotifier.new);
-

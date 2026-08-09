@@ -49,8 +49,9 @@ class MockHistoryRepository implements HistoryRepository {
   Future<int> purgeOlderThan(int days) async => 0;
 
   @override
-  Future<String> exportAll() async =>
-      entries.map((e) => '${e.capturedAt.toIso8601String()}\t${e.text}').join('\n');
+  Future<String> exportAll() async => entries
+      .map((e) => '${e.capturedAt.toIso8601String()}\t${e.text}')
+      .join('\n');
 
   @override
   Future<int> count() async => entries.length;
@@ -77,7 +78,6 @@ class MockHistoryRepository implements HistoryRepository {
   }
 }
 
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -87,27 +87,29 @@ void main() {
 
   void setupMethodChannelMock() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(const MethodChannel('keyflow/capture'), (MethodCall methodCall) async {
-      log.add(methodCall);
-      switch (methodCall.method) {
-        case 'startCapture':
-          return true;
-        case 'stopCapture':
-          return true;
-        case 'pauseCapture':
-          return true;
-        case 'resumeCapture':
-          return true;
-        case 'setExclusionList':
-          return true;
-        case 'setAutostart':
-          return true;
-        case 'isAutostartEnabled':
-          return true;
-        default:
-          return null;
-      }
-    });
+        .setMockMethodCallHandler(const MethodChannel('keyflow/capture'), (
+          MethodCall methodCall,
+        ) async {
+          log.add(methodCall);
+          switch (methodCall.method) {
+            case 'startCapture':
+              return true;
+            case 'stopCapture':
+              return true;
+            case 'pauseCapture':
+              return true;
+            case 'resumeCapture':
+              return true;
+            case 'setExclusionList':
+              return true;
+            case 'setAutostart':
+              return true;
+            case 'isAutostartEnabled':
+              return true;
+            default:
+              return null;
+          }
+        });
   }
 
   setUp(() {
@@ -123,12 +125,15 @@ void main() {
     captureService.dispose();
   });
 
-  test('startCapture invokes native channel and sets capturing state', () async {
-    final result = await captureService.startCapture();
-    expect(result, isTrue);
-    expect(captureService.isCapturing, isTrue);
-    expect(log.any((call) => call.method == 'startCapture'), isTrue);
-  });
+  test(
+    'startCapture invokes native channel and sets capturing state',
+    () async {
+      final result = await captureService.startCapture();
+      expect(result, isTrue);
+      expect(captureService.isCapturing, isTrue);
+      expect(log.any((call) => call.method == 'startCapture'), isTrue);
+    },
+  );
 
   test('pauseCapture and resumeCapture toggle state', () async {
     await captureService.pauseCapture();
@@ -144,17 +149,23 @@ void main() {
     expect(call.arguments, equals(['chrome.exe', 'notepad.exe']));
   });
 
-  test('initialize fetches exclusion list from repository and syncs to native', () async {
-    await captureService.initialize();
-    final call = log.firstWhere((c) => c.method == 'setExclusionList');
-    expect(call.arguments, equals(['1password.exe', 'bitwarden.exe']));
-    expect(captureService.isCapturing, isTrue);
-  });
+  test(
+    'initialize fetches exclusion list from repository and syncs to native',
+    () async {
+      await captureService.initialize();
+      final call = log.firstWhere((c) => c.method == 'setExclusionList');
+      expect(call.arguments, equals(['1password.exe', 'bitwarden.exe']));
+      expect(captureService.isCapturing, isTrue);
+    },
+  );
 
   test('setAutostart and isAutostartEnabled call native channel', () async {
     final autoResult = await captureService.setAutostart(true);
     expect(autoResult, isTrue);
-    expect(log.any((c) => c.method == 'setAutostart' && c.arguments == true), isTrue);
+    expect(
+      log.any((c) => c.method == 'setAutostart' && c.arguments == true),
+      isTrue,
+    );
 
     final isAuto = await captureService.isAutostartEnabled();
     expect(isAuto, isTrue);

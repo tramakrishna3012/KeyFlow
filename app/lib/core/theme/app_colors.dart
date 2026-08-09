@@ -40,7 +40,6 @@ class AppColors {
   /// Light surface color
   static const Color surfaceLight = Color(0x1AFFFFFF);
 
-
   // ── Surfaces ────────────────────────────────────────────────────────
   /// Card surface: 5 % white opacity
   static const Color cardSurface = Color(0x0DFFFFFF);

@@ -22,10 +22,7 @@ final databaseHelperProvider = Provider<DatabaseHelper>(
 final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
   final dbHelper = ref.watch(databaseHelperProvider);
   final keyStorage = ref.watch(secureKeyStorageProvider);
-  return SqliteHistoryRepository(
-    dbHelper: dbHelper,
-    keyStorage: keyStorage,
-  );
+  return SqliteHistoryRepository(dbHelper: dbHelper, keyStorage: keyStorage);
 });
 
 final encryptionServiceProvider = Provider<EncryptionService?>((ref) {
@@ -34,8 +31,9 @@ final encryptionServiceProvider = Provider<EncryptionService?>((ref) {
   return EncryptionService(userId: user.id);
 });
 
-final supabaseHistoryRepositoryProvider =
-    Provider<SupabaseHistoryRepository?>((ref) {
+final supabaseHistoryRepositoryProvider = Provider<SupabaseHistoryRepository?>((
+  ref,
+) {
   final encryption = ref.watch(encryptionServiceProvider);
   if (encryption == null) return null;
 

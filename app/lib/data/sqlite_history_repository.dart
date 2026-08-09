@@ -5,10 +5,7 @@ import 'models/history_entry.dart';
 import 'secure_key_storage.dart';
 
 class SqliteHistoryRepository implements HistoryRepository {
-  SqliteHistoryRepository({
-    required this.dbHelper,
-    required this.keyStorage,
-  });
+  SqliteHistoryRepository({required this.dbHelper, required this.keyStorage});
 
   final DatabaseHelper dbHelper;
   final SecureKeyStorage keyStorage;
@@ -97,7 +94,11 @@ class SqliteHistoryRepository implements HistoryRepository {
         .subtract(Duration(days: retentionDays))
         .millisecondsSinceEpoch;
 
-    return db.delete('history_entries', where: 'captured_at < ?', whereArgs: [cutoff]);
+    return db.delete(
+      'history_entries',
+      where: 'captured_at < ?',
+      whereArgs: [cutoff],
+    );
   }
 
   @override
@@ -113,7 +114,9 @@ class SqliteHistoryRepository implements HistoryRepository {
   @override
   Future<String> exportAll() async {
     final entries = await getAllEntries();
-    return entries.map((e) => '${e.capturedAt.toIso8601String()}\t${e.text}').join('\n');
+    return entries
+        .map((e) => '${e.capturedAt.toIso8601String()}\t${e.text}')
+        .join('\n');
   }
 
   @override
@@ -134,11 +137,10 @@ class SqliteHistoryRepository implements HistoryRepository {
   Future<void> setSetting(String key, String value) async {
     final password = await keyStorage.getOrCreateDatabaseKey();
     final db = await dbHelper.getDatabase(password);
-    await db.insert(
-      'settings',
-      {'key': key, 'value': value},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('settings', {
+      'key': key,
+      'value': value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
@@ -153,14 +155,10 @@ class SqliteHistoryRepository implements HistoryRepository {
   Future<void> addExclusion(String appIdentifier) async {
     final password = await keyStorage.getOrCreateDatabaseKey();
     final db = await dbHelper.getDatabase(password);
-    await db.insert(
-      'exclusion_list',
-      {
-        'app_identifier': appIdentifier,
-        'added_at': DateTime.now().millisecondsSinceEpoch,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert('exclusion_list', {
+      'app_identifier': appIdentifier,
+      'added_at': DateTime.now().millisecondsSinceEpoch,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   @override
@@ -174,4 +172,3 @@ class SqliteHistoryRepository implements HistoryRepository {
     );
   }
 }
-

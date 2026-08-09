@@ -21,4 +21,3 @@ abstract class HistoryRepository {
   Future<void> addExclusion(String appIdentifier);
   Future<void> removeExclusion(String appIdentifier);
 }
-

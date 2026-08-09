@@ -10,11 +10,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// signs in, signs out, or the session token refreshes.
 class SupabaseAuthNotifier extends ChangeNotifier {
   SupabaseAuthNotifier() {
-    _subscription = Supabase.instance.client.auth.onAuthStateChange.listen(
-      (data) {
-        notifyListeners();
-      },
-    );
+    _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
+      notifyListeners();
+    });
   }
 
   late final StreamSubscription<AuthState> _subscription;

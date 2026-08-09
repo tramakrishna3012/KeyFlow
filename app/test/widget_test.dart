@@ -6,21 +6,13 @@ import 'package:keyflow_app/main.dart';
 
 void main() {
   testWidgets('KeyFlowApp renders without crashing', (tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: KeyFlowApp(),
-      ),
-    );
+    await tester.pumpWidget(const ProviderScope(child: KeyFlowApp()));
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 
   testWidgets('Bottom navigation shows all 5 tabs', (tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: KeyFlowApp(),
-      ),
-    );
+    await tester.pumpWidget(const ProviderScope(child: KeyFlowApp()));
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Home'), findsOneWidget);

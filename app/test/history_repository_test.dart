@@ -23,9 +23,7 @@ class InMemoryHistoryRepository implements HistoryRepository {
 
   @override
   Future<List<HistoryEntry>> search(String query) async => _entries
-      .where(
-        (e) => e.text.toLowerCase().contains(query.toLowerCase()),
-      )
+      .where((e) => e.text.toLowerCase().contains(query.toLowerCase()))
       .toList()
       .reversed
       .toList();
@@ -64,8 +62,9 @@ class InMemoryHistoryRepository implements HistoryRepository {
   }
 
   @override
-  Future<String> exportAll() async =>
-      _entries.map((e) => '${e.capturedAt.toIso8601String()}\t${e.text}').join('\n');
+  Future<String> exportAll() async => _entries
+      .map((e) => '${e.capturedAt.toIso8601String()}\t${e.text}')
+      .join('\n');
 
   @override
   Future<int> count() async => _entries.length;
@@ -79,7 +78,8 @@ class InMemoryHistoryRepository implements HistoryRepository {
   }
 
   @override
-  Future<List<String>> getExclusionList() async => List.unmodifiable(_exclusions);
+  Future<List<String>> getExclusionList() async =>
+      List.unmodifiable(_exclusions);
 
   @override
   Future<void> addExclusion(String appIdentifier) async {
@@ -93,7 +93,6 @@ class InMemoryHistoryRepository implements HistoryRepository {
     _exclusions.remove(appIdentifier);
   }
 }
-
 
 void main() {
   late InMemoryHistoryRepository repo;
@@ -124,18 +123,22 @@ void main() {
     });
 
     test('search finds matching entries', () async {
-      await repo.insertEntry(HistoryEntry(
-        id: '1',
-        text: 'Thanks for reaching out',
-        sourceApp: 'mail',
-        capturedAt: DateTime.now(),
-      ));
-      await repo.insertEntry(HistoryEntry(
-        id: '2',
-        text: 'Please find attached',
-        sourceApp: 'mail',
-        capturedAt: DateTime.now(),
-      ));
+      await repo.insertEntry(
+        HistoryEntry(
+          id: '1',
+          text: 'Thanks for reaching out',
+          sourceApp: 'mail',
+          capturedAt: DateTime.now(),
+        ),
+      );
+      await repo.insertEntry(
+        HistoryEntry(
+          id: '2',
+          text: 'Please find attached',
+          sourceApp: 'mail',
+          capturedAt: DateTime.now(),
+        ),
+      );
 
       final results = await repo.search('reaching');
       expect(results, hasLength(1));
@@ -143,30 +146,36 @@ void main() {
     });
 
     test('search is case-insensitive', () async {
-      await repo.insertEntry(HistoryEntry(
-        id: '1',
-        text: 'Hello World',
-        sourceApp: 'chat',
-        capturedAt: DateTime.now(),
-      ));
+      await repo.insertEntry(
+        HistoryEntry(
+          id: '1',
+          text: 'Hello World',
+          sourceApp: 'chat',
+          capturedAt: DateTime.now(),
+        ),
+      );
 
       expect(await repo.search('hello'), hasLength(1));
       expect(await repo.search('HELLO'), hasLength(1));
     });
 
     test('deleteEntry removes only the targeted entry', () async {
-      await repo.insertEntry(HistoryEntry(
-        id: '1',
-        text: 'First',
-        sourceApp: 'app',
-        capturedAt: DateTime.now(),
-      ));
-      await repo.insertEntry(HistoryEntry(
-        id: '2',
-        text: 'Second',
-        sourceApp: 'app',
-        capturedAt: DateTime.now(),
-      ));
+      await repo.insertEntry(
+        HistoryEntry(
+          id: '1',
+          text: 'First',
+          sourceApp: 'app',
+          capturedAt: DateTime.now(),
+        ),
+      );
+      await repo.insertEntry(
+        HistoryEntry(
+          id: '2',
+          text: 'Second',
+          sourceApp: 'app',
+          capturedAt: DateTime.now(),
+        ),
+      );
 
       await repo.deleteEntry('1');
       expect(await repo.count(), 1);
@@ -176,12 +185,14 @@ void main() {
 
     test('deleteAllEntries clears everything', () async {
       for (var i = 0; i < 5; i++) {
-        await repo.insertEntry(HistoryEntry(
-          id: '$i',
-          text: 'Entry $i',
-          sourceApp: 'app',
-          capturedAt: DateTime.now(),
-        ));
+        await repo.insertEntry(
+          HistoryEntry(
+            id: '$i',
+            text: 'Entry $i',
+            sourceApp: 'app',
+            capturedAt: DateTime.now(),
+          ),
+        );
       }
 
       await repo.deleteAllEntries();
@@ -192,18 +203,22 @@ void main() {
       final old = DateTime.now().subtract(const Duration(days: 45));
       final recent = DateTime.now();
 
-      await repo.insertEntry(HistoryEntry(
-        id: 'old',
-        text: 'Expired entry',
-        sourceApp: 'app',
-        capturedAt: old,
-      ));
-      await repo.insertEntry(HistoryEntry(
-        id: 'new',
-        text: 'Recent entry',
-        sourceApp: 'app',
-        capturedAt: recent,
-      ));
+      await repo.insertEntry(
+        HistoryEntry(
+          id: 'old',
+          text: 'Expired entry',
+          sourceApp: 'app',
+          capturedAt: old,
+        ),
+      );
+      await repo.insertEntry(
+        HistoryEntry(
+          id: 'new',
+          text: 'Recent entry',
+          sourceApp: 'app',
+          capturedAt: recent,
+        ),
+      );
 
       final purged = await repo.purgeOlderThan(30);
       expect(purged, 1);
@@ -213,18 +228,22 @@ void main() {
     });
 
     test('exportAll includes all entries', () async {
-      await repo.insertEntry(HistoryEntry(
-        id: '1',
-        text: 'Entry one',
-        sourceApp: 'app',
-        capturedAt: DateTime(2026, 7),
-      ));
-      await repo.insertEntry(HistoryEntry(
-        id: '2',
-        text: 'Entry two',
-        sourceApp: 'app',
-        capturedAt: DateTime(2026, 7, 2),
-      ));
+      await repo.insertEntry(
+        HistoryEntry(
+          id: '1',
+          text: 'Entry one',
+          sourceApp: 'app',
+          capturedAt: DateTime(2026, 7),
+        ),
+      );
+      await repo.insertEntry(
+        HistoryEntry(
+          id: '2',
+          text: 'Entry two',
+          sourceApp: 'app',
+          capturedAt: DateTime(2026, 7, 2),
+        ),
+      );
 
       final exported = await repo.exportAll();
       expect(exported, contains('Entry one'));
@@ -232,18 +251,22 @@ void main() {
     });
 
     test('getAllEntries returns in reverse-chronological order', () async {
-      await repo.insertEntry(HistoryEntry(
-        id: '1',
-        text: 'First',
-        sourceApp: 'app',
-        capturedAt: DateTime(2026, 7),
-      ));
-      await repo.insertEntry(HistoryEntry(
-        id: '2',
-        text: 'Second',
-        sourceApp: 'app',
-        capturedAt: DateTime(2026, 7, 2),
-      ));
+      await repo.insertEntry(
+        HistoryEntry(
+          id: '1',
+          text: 'First',
+          sourceApp: 'app',
+          capturedAt: DateTime(2026, 7),
+        ),
+      );
+      await repo.insertEntry(
+        HistoryEntry(
+          id: '2',
+          text: 'Second',
+          sourceApp: 'app',
+          capturedAt: DateTime(2026, 7, 2),
+        ),
+      );
 
       final all = await repo.getAllEntries();
       expect(all.first.id, '2');

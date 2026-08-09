@@ -8,7 +8,7 @@ class SupabaseHistoryRepository {
   SupabaseHistoryRepository({
     required this._client,
     required EncryptionService encryptionService,
-  })  : _encryption = encryptionService;
+  }) : _encryption = encryptionService;
 
   final SupabaseClient _client;
   final EncryptionService _encryption;
@@ -19,7 +19,9 @@ class SupabaseHistoryRepository {
     try {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) {
-        debugPrint('SupabaseHistoryRepo: No authenticated user, skipping upsert');
+        debugPrint(
+          'SupabaseHistoryRepo: No authenticated user, skipping upsert',
+        );
         return;
       }
 
@@ -84,7 +86,9 @@ class SupabaseHistoryRepository {
             ),
           );
         } on Exception catch (e) {
-          debugPrint('SupabaseHistoryRepo: Skipping entry — decryption failed: $e');
+          debugPrint(
+            'SupabaseHistoryRepo: Skipping entry — decryption failed: $e',
+          );
         }
       }
 
@@ -146,9 +150,7 @@ class SupabaseHistoryRepository {
       final userId = _client.auth.currentUser?.id;
       if (userId == null) return 0;
 
-      final response = await _client
-          .from(_tableName)
-          .select('id');
+      final response = await _client.from(_tableName).select('id');
 
       return (response as List<dynamic>).length;
     } on Exception catch (e) {
