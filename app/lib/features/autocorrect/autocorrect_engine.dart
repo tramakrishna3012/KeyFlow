@@ -26,7 +26,15 @@ class AutocorrectEngine {
     Map<String, bool>? appOverrides,
   })  : _dictionary = Map.from(customDictionary ?? kDefaultEnglishDictionary),
         _learnedWords = Set.from(initialLearnedWords ?? {}),
-        _appOverrides = Map.from(appOverrides ?? {});
+        _appOverrides = Map.from(appOverrides ?? {}) {
+    for (final word in _learnedWords) {
+      final cleanWord = word.trim().toLowerCase();
+      if (cleanWord.isNotEmpty) {
+        _dictionary[cleanWord] = 2000;
+      }
+    }
+  }
+
 
   final Map<String, int> _dictionary;
   final Set<String> _learnedWords;

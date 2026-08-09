@@ -84,7 +84,9 @@ void main() {
     final results = await repository.searchEntries('roadmap');
     stopwatch.stop();
 
+    // ignore: avoid_print
     print('Search for "roadmap" returned ${results.length} results in ${stopwatch.elapsedMilliseconds} ms');
+
 
     // SRS §3.2 Requirement: Search must complete in under 200ms
     expect(stopwatch.elapsedMilliseconds, lessThan(200), reason: 'Search performance exceeded 200ms threshold');

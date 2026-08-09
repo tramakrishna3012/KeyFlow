@@ -24,7 +24,9 @@ void main() {
 
       stopwatch.stop();
 
+      // ignore: avoid_print
       print('Total execution time for 100 emoji searches: ${stopwatch.elapsedMilliseconds} ms');
+
 
       // SRS Requirement: Search completes under 10ms per lookup
       expect(stopwatch.elapsedMilliseconds, lessThan(100), reason: 'Emoji search latency exceeded threshold');

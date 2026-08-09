@@ -61,6 +61,7 @@ void main() {
                 // Ignore safe metadata length/count logs
                 if (!line.contains('length') && !line.contains('count') && !line.contains('status')) {
                   violations++;
+                  // ignore: avoid_print
                   print('Potential S-5 Violation in ${entity.path}:${i + 1}: $line');
                 }
               }
@@ -77,11 +78,13 @@ void main() {
             final line = lines[i];
             if (line.contains('console.log') && line.contains('text') && !line.contains('length')) {
               violations++;
+              // ignore: avoid_print
               print('Potential S-5 Violation in relay/server.js:${i + 1}: $line');
             }
           }
         }
       }
+
 
       // S-5 Acceptance Criteria: 0 violations found across the codebase
       expect(violations, equals(0), reason: 'S-5 Violation: Found logger call outputting captured text');

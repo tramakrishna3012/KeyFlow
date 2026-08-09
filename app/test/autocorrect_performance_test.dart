@@ -38,7 +38,9 @@ void main() {
       stopwatch.stop();
       final avgMsPerLookup = stopwatch.elapsedMicroseconds / (100 * 1000.0);
 
+      // ignore: avoid_print
       print('Total execution time for 100 lookups: ${stopwatch.elapsedMilliseconds} ms (${avgMsPerLookup.toStringAsFixed(2)} ms/lookup)');
+
 
       // SRS Requirement: Under 10ms latency per lookup
       expect(stopwatch.elapsedMilliseconds, lessThan(100), reason: 'Total 100 lookups exceeded 100ms threshold');

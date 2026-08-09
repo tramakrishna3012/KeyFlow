@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 import 'data/providers.dart';
 import 'features/history/history_providers.dart';
 
@@ -16,26 +18,22 @@ void main() async {
     debugPrint('Supabase init skipped/error: $e');
   }
 
-
   runApp(const ProviderScope(child: KeyFlowApp()));
 }
 
 class KeyFlowApp extends StatelessWidget {
+
   const KeyFlowApp({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
-      title: 'KeyFlow',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF13111C),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF7C4DFF),
-          surface: Color(0xFF1E1B2E),
-        ),
-      ),
-      home: const MainHomeScreen(),
-    );
+  Widget build(BuildContext context) => MaterialApp.router(
+        title: 'KeyFlow',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        routerConfig: appRouter,
+      );
+}
+
 }
 
 class MainHomeScreen extends ConsumerStatefulWidget {

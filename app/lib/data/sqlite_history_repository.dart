@@ -6,9 +6,11 @@ import 'secure_key_storage.dart';
 
 class SqliteHistoryRepository implements HistoryRepository {
   SqliteHistoryRepository({
-    required this._dbHelper,
+    required DatabaseHelper dbHelper,
     required SecureKeyStorage keyStorage,
-  })  : _keyStorage = keyStorage;
+  })  : _dbHelper = dbHelper,
+        _keyStorage = keyStorage;
+
 
   final DatabaseHelper _dbHelper;
   final SecureKeyStorage _keyStorage;

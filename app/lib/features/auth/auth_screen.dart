@@ -75,7 +75,8 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         );
       }
-    } catch (e) {
+    } on Exception catch (e) {
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

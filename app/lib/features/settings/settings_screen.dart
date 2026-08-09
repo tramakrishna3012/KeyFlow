@@ -334,8 +334,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final jsonStr = await ref.read(settingsControllerProvider).exportHistoryData();
     if (!mounted) return;
 
-    showDialog(
+    await showDialog(
       context: context,
+
       builder: (ctx) => AlertDialog(
         title: const Text('Export Data Snapshot'),
         content: SizedBox(
