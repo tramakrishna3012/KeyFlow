@@ -29,11 +29,9 @@ class KeyFlowApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp.router(
         title: 'KeyFlow',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: AppTheme.dark,
         routerConfig: appRouter,
       );
-}
-
 }
 
 class MainHomeScreen extends ConsumerStatefulWidget {

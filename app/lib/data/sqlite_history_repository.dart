@@ -6,19 +6,17 @@ import 'secure_key_storage.dart';
 
 class SqliteHistoryRepository implements HistoryRepository {
   SqliteHistoryRepository({
-    required DatabaseHelper dbHelper,
-    required SecureKeyStorage keyStorage,
-  })  : _dbHelper = dbHelper,
-        _keyStorage = keyStorage;
+    required this.dbHelper,
+    required this.keyStorage,
+  });
 
-
-  final DatabaseHelper _dbHelper;
-  final SecureKeyStorage _keyStorage;
+  final DatabaseHelper dbHelper;
+  final SecureKeyStorage keyStorage;
 
   @override
   Future<void> addEntry(HistoryEntry entry) async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     await db.insert(
       'history_entries',
       entry.toMap(),
@@ -31,8 +29,8 @@ class SqliteHistoryRepository implements HistoryRepository {
 
   @override
   Future<HistoryEntry?> getEntry(String id) async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     final maps = await db.query(
       'history_entries',
       where: 'id = ?',
@@ -45,8 +43,8 @@ class SqliteHistoryRepository implements HistoryRepository {
 
   @override
   Future<List<HistoryEntry>> search(String query) async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
 
     final List<Map<String, dynamic>> maps;
     if (query.isEmpty) {
@@ -68,23 +66,23 @@ class SqliteHistoryRepository implements HistoryRepository {
 
   @override
   Future<List<HistoryEntry>> getAllEntries() async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     final maps = await db.query('history_entries', orderBy: 'captured_at DESC');
     return maps.map(HistoryEntry.fromMap).toList();
   }
 
   @override
   Future<void> deleteEntry(String id) async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     await db.delete('history_entries', where: 'id = ?', whereArgs: [id]);
   }
 
   @override
   Future<void> clearAll() async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     await db.delete('history_entries');
   }
 
@@ -93,8 +91,8 @@ class SqliteHistoryRepository implements HistoryRepository {
 
   @override
   Future<int> purgeOlderThan(int retentionDays) async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     final cutoff = DateTime.now()
         .subtract(Duration(days: retentionDays))
         .millisecondsSinceEpoch;
@@ -104,8 +102,8 @@ class SqliteHistoryRepository implements HistoryRepository {
 
   @override
   Future<int> count() async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     final result = Sqflite.firstIntValue(
       await db.rawQuery('SELECT COUNT(*) FROM history_entries'),
     );
@@ -120,8 +118,8 @@ class SqliteHistoryRepository implements HistoryRepository {
 
   @override
   Future<String?> getSetting(String key) async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     final maps = await db.query(
       'settings',
       where: 'key = ?',
@@ -134,8 +132,8 @@ class SqliteHistoryRepository implements HistoryRepository {
 
   @override
   Future<void> setSetting(String key, String value) async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     await db.insert(
       'settings',
       {'key': key, 'value': value},
@@ -145,16 +143,16 @@ class SqliteHistoryRepository implements HistoryRepository {
 
   @override
   Future<List<String>> getExclusionList() async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     final maps = await db.query('exclusion_list');
     return maps.map((m) => m['app_identifier'] as String).toList();
   }
 
   @override
   Future<void> addExclusion(String appIdentifier) async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     await db.insert(
       'exclusion_list',
       {
@@ -167,8 +165,8 @@ class SqliteHistoryRepository implements HistoryRepository {
 
   @override
   Future<void> removeExclusion(String appIdentifier) async {
-    final password = await _keyStorage.getOrCreateDatabaseKey();
-    final db = await _dbHelper.getDatabase(password);
+    final password = await keyStorage.getOrCreateDatabaseKey();
+    final db = await dbHelper.getDatabase(password);
     await db.delete(
       'exclusion_list',
       where: 'app_identifier = ?',
