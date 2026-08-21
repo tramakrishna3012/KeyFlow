@@ -1,29 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'core/router/app_router.dart';
+import 'core/services/cache_cleanup_service.dart';
+import 'core/services/permission_helper.dart';
 import 'core/theme/app_theme.dart';
 import 'data/providers.dart';
+import 'data/secure_auth_storage.dart';
 import 'features/history/history_providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await Supabase.initialize(
-      url: 'https://nmvwjdtsgzttfrepqprr.supabase.co',
-      publishableKey:
-          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdndqZHRzZ3p0dGZyZXBxcHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzg3NTUyMDAsImV4cCI6MjA1NDMzMTIwMH0.sampleKey',
-    );
-  } on Exception catch (e) {
-    debugPrint('Supabase init skipped/error: $e');
+  // Load configuration from environment defines (--dart-define) with fallback
+  const supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://nmvwjdtsgzttfrepqprr.supabase.co',
+  );
+  const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
+    try {
+      await Supabase.initialize(
+        url: supabaseUrl,
+        publishableKey: supabaseAnonKey,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: SecureAuthStorage(),
+        ),
+      );
+    } on Object catch (e) {
+      debugPrint('Supabase init skipped/error: $e');
+    }
+  } else {
+    debugPrint('Supabase credentials not provided via --dart-define; running in offline mode.');
   }
+
+  // Setup app lifecycle listener to purge temp cache on exit
+  AppLifecycleListener(
+    onDetach: () {
+      const CacheCleanupService().clearTempAndCache();
+    },
+  );
 
   runApp(const ProviderScope(child: KeyFlowApp()));
 }
 
-class KeyFlowApp extends StatelessWidget {
+class KeyFlowApp extends ConsumerStatefulWidget {
   const KeyFlowApp({super.key});
+
+  @override
+  ConsumerState<KeyFlowApp> createState() => _KeyFlowAppState();
+}
+
+class _KeyFlowAppState extends ConsumerState<KeyFlowApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final statuses = await requestStartupPermissions();
+      if (mounted) {
+        handlePermissionDegradation(context, statuses);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(

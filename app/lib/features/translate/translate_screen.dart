@@ -16,17 +16,6 @@ class TranslateScreen extends ConsumerStatefulWidget {
 class _TranslateScreenState extends ConsumerState<TranslateScreen> {
   late final TextEditingController _sourceController;
 
-  static const List<Map<String, String>> _languages = [
-    {'code': 'es', 'flag': '🇪🇸', 'name': 'Spanish'},
-    {'code': 'fr', 'flag': '🇫🇷', 'name': 'French'},
-    {'code': 'de', 'flag': '🇩🇪', 'name': 'German'},
-    {'code': 'ja', 'flag': '🇯🇵', 'name': 'Japanese'},
-    {'code': 'zh', 'flag': '🇨🇳', 'name': 'Chinese'},
-    {'code': 'ar', 'flag': '🇸🇦', 'name': 'Arabic'},
-    {'code': 'pt', 'flag': '🇧🇷', 'name': 'Portuguese'},
-    {'code': 'ko', 'flag': '🇰🇷', 'name': 'Korean'},
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -86,10 +75,13 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
   Widget build(BuildContext context) {
     final translationAsync = ref.watch(translationResultProvider);
     final selectedLang = ref.watch(targetLangProvider);
+    final languages = ref.watch(availableLanguagesProvider);
 
-    final currentLangObj = _languages.firstWhere(
+    final currentLangObj = languages.firstWhere(
       (l) => l['code'] == selectedLang,
-      orElse: () => _languages.first,
+      orElse: () => languages.isNotEmpty
+          ? languages.first
+          : {'code': 'es', 'flag': '🇪🇸', 'name': 'Spanish'},
     );
 
     return Scaffold(
@@ -118,7 +110,7 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            _buildLanguageGrid(selectedLang),
+            _buildLanguageGrid(selectedLang, languages),
           ],
         ),
       ),
@@ -335,7 +327,10 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
     ),
   );
 
-  Widget _buildLanguageGrid(String activeLangCode) => GridView.builder(
+  Widget _buildLanguageGrid(
+    String activeLangCode,
+    List<Map<String, String>> languages,
+  ) => GridView.builder(
     shrinkWrap: true,
     physics: const NeverScrollableScrollPhysics(),
     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -344,9 +339,9 @@ class _TranslateScreenState extends ConsumerState<TranslateScreen> {
       crossAxisSpacing: 10,
       childAspectRatio: 2.5,
     ),
-    itemCount: _languages.length,
+    itemCount: languages.length,
     itemBuilder: (ctx, idx) {
-      final item = _languages[idx];
+      final item = languages[idx];
       final isSelected = item['code'] == activeLangCode;
 
       return InkWell(

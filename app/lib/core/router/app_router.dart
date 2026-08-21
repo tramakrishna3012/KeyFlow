@@ -1,20 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/auth_screen.dart';
 import '../../features/emoji/emoji_screen.dart';
 import '../../features/history/history_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/translate/translate_screen.dart';
 import '../theme/app_colors.dart';
+import 'supabase_auth_notifier.dart';
 
-/// Top-level GoRouter configuration with a 5-tab shell route.
+final SupabaseAuthNotifier _authNotifier = SupabaseAuthNotifier();
+
+/// Top-level GoRouter configuration with Auth routing and 5-tab shell route.
 ///
 /// Tabs: Home, History, Translate, Emoji, Settings
 /// Uses [StatefulShellRoute.indexedStack] for tab persistence.
 final GoRouter appRouter = GoRouter(
   initialLocation: '/home',
+  refreshListenable: _authNotifier,
+  redirect: (BuildContext context, GoRouterState state) {
+    final isLoggingIn = state.matchedLocation == '/login';
+    final isAuthenticated = _authNotifier.isAuthenticated;
+
+    // Unauthenticated users attempting to access protected routes -> redirect to /login
+    if (!isAuthenticated && !isLoggingIn) {
+      return '/login';
+    }
+
+    // Authenticated users hitting /login -> bypass directly to /home
+    if (isAuthenticated && isLoggingIn) {
+      return '/home';
+    }
+
+    return null;
+  },
   routes: [
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const AuthScreen(),
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           _ScaffoldWithNavBar(navigationShell: navigationShell),

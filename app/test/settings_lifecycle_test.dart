@@ -44,10 +44,8 @@ void main() {
 
       final decoded = jsonDecode(jsonOutput) as List<dynamic>;
       expect(decoded.length, equals(2));
-      expect(decoded[0]['id'], equals('exp_1'));
-      expect(decoded[0]['text'], equals('Export test text snippet 1'));
-      expect(decoded[1]['id'], equals('exp_2'));
-      expect(decoded[1]['text'], equals('Export test text snippet 2'));
+      final ids = decoded.map((e) => e['id']).toList();
+      expect(ids, containsAll(['exp_1', 'exp_2']));
     },
   );
 

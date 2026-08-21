@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:keyflow_app/features/auth/auth_screen.dart';
 import 'package:keyflow_app/main.dart';
 
 void main() {
@@ -11,14 +12,14 @@ void main() {
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 
-  testWidgets('Bottom navigation shows all 5 tabs', (tester) async {
+  testWidgets('Unauthenticated startup redirects to AuthScreen', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: KeyFlowApp()));
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('History'), findsOneWidget);
-    expect(find.text('Translate'), findsOneWidget);
-    expect(find.text('Emoji'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    expect(find.byType(AuthScreen), findsOneWidget);
+    expect(find.text('KeyFlow'), findsOneWidget);
+    expect(find.text('Sign In'), findsWidgets);
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
   });
 }

@@ -28,15 +28,18 @@ class AutocorrectEngine {
        _learnedWords = Set.from(initialLearnedWords ?? {}),
        _appOverrides = Map.from(appOverrides ?? {}) {
     for (final word in _learnedWords) {
-      final cleanWord = word.trim().toLowerCase();
+      final trimmed = word.trim();
+      final cleanWord = trimmed.toLowerCase();
       if (cleanWord.isNotEmpty) {
         _dictionary[cleanWord] = 2000;
+        _learnedWordCasing[cleanWord] = trimmed;
       }
     }
   }
 
   final Map<String, int> _dictionary;
   final Set<String> _learnedWords;
+  final Map<String, String> _learnedWordCasing = {};
   final Map<String, bool> _appOverrides;
 
   bool isEnabledGlobally = true;
@@ -60,16 +63,21 @@ class AutocorrectEngine {
 
   /// Adds a user-accepted word to the local learned dictionary.
   void learnWord(String word) {
-    final cleanWord = word.trim().toLowerCase();
-    if (cleanWord.isEmpty) return;
-    _learnedWords.add(cleanWord);
+    final trimmed = word.trim();
+    if (trimmed.isEmpty) return;
+    final cleanWord = trimmed.toLowerCase();
+    _learnedWords.add(trimmed);
     _dictionary[cleanWord] = 2000; // High score for learned words
+    _learnedWordCasing[cleanWord] = trimmed;
   }
 
   /// Removes a learned word.
   void unlearnWord(String word) {
-    final cleanWord = word.trim().toLowerCase();
+    final trimmed = word.trim();
+    final cleanWord = trimmed.toLowerCase();
+    _learnedWords.remove(trimmed);
     _learnedWords.remove(cleanWord);
+    _learnedWordCasing.remove(cleanWord);
     _dictionary.remove(cleanWord);
   }
 
@@ -86,11 +94,6 @@ class AutocorrectEngine {
 
     final word = inputWord.trim().toLowerCase();
     if (word.length < 2) return const [];
-
-    // If already in dictionary or learned set with exact match, return empty (already correct)
-    if (_dictionary.containsKey(word) || _learnedWords.contains(word)) {
-      return const [];
-    }
 
     final candidates = <CorrectionCandidate>[];
 
@@ -119,10 +122,12 @@ class AutocorrectEngine {
       return b.frequencyScore.compareTo(a.frequencyScore);
     });
 
-    return candidates
-        .take(maxResults)
-        .map((c) => _matchCase(inputWord, c.word))
-        .toList();
+    return candidates.take(maxResults).map((c) {
+      if (_learnedWordCasing.containsKey(c.word)) {
+        return _learnedWordCasing[c.word]!;
+      }
+      return _matchCase(inputWord, c.word);
+    }).toList();
   }
 
   /// Fast Levenshtein distance implementation.

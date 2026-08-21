@@ -26,7 +26,10 @@ void main() {
 
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('keyflow_perf_test');
-    dbHelper = DatabaseHelper(customPath: '${tempDir.path}/perf_test.db');
+    dbHelper = DatabaseHelper(
+      customPath: '${tempDir.path}/perf_test.db',
+      databaseFactoryOverride: databaseFactoryFfi,
+    );
     repository = SqliteHistoryRepository(
       dbHelper: dbHelper,
       keyStorage: TestKeyStorage(),

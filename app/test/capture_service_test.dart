@@ -120,9 +120,9 @@ void main() {
   });
 
   tearDown(() {
+    captureService.dispose();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(const MethodChannel('keyflow/capture'), null);
-    captureService.dispose();
   });
 
   test(
