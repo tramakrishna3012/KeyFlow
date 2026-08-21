@@ -9,18 +9,16 @@ function rateLimiter({ windowMs = 60 * 1000, maxRequests = 100, message = 'Too m
     if (!bucket) {
       bucket = { count: 1, resetTime: now + windowMs };
       requestBuckets.set(ip, bucket);
+    } else if (now > bucket.resetTime) {
+      bucket.count = 1;
+      bucket.resetTime = now + windowMs;
     } else {
-      if (now > bucket.resetTime) {
-        bucket.count = 1;
-        bucket.resetTime = now + windowMs;
-      } else {
-        bucket.count += 1;
-        if (bucket.count > maxRequests) {
-          return res.status(429).json({
-            error: message,
-            retryAfterSeconds: Math.ceil((bucket.resetTime - now) / 1000)
-          });
-        }
+      bucket.count += 1;
+      if (bucket.count > maxRequests) {
+        return res.status(429).json({
+          error: message,
+          retryAfterSeconds: Math.ceil((bucket.resetTime - now) / 1000)
+        });
       }
     }
 

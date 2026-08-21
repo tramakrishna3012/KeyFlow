@@ -19,11 +19,15 @@ final availableLanguagesProvider = Provider<List<Map<String, String>>>((ref) {
   return supabaseAsync.when(
     data: (rows) {
       if (rows.isEmpty) return kDefaultLanguages;
-      return rows.map((r) => {
-        'code': r['code'] as String? ?? 'es',
-        'flag': r['flag'] as String? ?? '🌐',
-        'name': r['name'] as String? ?? 'Unknown',
-      }).toList();
+      return rows
+          .map(
+            (r) => {
+              'code': r['code'] as String? ?? 'es',
+              'flag': r['flag'] as String? ?? '🌐',
+              'name': r['name'] as String? ?? 'Unknown',
+            },
+          )
+          .toList();
     },
     loading: () => kDefaultLanguages,
     error: (_, _) => kDefaultLanguages,

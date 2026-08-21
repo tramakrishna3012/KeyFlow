@@ -1,14 +1,6 @@
-enum LookMonitoringStatus {
-  active,
-  paused,
-  stopped,
-}
+enum LookMonitoringStatus { active, paused, stopped }
 
-enum LookConsentState {
-  granted,
-  revoked,
-  pending,
-}
+enum LookConsentState { granted, revoked, pending }
 
 class LookActivityLog {
   const LookActivityLog({
@@ -23,17 +15,22 @@ class LookActivityLog {
     required this.endedAt,
   });
 
-  factory LookActivityLog.fromJson(Map<String, dynamic> json) => LookActivityLog(
-    id: json['id'] as String? ?? '',
-    appName: json['appName'] as String? ?? 'Unknown',
-    appCategory: json['appCategory'] as String? ?? 'General',
-    windowTitle: json['windowTitle'] as String? ?? '',
-    durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
-    idleSeconds: (json['idleSeconds'] as num?)?.toInt() ?? 0,
-    isIdle: json['isIdle'] as bool? ?? false,
-    startedAt: DateTime.tryParse(json['startedAt']?.toString() ?? '') ?? DateTime.now(),
-    endedAt: DateTime.tryParse(json['endedAt']?.toString() ?? '') ?? DateTime.now(),
-  );
+  factory LookActivityLog.fromJson(Map<String, dynamic> json) =>
+      LookActivityLog(
+        id: json['id'] as String? ?? '',
+        appName: json['appName'] as String? ?? 'Unknown',
+        appCategory: json['appCategory'] as String? ?? 'General',
+        windowTitle: json['windowTitle'] as String? ?? '',
+        durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 0,
+        idleSeconds: (json['idleSeconds'] as num?)?.toInt() ?? 0,
+        isIdle: json['isIdle'] as bool? ?? false,
+        startedAt:
+            DateTime.tryParse(json['startedAt']?.toString() ?? '') ??
+            DateTime.now(),
+        endedAt:
+            DateTime.tryParse(json['endedAt']?.toString() ?? '') ??
+            DateTime.now(),
+      );
 
   final String id;
   final String appName;

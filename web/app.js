@@ -41,9 +41,9 @@ const state = {
     { app: 'Notion', category: 'Productivity', title: 'Look System Q3 Product Requirements & Architecture', active: '30m', idle: '10m', time: '1h ago' }
   ],
   auditLogs: [
-    { time: 'Today, 09:15 AM', action: 'LOGIN_SUCCESS', resource: 'Auth', actor: 'jane.doe@looksystem.com', ip: '192.168.1.104' },
-    { time: 'Today, 09:16 AM', action: 'DEVICE_AUTHORIZED', resource: 'Workstation', actor: 'jane.doe@looksystem.com', ip: '192.168.1.104' },
-    { time: 'Yesterday, 04:30 PM', action: 'RETENTION_POLICY_SAVED', resource: 'Policy', actor: 'admin@looksystem.com', ip: '192.168.1.1' }
+    { time: 'Today, 09:15 AM', action: 'LOGIN_SUCCESS', resource: 'Auth', actor: 'jane.doe@looksystem.com', ip: '127.0.0.1' },
+    { time: 'Today, 09:16 AM', action: 'DEVICE_AUTHORIZED', resource: 'Workstation', actor: 'jane.doe@looksystem.com', ip: '127.0.0.1' },
+    { time: 'Yesterday, 04:30 PM', action: 'RETENTION_POLICY_SAVED', resource: 'Policy', actor: 'admin@looksystem.com', ip: '127.0.0.1' }
   ]
 };
 

@@ -11,7 +11,7 @@ import 'look_window_sanitizer.dart';
 /// - Zero performance overhead
 class LookMonitorService extends ChangeNotifier {
   LookMonitorService({LookWindowSanitizer? sanitizer})
-      : _sanitizer = sanitizer ?? const LookWindowSanitizer();
+    : _sanitizer = sanitizer ?? const LookWindowSanitizer();
 
   final LookWindowSanitizer _sanitizer;
   Timer? _pollingTimer;
@@ -153,19 +153,32 @@ class LookMonitorService extends ChangeNotifier {
 
   String _inferCategory(String appName) {
     final lower = appName.toLowerCase();
-    if (lower.contains('code') || lower.contains('studio') || lower.contains('terminal')) {
+    if (lower.contains('code') ||
+        lower.contains('studio') ||
+        lower.contains('terminal')) {
       return 'Development';
     }
-    if (lower.contains('slack') || lower.contains('teams') || lower.contains('discord') || lower.contains('zoom')) {
+    if (lower.contains('slack') ||
+        lower.contains('teams') ||
+        lower.contains('discord') ||
+        lower.contains('zoom')) {
       return 'Communication';
     }
-    if (lower.contains('figma') || lower.contains('photoshop') || lower.contains('canva')) {
+    if (lower.contains('figma') ||
+        lower.contains('photoshop') ||
+        lower.contains('canva')) {
       return 'Design';
     }
-    if (lower.contains('chrome') || lower.contains('edge') || lower.contains('firefox') || lower.contains('safari')) {
+    if (lower.contains('chrome') ||
+        lower.contains('edge') ||
+        lower.contains('firefox') ||
+        lower.contains('safari')) {
       return 'Browsing';
     }
-    if (lower.contains('notion') || lower.contains('word') || lower.contains('excel') || lower.contains('docs')) {
+    if (lower.contains('notion') ||
+        lower.contains('word') ||
+        lower.contains('excel') ||
+        lower.contains('docs')) {
       return 'Productivity';
     }
     return 'General';

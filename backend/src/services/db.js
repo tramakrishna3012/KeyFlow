@@ -1,6 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const { DB_PATH } = require('../config/env');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 
 const db = new sqlite3.Database(DB_PATH);
 

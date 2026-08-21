@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { run } = require('./db');
 
 async function logAudit({ organizationId = null, actorUserId = null, action, resourceType, resourceId = null, ipAddress = null, userAgent = null, metadata = {} }) {

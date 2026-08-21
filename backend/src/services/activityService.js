@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { run, get, all } = require('./db');
 
 const CATEGORY_MAP = {
@@ -82,8 +82,8 @@ function sanitizeWindowTitle(rawTitle = '') {
     }
   });
 
-  // Strip emails
-  sanitized = sanitized.replace(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/g, '[Redacted Email]');
+  // Strip emails (linear non-backtracking)
+  sanitized = sanitized.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[Redacted Email]');
 
   // Strip token-like alphanumeric strings (> 24 hex/b64 chars)
   sanitized = sanitized.replace(/\b[A-Za-z0-9-_]{24,}\b/g, '[Redacted Token]');
@@ -141,8 +141,8 @@ async function ingestBatchActivity({ userId, deviceId, entries }) {
         appName,
         category,
         sanitizedTitle,
-        Math.max(0, parseInt(durationSeconds, 10) || 0),
-        Math.max(0, parseInt(idleSeconds, 10) || 0),
+        Math.max(0, Number.parseInt(durationSeconds, 10) || 0),
+        Math.max(0, Number.parseInt(idleSeconds, 10) || 0),
         isIdle ? 1 : 0,
         startedAt,
         endedAt

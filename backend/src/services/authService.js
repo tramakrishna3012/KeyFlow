@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { run, get } = require('./db');
 const { JWT_SECRET, JWT_EXPIRES_IN, MAX_FAILED_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES } = require('../config/env');
 const { logAudit } = require('./auditService');

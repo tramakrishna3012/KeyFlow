@@ -24,7 +24,9 @@ class CacheCleanupService {
               await entity.delete(recursive: true);
             }
           } on Object catch (e) {
-            debugPrint('CacheCleanupService: Failed to delete ${entity.path}: $e');
+            debugPrint(
+              'CacheCleanupService: Failed to delete ${entity.path}: $e',
+            );
           }
         }
       }

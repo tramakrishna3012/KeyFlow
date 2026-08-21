@@ -36,10 +36,7 @@ final GoRouter appRouter = GoRouter(
     return null;
   },
   routes: [
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const AuthScreen(),
-    ),
+    GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           _ScaffoldWithNavBar(navigationShell: navigationShell),

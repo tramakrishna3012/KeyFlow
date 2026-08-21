@@ -33,7 +33,9 @@ void main() async {
       debugPrint('Supabase init skipped/error: $e');
     }
   } else {
-    debugPrint('Supabase credentials not provided via --dart-define; running in offline mode.');
+    debugPrint(
+      'Supabase credentials not provided via --dart-define; running in offline mode.',
+    );
   }
 
   // Setup app lifecycle listener to purge temp cache on exit

@@ -12,7 +12,9 @@ void main() {
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 
-  testWidgets('Unauthenticated startup redirects to AuthScreen', (tester) async {
+  testWidgets('Unauthenticated startup redirects to AuthScreen', (
+    tester,
+  ) async {
     await tester.pumpWidget(const ProviderScope(child: KeyFlowApp()));
     await tester.pumpAndSettle();
 

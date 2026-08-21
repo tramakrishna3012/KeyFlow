@@ -44,13 +44,17 @@ final allEmojisProvider = Provider<List<EmojiItem>>((ref) {
   return supabaseAsync.when(
     data: (rows) {
       if (rows.isEmpty) return kDefaultEmojiDataset;
-      return rows.map((r) => EmojiItem(
-        char: r['char'] as String? ?? '😀',
-        name: r['name'] as String? ?? '',
-        shortcode: r['shortcode'] as String? ?? '',
-        category: r['category'] as String? ?? 'Symbols & Flags',
-        keywords: (r['keywords'] as List<dynamic>?)?.cast<String>() ?? [],
-      )).toList();
+      return rows
+          .map(
+            (r) => EmojiItem(
+              char: r['char'] as String? ?? '😀',
+              name: r['name'] as String? ?? '',
+              shortcode: r['shortcode'] as String? ?? '',
+              category: r['category'] as String? ?? 'Symbols & Flags',
+              keywords: (r['keywords'] as List<dynamic>?)?.cast<String>() ?? [],
+            ),
+          )
+          .toList();
     },
     loading: () => kDefaultEmojiDataset,
     error: (_, _) => kDefaultEmojiDataset,

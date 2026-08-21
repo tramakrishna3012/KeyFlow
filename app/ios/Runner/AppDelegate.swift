@@ -17,6 +17,7 @@ import UIKit
   }
 
   override func applicationWillResignActive(_ application: UIApplication) {
+    super.applicationWillResignActive(application)
     guard let window = self.window else { return }
     if window.viewWithTag(999111) == nil {
       let blurEffect = UIBlurEffect(style: .dark)
@@ -30,6 +31,7 @@ import UIKit
   }
 
   override func applicationDidBecomeActive(_ application: UIApplication) {
+    super.applicationDidBecomeActive(application)
     privacyBlurView?.removeFromSuperview()
     self.window?.viewWithTag(999111)?.removeFromSuperview()
     privacyBlurView = nil

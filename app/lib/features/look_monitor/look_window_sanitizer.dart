@@ -3,8 +3,14 @@
 class LookWindowSanitizer {
   const LookWindowSanitizer();
 
-  static final RegExp _urlRegex = RegExp(r'https?:\/\/[^\s]+', caseSensitive: false);
-  static final RegExp _emailRegex = RegExp(r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+', caseSensitive: false);
+  static final RegExp _urlRegex = RegExp(
+    r'https?:\/\/[^\s]+',
+    caseSensitive: false,
+  );
+  static final RegExp _emailRegex = RegExp(
+    r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+',
+    caseSensitive: false,
+  );
   static final RegExp _tokenRegex = RegExp(r'\b[A-Za-z0-9-_]{24,}\b');
 
   /// Cleans the raw window title.

@@ -7,13 +7,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// in standard SharedPreferences / UserDefaults.
 class SecureAuthStorage extends LocalStorage {
   SecureAuthStorage({FlutterSecureStorage? storage})
-      : _storage = storage ??
-            const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-              iOptions: IOSOptions(
-                accessibility: KeychainAccessibility.first_unlock,
-              ),
-            );
+    : _storage =
+          storage ??
+          const FlutterSecureStorage(
+            aOptions: AndroidOptions(encryptedSharedPreferences: true),
+            iOptions: IOSOptions(
+              accessibility: KeychainAccessibility.first_unlock,
+            ),
+          );
 
   final FlutterSecureStorage _storage;
   static const String _sessionKey = 'supabase_auth_token';

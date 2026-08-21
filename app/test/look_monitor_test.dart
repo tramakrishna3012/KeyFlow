@@ -8,11 +8,15 @@ void main() {
     const sanitizer = LookWindowSanitizer();
 
     test('Sanitizes URLs by stripping query parameters and sensitive tokens', () {
-      const raw = 'Google Chrome — https://internal.company.com/project?auth_token=super_secret_token_12345678901234567890';
+      const raw =
+          'Google Chrome — https://internal.company.com/project?auth_token=super_secret_token_12345678901234567890';
       final sanitized = sanitizer.sanitize(raw);
       expect(sanitized.contains('auth_token'), isFalse);
       expect(sanitized.contains('super_secret'), isFalse);
-      expect(sanitized.contains('https://internal.company.com/project'), isTrue);
+      expect(
+        sanitized.contains('https://internal.company.com/project'),
+        isTrue,
+      );
     });
 
     test('Redacts email addresses from window titles', () {
@@ -25,7 +29,10 @@ void main() {
     test('Redacts API keys and secret hash strings (>24 chars)', () {
       const raw = 'VS Code — API_KEY_mock_token_1234567890abcdef1234567890';
       final sanitized = sanitizer.sanitize(raw);
-      expect(sanitized.contains('mock_token_1234567890abcdef1234567890'), isFalse);
+      expect(
+        sanitized.contains('mock_token_1234567890abcdef1234567890'),
+        isFalse,
+      );
       expect(sanitized, contains('[Redacted Token]'));
     });
   });
@@ -98,43 +105,55 @@ void main() {
       expect(service.activityLogs.first.appCategory, equals('Development'));
     });
 
-    test('Rolling intervals occur when window title changes within same application', () {
-      service
-        ..startMonitoring()
-        ..updateForegroundWindow(
+    test(
+      'Rolling intervals occur when window title changes within same application',
+      () {
+        service
+          ..startMonitoring()
+          ..updateForegroundWindow(
+            appName: 'Google Chrome',
+            rawTitle: 'Tab 1 — Documentation',
+          );
+
+        final initialLogsCount = service.activityLogs.length;
+
+        // Switch tab within same browser
+        service.updateForegroundWindow(
           appName: 'Google Chrome',
-          rawTitle: 'Tab 1 — Documentation',
+          rawTitle: 'Tab 2 — GitHub Pull Request',
         );
 
-      final initialLogsCount = service.activityLogs.length;
-
-      // Switch tab within same browser
-      service.updateForegroundWindow(
-        appName: 'Google Chrome',
-        rawTitle: 'Tab 2 — GitHub Pull Request',
-      );
-
-      expect(service.activityLogs.length, equals(initialLogsCount + 1));
-      expect(service.activityLogs.first.appName, equals('Google Chrome'));
-      expect(service.activityLogs.first.windowTitle, equals('Tab 1 — Documentation'));
-      expect(service.currentWindowTitle, equals('Tab 2 — GitHub Pull Request'));
-    });
+        expect(service.activityLogs.length, equals(initialLogsCount + 1));
+        expect(service.activityLogs.first.appName, equals('Google Chrome'));
+        expect(
+          service.activityLogs.first.windowTitle,
+          equals('Tab 1 — Documentation'),
+        );
+        expect(
+          service.currentWindowTitle,
+          equals('Tab 2 — GitHub Pull Request'),
+        );
+      },
+    );
   });
 
   group('Look System: Model Resilience & Hardening', () {
-    test('LookActivityLog.fromJson gracefully handles missing or invalid timestamps without throwing', () {
-      final invalidJson = <String, dynamic>{
-        'id': 'test-123',
-        'appName': 'TestApp',
-        'startedAt': null,
-        'endedAt': 'invalid-date-format',
-      };
+    test(
+      'LookActivityLog.fromJson gracefully handles missing or invalid timestamps without throwing',
+      () {
+        final invalidJson = <String, dynamic>{
+          'id': 'test-123',
+          'appName': 'TestApp',
+          'startedAt': null,
+          'endedAt': 'invalid-date-format',
+        };
 
-      final log = LookActivityLog.fromJson(invalidJson);
-      expect(log.id, equals('test-123'));
-      expect(log.appName, equals('TestApp'));
-      expect(log.startedAt, isA<DateTime>());
-      expect(log.endedAt, isA<DateTime>());
-    });
+        final log = LookActivityLog.fromJson(invalidJson);
+        expect(log.id, equals('test-123'));
+        expect(log.appName, equals('TestApp'));
+        expect(log.startedAt, isA<DateTime>());
+        expect(log.endedAt, isA<DateTime>());
+      },
+    );
   });
 }

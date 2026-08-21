@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { run, get, all } = require('../services/db');
@@ -89,9 +89,9 @@ router.get('/retention', async (req, res, next) => {
 router.put('/retention', async (req, res, next) => {
   try {
     const { retentionDays, autoPurgeEnabled } = req.body;
-    const days = parseInt(retentionDays, 10);
+    const days = Number.parseInt(retentionDays, 10);
 
-    if (isNaN(days) || days < 7 || days > 730) {
+    if (Number.isNaN(days) || days < 7 || days > 730) {
       return res.status(400).json({ error: 'retentionDays must be between 7 and 730 days' });
     }
 
