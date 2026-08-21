@@ -86,55 +86,118 @@ final GoRouter appRouter = GoRouter(
   ],
 );
 
-/// Shell scaffold that wraps all tabs with a persistent bottom nav bar.
+/// Shell scaffold that wraps all tabs with responsive navigation:
+/// - Desktop / Tablet (> 600px): Uses [NavigationRail] on the left
+/// - Mobile (<= 600px): Uses [BottomNavigationBar] inside [SafeArea]
 class _ScaffoldWithNavBar extends StatelessWidget {
   const _ScaffoldWithNavBar({required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: navigationShell,
-    bottomNavigationBar: Container(
-      decoration: const BoxDecoration(
-        border: Border(
-          top: BorderSide(color: AppColors.cardBorder, width: 0.8),
-        ),
-      ),
-      child: BottomNavigationBar(
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) => navigationShell.goBranch(
-          index,
-          initialLocation: index == navigationShell.currentIndex,
-        ),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            activeIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWideScreen = constraints.maxWidth > 600;
+
+        if (isWideScreen) {
+          return Scaffold(
+            body: Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: navigationShell.currentIndex,
+                  onDestinationSelected: (index) => navigationShell.goBranch(
+                    index,
+                    initialLocation: index == navigationShell.currentIndex,
+                  ),
+                  labelType: NavigationRailLabelType.all,
+                  destinations: const [
+                    NavigationRailDestination(
+                      icon: Icon(Icons.home_rounded),
+                      selectedIcon: Icon(Icons.home_rounded),
+                      label: Text('Home'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.history_rounded),
+                      selectedIcon: Icon(Icons.history_rounded),
+                      label: Text('History'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.translate_rounded),
+                      selectedIcon: Icon(Icons.translate_rounded),
+                      label: Text('Translate'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.emoji_emotions_rounded),
+                      selectedIcon: Icon(Icons.emoji_emotions_rounded),
+                      label: Text('Emoji'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.settings_rounded),
+                      selectedIcon: Icon(Icons.settings_rounded),
+                      label: Text('Settings'),
+                    ),
+                  ],
+                ),
+                const VerticalDivider(
+                  thickness: 1,
+                  width: 1,
+                  color: AppColors.cardBorder,
+                ),
+                Expanded(child: navigationShell),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          body: navigationShell,
+          bottomNavigationBar: SafeArea(
+            child: Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: AppColors.cardBorder, width: 0.8),
+                ),
+              ),
+              child: BottomNavigationBar(
+                currentIndex: navigationShell.currentIndex,
+                onTap: (index) => navigationShell.goBranch(
+                  index,
+                  initialLocation: index == navigationShell.currentIndex,
+                ),
+                type: BottomNavigationBarType.fixed,
+                items: const [
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.home_rounded),
+                    activeIcon: Icon(Icons.home_rounded),
+                    label: 'Home',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.history_rounded),
+                    activeIcon: Icon(Icons.history_rounded),
+                    label: 'History',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.translate_rounded),
+                    activeIcon: Icon(Icons.translate_rounded),
+                    label: 'Translate',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.emoji_emotions_rounded),
+                    activeIcon: Icon(Icons.emoji_emotions_rounded),
+                    label: 'Emoji',
+                  ),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.settings_rounded),
+                    activeIcon: Icon(Icons.settings_rounded),
+                    label: 'Settings',
+                  ),
+                ],
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_rounded),
-            activeIcon: Icon(Icons.history_rounded),
-            label: 'History',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.translate_rounded),
-            activeIcon: Icon(Icons.translate_rounded),
-            label: 'Translate',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.emoji_emotions_rounded),
-            activeIcon: Icon(Icons.emoji_emotions_rounded),
-            label: 'Emoji',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_rounded),
-            activeIcon: Icon(Icons.settings_rounded),
-            label: 'Settings',
-          ),
-        ],
-      ),
-    ),
-  );
+        );
+      },
+    );
+  }
 }
