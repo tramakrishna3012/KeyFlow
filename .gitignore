@@ -30,3 +30,19 @@ Thumbs.db
 # Local configuration & docs
 local.properties
 app/android/local.properties
+
+# Node & JavaScript dependencies
+node_modules/
+*/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database & SQLite files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+backend/*.db

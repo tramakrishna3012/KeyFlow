@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Look System Application - Transparent, privacy-first workplace productivity and system activity monitoring dashboard.">
+  <title>Look System Application | Transparent Activity Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">LOOK SYSTEM</span>
+          <span class="brand-tag">Transparent Analytics</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-item active" data-tab="overview" id="nav-overview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          Executive Overview
+        </button>
+        <button class="nav-item" data-tab="timeline" id="nav-timeline">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Timeline & Sessions
+        </button>
+        <button class="nav-item" data-tab="apps" id="nav-apps">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          App Usage Breakdown
+        </button>
+        <button class="nav-item" data-tab="admin" id="nav-admin">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          Admin & Org Controls
+        </button>
+        <button class="nav-item" data-tab="privacy" id="nav-privacy">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          Privacy & Compliance
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="monitoring-pill active" id="global-status-pill">
+          <span class="pulse-dot"></span>
+          <span class="status-label">Monitoring: ACTIVE</span>
+        </div>
+        <div class="user-chip">
+          <div class="avatar" id="user-avatar">JD</div>
+          <div class="user-meta">
+            <span class="user-name" id="user-name">Jane Doe</span>
+            <span class="user-role" id="user-role">Organization Admin</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="header-title">
+          <h1 id="page-title">Executive Overview</h1>
+          <p class="header-subtitle">Real-time productivity, application distribution & transparent telemetry.</p>
+        </div>
+        <div class="header-actions">
+          <div class="date-selector">
+            <button class="filter-btn active" data-range="today">Today</button>
+            <button class="filter-btn" data-range="7d">Last 7 Days</button>
+            <button class="filter-btn" data-range="30d">Last 30 Days</button>
+          </div>
+          <button class="btn btn-primary" id="btn-export-data">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export Telemetry
+          </button>
+        </div>
+      </header>
+
+      <!-- Transparency Banner -->
+      <div class="transparency-banner">
+        <div class="banner-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        </div>
+        <div class="banner-text">
+          <strong>Privacy-Preserving Telemetry Guarantee</strong>: Look System Application monitors active app names and idle intervals only. Keystrokes, passwords, clipboard text, and private chat messages are <u>never</u> recorded.
+        </div>
+        <div class="banner-controls">
+          <button class="btn btn-sm btn-outline" id="btn-quick-pause">Pause 15m</button>
+        </div>
+      </div>
+
+      <!-- Tab 1: Executive Overview -->
+      <section class="tab-content active" id="tab-overview">
+        <!-- KPI Cards Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Active Time</span>
+              <div class="kpi-icon teal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+            </div>
+            <div class="kpi-value" id="val-active-time">5h 42m</div>
+            <div class="kpi-trend positive">+14% vs yesterday</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Idle Duration</span>
+              <div class="kpi-icon orange"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg></div>
+            </div>
+            <div class="kpi-value" id="val-idle-time">48m</div>
+            <div class="kpi-trend neutral">Normal break intervals</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Focus Score</span>
+              <div class="kpi-icon purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div>
+            </div>
+            <div class="kpi-value" id="val-focus-score">88%</div>
+            <div class="kpi-trend positive">Deep work target met</div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Active Devices</span>
+              <div class="kpi-icon blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
+            </div>
+            <div class="kpi-value" id="val-devices">1 Authorized</div>
+            <div class="kpi-trend positive">Workstation Encrypted</div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="chart-card flex-2">
+            <div class="card-header">
+              <h3>Category Distribution</h3>
+              <span class="badge">Productivity Classification</span>
+            </div>
+            <div class="category-bars" id="category-bars-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="chart-card flex-1">
+            <div class="card-header">
+              <h3>Top Applications</h3>
+              <span class="badge">By Active Duration</span>
+            </div>
+            <div class="top-apps-list" id="top-apps-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 2: Timeline & Sessions -->
+      <section class="tab-content" id="tab-timeline">
+        <div class="card full-width">
+          <div class="card-header">
+            <h3>Work Sessions & Activity Timeline</h3>
+            <span class="badge">Hourly Distribution</span>
+          </div>
+          <div class="timeline-visual" id="timeline-track">
+            <!-- Dynamically populated -->
+          </div>
+          <div class="timeline-logs" id="timeline-logs-table">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: App Usage Breakdown -->
+      <section class="tab-content" id="tab-apps">
+        <div class="card full-width">
+          <div class="card-header">
+            <h3>Application Telemetry Matrix</h3>
+            <span class="badge">Privacy-Sanitized</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Application</th>
+                  <th>Category</th>
+                  <th>Sanitized Window Title</th>
+                  <th>Active Duration</th>
+                  <th>Idle Duration</th>
+                  <th>Last Seen</th>
+                </tr>
+              </thead>
+              <tbody id="app-matrix-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 4: Admin & Org Controls -->
+      <section class="tab-content" id="tab-admin">
+        <div class="admin-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3>Organization Retention Policy</h3>
+              <span class="badge">Auto-Purge</span>
+            </div>
+            <form id="form-retention" class="form-vertical">
+              <div class="form-group">
+                <label for="retention-days">Data Retention Window (Days)</label>
+                <input type="number" id="retention-days" min="7" max="730" value="90" class="input-control">
+                <small class="form-help">Activity older than this limit will be automatically deleted permanently.</small>
+              </div>
+              <div class="form-group checkbox-group">
+                <label>
+                  <input type="checkbox" id="auto-purge-toggle" checked>
+                  Enable Automated Daily Cryptographic Purge
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Policy</button>
+                <button type="button" class="btn btn-outline" id="btn-purge-now">Trigger Immediate Purge</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>Enrolled Workstations</h3>
+              <span class="badge">Authorized Only</span>
+            </div>
+            <div class="device-list" id="admin-devices-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <div class="card full-width mt-4">
+          <div class="card-header">
+            <h3>Security & Compliance Audit Trail</h3>
+            <span class="badge">Immutable Log</span>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Action</th>
+                  <th>Resource</th>
+                  <th>Actor</th>
+                  <th>IP Address</th>
+                </tr>
+              </thead>
+              <tbody id="audit-logs-body">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 5: Privacy & Compliance -->
+      <section class="tab-content" id="tab-privacy">
+        <div class="privacy-grid">
+          <div class="card">
+            <div class="card-header">
+              <h3>Employee Consent & Transparency</h3>
+              <span class="badge status-granted" id="consent-badge">Consent Granted</span>
+            </div>
+            <div class="privacy-notice-box">
+              <h4>What Look System Application Collects:</h4>
+              <ul>
+                <li>✓ Active application name (e.g. VS Code, Slack, Chrome)</li>
+                <li>✓ Duration of application focus and idle transitions</li>
+                <li>✓ Work session start and completion timestamps</li>
+                <li>✓ Sanitized window titles (URLs, emails, and tokens are scrubbed)</li>
+              </ul>
+              <h4>What Look System NEVER Collects:</h4>
+              <ul class="danger-list">
+                <li>✕ No raw keystrokes or password entries</li>
+                <li>✕ No clipboard contents or secret tokens</li>
+                <li>✕ No private chat messages or email contents</li>
+                <li>✕ No hidden background camera or screen recordings</li>
+              </ul>
+            </div>
+            <div class="form-actions mt-3">
+              <button class="btn btn-outline" id="btn-toggle-consent">Revoke Consent</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3>GDPR & CCPA Data Subject Rights (DSAR)</h3>
+              <span class="badge">Self-Service</span>
+            </div>
+            <p class="text-muted">You have the legal right to download a copy of all activity telemetry collected on your workstation, or request permanent deletion.</p>
+            <div class="dsar-actions mt-4">
+              <button class="btn btn-secondary w-100 mb-2" id="btn-dsar-export">
+                Download My Complete Data Archive (JSON)
+              </button>
+              <button class="btn btn-danger w-100" id="btn-dsar-delete">
+                Right to be Forgotten: Erase All My Activity Records
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

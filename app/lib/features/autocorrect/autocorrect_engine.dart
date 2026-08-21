@@ -75,8 +75,9 @@ class AutocorrectEngine {
   void unlearnWord(String word) {
     final trimmed = word.trim();
     final cleanWord = trimmed.toLowerCase();
-    _learnedWords.remove(trimmed);
-    _learnedWords.remove(cleanWord);
+    _learnedWords
+      ..remove(trimmed)
+      ..remove(cleanWord);
     _learnedWordCasing.remove(cleanWord);
     _dictionary.remove(cleanWord);
   }
