@@ -45,3 +45,15 @@ flutter_launcher_icons:
   image_path: "assets/icon/logo.png"
   min_sdk_android: 21
   remove_alpha_ios: true
+  adaptive_icon_foreground: "assets/icon/logo.png"
+  adaptive_icon_background: "#2D1B69"
+  web:
+    generate: true
+    image_path: "assets/icon/logo.png"
+  windows:
+    generate: true
+    image_path: "assets/icon/logo.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/icon/logo.png"
