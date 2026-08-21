@@ -22,10 +22,14 @@ class SupabaseAuthNotifier extends ChangeNotifier {
     }
   }
 
+  static bool? debugAuthenticatedOverride;
   StreamSubscription<AuthState>? _subscription;
 
   /// Whether the user currently has an active Supabase session.
   bool get isAuthenticated {
+    if (debugAuthenticatedOverride != null) {
+      return debugAuthenticatedOverride!;
+    }
     try {
       return Supabase.instance.client.auth.currentSession != null;
     } on Object catch (_) {

@@ -95,109 +95,107 @@ class _ScaffoldWithNavBar extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWideScreen = constraints.maxWidth > 600;
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final isWideScreen = constraints.maxWidth > 600;
 
-        if (isWideScreen) {
-          return Scaffold(
-            body: Row(
-              children: [
-                NavigationRail(
-                  selectedIndex: navigationShell.currentIndex,
-                  onDestinationSelected: (index) => navigationShell.goBranch(
-                    index,
-                    initialLocation: index == navigationShell.currentIndex,
-                  ),
-                  labelType: NavigationRailLabelType.all,
-                  destinations: const [
-                    NavigationRailDestination(
-                      icon: Icon(Icons.home_rounded),
-                      selectedIcon: Icon(Icons.home_rounded),
-                      label: Text('Home'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.history_rounded),
-                      selectedIcon: Icon(Icons.history_rounded),
-                      label: Text('History'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.translate_rounded),
-                      selectedIcon: Icon(Icons.translate_rounded),
-                      label: Text('Translate'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.emoji_emotions_rounded),
-                      selectedIcon: Icon(Icons.emoji_emotions_rounded),
-                      label: Text('Emoji'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.settings_rounded),
-                      selectedIcon: Icon(Icons.settings_rounded),
-                      label: Text('Settings'),
-                    ),
-                  ],
-                ),
-                const VerticalDivider(
-                  thickness: 1,
-                  width: 1,
-                  color: AppColors.cardBorder,
-                ),
-                Expanded(child: navigationShell),
-              ],
-            ),
-          );
-        }
-
+      if (isWideScreen) {
         return Scaffold(
-          body: navigationShell,
-          bottomNavigationBar: SafeArea(
-            child: Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: AppColors.cardBorder, width: 0.8),
-                ),
-              ),
-              child: BottomNavigationBar(
-                currentIndex: navigationShell.currentIndex,
-                onTap: (index) => navigationShell.goBranch(
+          body: Row(
+            children: [
+              NavigationRail(
+                selectedIndex: navigationShell.currentIndex,
+                onDestinationSelected: (index) => navigationShell.goBranch(
                   index,
                   initialLocation: index == navigationShell.currentIndex,
                 ),
-                type: BottomNavigationBarType.fixed,
-                items: const [
-                  BottomNavigationBarItem(
+                labelType: NavigationRailLabelType.all,
+                destinations: const [
+                  NavigationRailDestination(
                     icon: Icon(Icons.home_rounded),
-                    activeIcon: Icon(Icons.home_rounded),
-                    label: 'Home',
+                    selectedIcon: Icon(Icons.home_rounded),
+                    label: Text('Home'),
                   ),
-                  BottomNavigationBarItem(
+                  NavigationRailDestination(
                     icon: Icon(Icons.history_rounded),
-                    activeIcon: Icon(Icons.history_rounded),
-                    label: 'History',
+                    selectedIcon: Icon(Icons.history_rounded),
+                    label: Text('History'),
                   ),
-                  BottomNavigationBarItem(
+                  NavigationRailDestination(
                     icon: Icon(Icons.translate_rounded),
-                    activeIcon: Icon(Icons.translate_rounded),
-                    label: 'Translate',
+                    selectedIcon: Icon(Icons.translate_rounded),
+                    label: Text('Translate'),
                   ),
-                  BottomNavigationBarItem(
+                  NavigationRailDestination(
                     icon: Icon(Icons.emoji_emotions_rounded),
-                    activeIcon: Icon(Icons.emoji_emotions_rounded),
-                    label: 'Emoji',
+                    selectedIcon: Icon(Icons.emoji_emotions_rounded),
+                    label: Text('Emoji'),
                   ),
-                  BottomNavigationBarItem(
+                  NavigationRailDestination(
                     icon: Icon(Icons.settings_rounded),
-                    activeIcon: Icon(Icons.settings_rounded),
-                    label: 'Settings',
+                    selectedIcon: Icon(Icons.settings_rounded),
+                    label: Text('Settings'),
                   ),
                 ],
               ),
-            ),
+              const VerticalDivider(
+                thickness: 1,
+                width: 1,
+                color: AppColors.cardBorder,
+              ),
+              Expanded(child: navigationShell),
+            ],
           ),
         );
-      },
-    );
-  }
+      }
+
+      return Scaffold(
+        body: navigationShell,
+        bottomNavigationBar: SafeArea(
+          child: Container(
+            decoration: const BoxDecoration(
+              border: Border(
+                top: BorderSide(color: AppColors.cardBorder, width: 0.8),
+              ),
+            ),
+            child: BottomNavigationBar(
+              currentIndex: navigationShell.currentIndex,
+              onTap: (index) => navigationShell.goBranch(
+                index,
+                initialLocation: index == navigationShell.currentIndex,
+              ),
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home_rounded),
+                  activeIcon: Icon(Icons.home_rounded),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.history_rounded),
+                  activeIcon: Icon(Icons.history_rounded),
+                  label: 'History',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.translate_rounded),
+                  activeIcon: Icon(Icons.translate_rounded),
+                  label: 'Translate',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.emoji_emotions_rounded),
+                  activeIcon: Icon(Icons.emoji_emotions_rounded),
+                  label: 'Emoji',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.settings_rounded),
+                  activeIcon: Icon(Icons.settings_rounded),
+                  label: 'Settings',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
