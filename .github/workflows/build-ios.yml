@@ -17,10 +17,10 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
     - name: Setup Flutter
-      uses: subosito/flutter-action@v2
+      uses: subosito/flutter-action@48cafc24713cca54bbe03cdc3a423187d413aadb # v2.16.0
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         cache: true
@@ -32,21 +32,16 @@ jobs:
         cd app
         flutter pub get
         
-    - name: Install CocoaPods
-      run: |
-        cd app/ios
-        pod install --repo-update
-        
-    - name: Build iOS IPA
+    - name: Build iOS
       run: |
         cd app
-        flutter build ipa --release --no-codesign
+        flutter build ios --release --no-codesign
         
-    - name: Upload iOS IPA artifact
-      uses: actions/upload-artifact@v4
+    - name: Upload iOS build artifact
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
-        name: ios-ipa
-        path: app/build/ios/ipa/*.ipa
+        name: ios-build
+        path: app/build/ios/iphoneos/
         retention-days: 30
         
   test-ios:
@@ -55,10 +50,10 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
     - name: Setup Flutter
-      uses: subosito/flutter-action@v2
+      uses: subosito/flutter-action@48cafc24713cca54bbe03cdc3a423187d413aadb # v2.16.0
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         cache: true

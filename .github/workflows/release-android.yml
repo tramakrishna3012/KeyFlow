@@ -14,10 +14,10 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
     - name: Setup Flutter
-      uses: subosito/flutter-action@v2
+      uses: subosito/flutter-action@48cafc24713cca54bbe03cdc3a423187d413aadb # v2.16.0
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         cache: true
@@ -30,7 +30,7 @@ jobs:
         flutter pub get
         
     - name: Setup Java
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@8df10395026330eed31be34d8f5d00f637688e58 # v4.0.0
       with:
         distribution: 'temurin'
         java-version: '17'
@@ -59,14 +59,14 @@ jobs:
         flutter build apk --release --split-per-abi
         
     - name: Upload AAB artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: android-app-bundle
         path: app/build/app/outputs/bundle/release/app-release.aab
         retention-days: 30
         
     - name: Upload APK artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: android-apks
         path: app/build/app/outputs/flutter-apk/*.apk
@@ -74,7 +74,7 @@ jobs:
         
     - name: Upload to GitHub Release
       if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@c062e49d01eb946f041285265fb207011d8c1c4e # v2.0.8
       with:
         files: |
           app/build/app/outputs/bundle/release/app-release.aab
