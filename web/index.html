@@ -659,6 +659,9 @@
         <button class="modal-close" id="btn-close-auth">&times;</button>
       </div>
 
+      <!-- Inline Alert Box inside Auth Modal -->
+      <div id="auth-alert" class="alert-box" style="display: none;"></div>
+
       <!-- Sign In Form -->
       <form id="form-signin" class="modal-body">
         <div class="form-group mb-3">
@@ -669,7 +672,7 @@
           <label for="signin-password">Password</label>
           <input type="password" id="signin-password" class="input-control" placeholder="••••••••••••" required>
         </div>
-        <button type="submit" class="btn btn-primary w-100 mt-2">Sign In to Workstation</button>
+        <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-submit-signin">Sign In to Workstation</button>
       </form>
 
       <!-- Sign Up Form -->
@@ -690,10 +693,13 @@
           <label for="signup-org">Organization Name</label>
           <input type="text" id="signup-org" class="input-control" placeholder="Acme Corporation" value="Default Organization">
         </div>
-        <button type="submit" class="btn btn-primary w-100 mt-2">Create Account & Start Session</button>
+        <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-submit-signup">Create Account & Start Session</button>
       </form>
     </div>
   </div>
+
+  <!-- Global Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
 
   <script src="app.js"></script>
 </body>

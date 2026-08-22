@@ -29,6 +29,56 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================================================
+// Toast & Alert Notification System (Replaces browser pop-up alerts)
+// ==========================================================================
+
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const icons = {
+    success: '✅',
+    error: '❌',
+    info: 'ℹ️'
+  };
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <span>${icons[type] || '🔔'}</span>
+    <div style="flex: 1; font-weight: 500;">${message}</div>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(20px) scale(0.95)';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function showAuthAlert(message, type = 'error') {
+  const alertBox = document.getElementById('auth-alert');
+  if (!alertBox) return;
+
+  const icons = {
+    error: '⚠️',
+    success: '✅',
+    info: '💡'
+  };
+
+  alertBox.className = `alert-box ${type}`;
+  alertBox.innerHTML = `<span>${icons[type] || '⚠️'}</span><span>${message}</span>`;
+  alertBox.style.display = 'flex';
+}
+
+function hideAuthAlert() {
+  const alertBox = document.getElementById('auth-alert');
+  if (alertBox) alertBox.style.display = 'none';
+}
+
+// ==========================================================================
 // Marketing Site Interactive Features
 // ==========================================================================
 
@@ -94,6 +144,7 @@ function setupMarketingSite() {
   btnOpenDash?.addEventListener('click', () => {
     if (!currentUser || !authToken) {
       document.getElementById('auth-modal').style.display = 'flex';
+      showAuthAlert('Please sign in to access the Look System Dashboard.', 'info');
       return;
     }
     document.body.classList.add('dashboard-mode');
@@ -105,6 +156,7 @@ function setupMarketingSite() {
     e.preventDefault();
     if (!currentUser || !authToken) {
       document.getElementById('auth-modal').style.display = 'flex';
+      showAuthAlert('Please sign in to access the Look System Dashboard.', 'info');
       return;
     }
     document.body.classList.add('dashboard-mode');
@@ -121,14 +173,14 @@ function setupMarketingSite() {
   document.getElementById('form-request-access')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = document.getElementById('req-name')?.value;
-    alert(`Thank you, ${name}! Your access request has been recorded. You will receive an email invitation shortly.`);
+    showToast(`Thank you, ${name}! Your access request has been recorded.`, 'success');
     e.target.reset();
   });
 
   document.getElementById('form-notify-builds')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const email = document.getElementById('notify-email')?.value;
-    alert(`Subscribed! Release announcements will be delivered to ${email}.`);
+    showToast(`Subscribed! Release announcements will be sent to ${email}.`, 'success');
     e.target.reset();
   });
 }
@@ -216,9 +268,18 @@ function setupAuthModal() {
   const tabSignUp = document.getElementById('tab-btn-signup');
   const formSignIn = document.getElementById('form-signin');
   const formSignUp = document.getElementById('form-signup');
+  const btnSubmitSignIn = document.getElementById('btn-submit-signin');
+  const btnSubmitSignUp = document.getElementById('btn-submit-signup');
 
-  const showModal = () => { if (modal) modal.style.display = 'flex'; };
-  const hideModal = () => { if (modal) modal.style.display = 'none'; };
+  const showModal = () => {
+    hideAuthAlert();
+    if (modal) modal.style.display = 'flex';
+  };
+
+  const hideModal = () => {
+    hideAuthAlert();
+    if (modal) modal.style.display = 'none';
+  };
 
   btnNavTrigger?.addEventListener('click', () => {
     if (currentUser) {
@@ -242,10 +303,11 @@ function setupAuthModal() {
     currentSessionId = null;
     updateUserUI();
     document.body.classList.remove('dashboard-mode');
-    alert('You have been signed out.');
+    showToast('You have been signed out.', 'info');
   });
 
   tabSignIn?.addEventListener('click', () => {
+    hideAuthAlert();
     tabSignIn.classList.add('active');
     tabSignUp?.classList.remove('active');
     formSignIn.style.display = 'block';
@@ -253,6 +315,7 @@ function setupAuthModal() {
   });
 
   tabSignUp?.addEventListener('click', () => {
+    hideAuthAlert();
     tabSignUp.classList.add('active');
     tabSignIn?.classList.remove('active');
     formSignUp.style.display = 'block';
@@ -262,8 +325,16 @@ function setupAuthModal() {
   // Handle Sign In Submit
   formSignIn?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    hideAuthAlert();
+
     const email = document.getElementById('signin-email')?.value?.trim();
     const password = document.getElementById('signin-password')?.value;
+
+    if (btnSubmitSignIn) {
+      btnSubmitSignIn.disabled = true;
+      btnSubmitSignIn.textContent = 'Signing in...';
+    }
+
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
@@ -280,21 +351,36 @@ function setupAuthModal() {
       currentUser = data.user;
       updateUserUI();
       hideModal();
+
+      const name = currentUser.fullName || currentUser.full_name || 'Owner';
+      showToast(`Welcome back, ${name}!`, 'success');
       document.body.classList.add('dashboard-mode');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       await refreshAllDashboardData();
     } catch (err) {
-      alert(`Sign In Error: ${err.message}`);
+      showAuthAlert(err.message, 'error');
+    } finally {
+      if (btnSubmitSignIn) {
+        btnSubmitSignIn.disabled = false;
+        btnSubmitSignIn.textContent = 'Sign In to Workstation';
+      }
     }
   });
 
   // Handle Sign Up Submit
   formSignUp?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    hideAuthAlert();
+
     const fullName = document.getElementById('signup-name')?.value?.trim();
     const email = document.getElementById('signup-email')?.value?.trim();
     const password = document.getElementById('signup-password')?.value;
     const organizationName = document.getElementById('signup-org')?.value?.trim();
+
+    if (btnSubmitSignUp) {
+      btnSubmitSignUp.disabled = true;
+      btnSubmitSignUp.textContent = 'Creating account...';
+    }
 
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
@@ -306,7 +392,7 @@ function setupAuthModal() {
       if (!res.ok) {
         const errorMsg = data.error || data.message || 'Registration failed';
         if (res.status === 409 || errorMsg.toLowerCase().includes('already registered')) {
-          alert('This email is already registered! Switching to Sign In...');
+          showAuthAlert('This email is already registered. Switched to Sign In.', 'info');
           tabSignIn?.click();
           if (document.getElementById('signin-email')) {
             document.getElementById('signin-email').value = email;
@@ -324,12 +410,19 @@ function setupAuthModal() {
       currentUser = data.user;
       updateUserUI();
       hideModal();
-      alert(`Account created successfully! Welcome, ${currentUser.fullName || currentUser.full_name || 'Owner'}!`);
+
+      const name = currentUser.fullName || currentUser.full_name || 'Owner';
+      showToast(`Account created! Welcome, ${name}.`, 'success');
       document.body.classList.add('dashboard-mode');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       await refreshAllDashboardData();
     } catch (err) {
-      alert(`Registration Notice: ${err.message}`);
+      showAuthAlert(err.message, 'error');
+    } finally {
+      if (btnSubmitSignUp) {
+        btnSubmitSignUp.disabled = false;
+        btnSubmitSignUp.textContent = 'Create Account & Start Session';
+      }
     }
   });
 }
@@ -456,17 +549,17 @@ function setupSessionControls() {
       const data = await res.json();
       if (data.sessionId) {
         currentSessionId = data.sessionId;
-        alert(`Session started: ${data.sessionId}`);
+        showToast(`Session started: ${data.sessionId.substring(0, 8)}...`, 'success');
         refreshAllDashboardData();
       }
     } catch (err) {
-      alert(`Could not start session: ${err.message}`);
+      showToast(`Could not start session: ${err.message}`, 'error');
     }
   });
 
   document.getElementById('btn-pause-session-header')?.addEventListener('click', async () => {
     if (!currentSessionId) {
-      alert('No active session to pause.');
+      showToast('No active session to pause.', 'info');
       return;
     }
     try {
@@ -478,15 +571,15 @@ function setupSessionControls() {
         },
         body: JSON.stringify({ sessionId: currentSessionId })
       });
-      alert('Session paused.');
+      showToast('Session paused.', 'info');
     } catch (err) {
-      alert(`Error pausing session: ${err.message}`);
+      showToast(`Error pausing session: ${err.message}`, 'error');
     }
   });
 
   document.getElementById('btn-stop-session-header')?.addEventListener('click', async () => {
     if (!currentSessionId) {
-      alert('No active session to stop.');
+      showToast('No active session to stop.', 'info');
       return;
     }
     try {
@@ -498,11 +591,11 @@ function setupSessionControls() {
         },
         body: JSON.stringify({ sessionId: currentSessionId })
       });
-      alert('Session stopped and archived.');
+      showToast('Session stopped and archived.', 'success');
       currentSessionId = null;
       refreshAllDashboardData();
     } catch (err) {
-      alert(`Error stopping session: ${err.message}`);
+      showToast(`Error stopping session: ${err.message}`, 'error');
     }
   });
 }
@@ -720,7 +813,7 @@ function setupSearch() {
         </tr>
       `).join('');
     } catch (err) {
-      alert(`Search error: ${err.message}`);
+      showToast(`Search error: ${err.message}`, 'error');
     }
   });
 }
@@ -739,11 +832,11 @@ function setupExclusions() {
         },
         body: JSON.stringify({ appName })
       });
-      alert(`Excluded ${appName} from monitoring.`);
+      showToast(`Excluded ${appName} from monitoring.`, 'success');
       document.getElementById('input-new-exclusion').value = '';
       loadExclusions();
     } catch (err) {
-      alert(`Could not add exclusion: ${err.message}`);
+      showToast(`Could not add exclusion: ${err.message}`, 'error');
     }
   });
 }
@@ -780,19 +873,16 @@ async function loadExclusions() {
 
 function setupAdminControls() {
   document.getElementById('btn-purge-now')?.addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to trigger an immediate cryptographic purge of past retained data?')) {
-      return;
-    }
     try {
       const res = await fetch(`${API_BASE}/admin/purge`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${authToken}` }
       });
       const data = await res.json();
-      alert(`Purge completed. ${data.purgedCount || 0} historical records permanently deleted.`);
+      showToast(`Purge completed. ${data.purgedCount || 0} historical records permanently deleted.`, 'success');
       refreshAllDashboardData();
     } catch (err) {
-      alert(`Purge notice: ${err.message}`);
+      showToast(`Purge notice: ${err.message}`, 'info');
     }
   });
 }
