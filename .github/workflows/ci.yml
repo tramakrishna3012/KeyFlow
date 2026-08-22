@@ -28,7 +28,7 @@ jobs:
     - name: Get Flutter dependencies
       run: |
         cd app
-        flutter pub get
+        flutter pub get --enforce-lockfile
         
     - name: Analyze code
       run: |
@@ -81,7 +81,7 @@ jobs:
     - name: Get Flutter dependencies
       run: |
         cd app
-        flutter pub get
+        flutter pub get --enforce-lockfile
         
     - name: Build Android APK
       run: |
@@ -114,7 +114,7 @@ jobs:
     - name: Get Flutter dependencies
       run: |
         cd app
-        flutter pub get
+        flutter pub get --enforce-lockfile
         
     - name: Build Web
       run: |

@@ -30,7 +30,7 @@ jobs:
     - name: Get Flutter dependencies
       run: |
         cd app
-        flutter pub get
+        flutter pub get --enforce-lockfile
         
     - name: Build Windows executable
       run: |
