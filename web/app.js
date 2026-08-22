@@ -19,12 +19,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupTypingHistory();
   setupSearch();
   setupExclusions();
+  setupAdminControls();
   setupAuthModal();
 
   await verifyAuthOrPrompt();
   if (currentUser) {
-    await loadOverviewData();
-    await loadTypingHistory();
+    await refreshAllDashboardData();
   }
 });
 
@@ -98,6 +98,7 @@ function setupMarketingSite() {
     }
     document.body.classList.add('dashboard-mode');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    refreshAllDashboardData();
   });
 
   linkFooterDash?.addEventListener('click', (e) => {
@@ -108,6 +109,7 @@ function setupMarketingSite() {
     }
     document.body.classList.add('dashboard-mode');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    refreshAllDashboardData();
   });
 
   btnBackSite?.addEventListener('click', () => {
@@ -139,7 +141,6 @@ async function setupDownloadsGrid() {
   const container = document.getElementById('downloads-grid-container');
   if (!container) return;
 
-  // Detect visitor OS
   const detectedPlatform = detectVisitorOS();
 
   try {
@@ -221,8 +222,10 @@ function setupAuthModal() {
 
   btnNavTrigger?.addEventListener('click', () => {
     if (currentUser) {
-      // Toggle Dashboard or show info
       document.body.classList.toggle('dashboard-mode');
+      if (document.body.classList.contains('dashboard-mode')) {
+        refreshAllDashboardData();
+      }
     } else {
       showModal();
     }
@@ -236,6 +239,7 @@ function setupAuthModal() {
     localStorage.removeItem('look_jwt_token');
     authToken = '';
     currentUser = null;
+    currentSessionId = null;
     updateUserUI();
     document.body.classList.remove('dashboard-mode');
     alert('You have been signed out.');
@@ -258,7 +262,7 @@ function setupAuthModal() {
   // Handle Sign In Submit
   formSignIn?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('signin-email')?.value;
+    const email = document.getElementById('signin-email')?.value?.trim();
     const password = document.getElementById('signin-password')?.value;
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
@@ -267,17 +271,18 @@ function setupAuthModal() {
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Login failed');
+      if (!res.ok) {
+        throw new Error(data.error || data.message || 'Invalid email or password');
+      }
 
       authToken = data.token;
       localStorage.setItem('look_jwt_token', authToken);
       currentUser = data.user;
       updateUserUI();
       hideModal();
-      alert('Signed in successfully! Launching Web Dashboard.');
       document.body.classList.add('dashboard-mode');
-      loadOverviewData();
-      loadTypingHistory();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      await refreshAllDashboardData();
     } catch (err) {
       alert(`Sign In Error: ${err.message}`);
     }
@@ -286,10 +291,10 @@ function setupAuthModal() {
   // Handle Sign Up Submit
   formSignUp?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const fullName = document.getElementById('signup-name')?.value;
-    const email = document.getElementById('signup-email')?.value;
+    const fullName = document.getElementById('signup-name')?.value?.trim();
+    const email = document.getElementById('signup-email')?.value?.trim();
     const password = document.getElementById('signup-password')?.value;
-    const organizationName = document.getElementById('signup-org')?.value;
+    const organizationName = document.getElementById('signup-org')?.value?.trim();
 
     try {
       const res = await fetch(`${API_BASE}/auth/register`, {
@@ -298,19 +303,33 @@ function setupAuthModal() {
         body: JSON.stringify({ fullName, email, password, organizationName, role: 'admin' })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Registration failed');
+      if (!res.ok) {
+        const errorMsg = data.error || data.message || 'Registration failed';
+        if (res.status === 409 || errorMsg.toLowerCase().includes('already registered')) {
+          alert('This email is already registered! Switching to Sign In...');
+          tabSignIn?.click();
+          if (document.getElementById('signin-email')) {
+            document.getElementById('signin-email').value = email;
+          }
+          if (document.getElementById('signin-password')) {
+            document.getElementById('signin-password').focus();
+          }
+          return;
+        }
+        throw new Error(errorMsg);
+      }
 
       authToken = data.token;
       localStorage.setItem('look_jwt_token', authToken);
       currentUser = data.user;
       updateUserUI();
       hideModal();
-      alert('Account created! Launching Web Dashboard.');
+      alert(`Account created successfully! Welcome, ${currentUser.fullName || currentUser.full_name || 'Owner'}!`);
       document.body.classList.add('dashboard-mode');
-      loadOverviewData();
-      loadTypingHistory();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      await refreshAllDashboardData();
     } catch (err) {
-      alert(`Registration Error: ${err.message}`);
+      alert(`Registration Notice: ${err.message}`);
     }
   });
 }
@@ -348,17 +367,16 @@ function updateUserUI() {
   const userAvatar = document.getElementById('user-avatar');
 
   if (currentUser && authToken) {
-    // Show Dashboard Button & Logout
     if (dashBtn) dashBtn.style.display = 'inline-flex';
     if (logoutBtn) logoutBtn.style.display = 'block';
-    if (userName) userName.textContent = currentUser.full_name || 'Authorized Owner';
+    if (userName) userName.textContent = currentUser.fullName || currentUser.full_name || 'Authorized Owner';
     if (userRole) userRole.textContent = currentUser.role === 'admin' ? 'Administrator' : 'Team Member';
     
-    const initials = (currentUser.full_name || 'AO').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const nameStr = currentUser.fullName || currentUser.full_name || 'AO';
+    const initials = nameStr.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     if (userAvatar) userAvatar.textContent = initials;
-    if (navAuthBtn) navAuthBtn.textContent = `Dashboard (${currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Owner'})`;
+    if (navAuthBtn) navAuthBtn.textContent = `Dashboard (${nameStr.split(' ')[0]})`;
   } else {
-    // Hide Dashboard Button & Logout
     if (dashBtn) dashBtn.style.display = 'none';
     if (logoutBtn) logoutBtn.style.display = 'none';
     if (userName) userName.textContent = 'Guest / Visitor';
@@ -369,8 +387,18 @@ function updateUserUI() {
 }
 
 // ==========================================================================
-// Look System Dashboard Navigation & Controls
+// Dashboard Data Refresh & Navigation
 // ==========================================================================
+
+async function refreshAllDashboardData() {
+  await Promise.allSettled([
+    loadOverviewData(),
+    loadTypingHistory(),
+    loadSessions(),
+    loadAppBreakdown(),
+    loadExclusions()
+  ]);
+}
 
 function setupNavigation() {
   const navButtons = document.querySelectorAll('.sidebar .f-tab-btn');
@@ -395,9 +423,10 @@ function setupNavigation() {
       };
       document.getElementById('page-title').textContent = titles[tabId] || 'Look System';
 
-      if (tabId === 'typing') {
-        loadTypingHistory();
-      }
+      if (tabId === 'typing') loadTypingHistory();
+      if (tabId === 'sessions') loadSessions();
+      if (tabId === 'apps') loadAppBreakdown();
+      if (tabId === 'privacy') loadExclusions();
     });
   });
 }
@@ -417,7 +446,7 @@ function setupSessionControls() {
       if (data.sessionId) {
         currentSessionId = data.sessionId;
         alert(`Session started: ${data.sessionId}`);
-        loadOverviewData();
+        refreshAllDashboardData();
       }
     } catch (err) {
       alert(`Could not start session: ${err.message}`);
@@ -460,7 +489,7 @@ function setupSessionControls() {
       });
       alert('Session stopped and archived.');
       currentSessionId = null;
-      loadOverviewData();
+      refreshAllDashboardData();
     } catch (err) {
       alert(`Error stopping session: ${err.message}`);
     }
@@ -541,7 +570,7 @@ async function loadTypingHistory(q = '', appName = '') {
 }
 
 // ==========================================================================
-// Dashboard Overview & Telemetry
+// Dashboard Overview, Sessions, Breakdown, Exclusions
 // ==========================================================================
 
 async function loadOverviewData() {
@@ -564,7 +593,7 @@ async function loadOverviewData() {
     const topAppsContainer = document.getElementById('top-apps-container');
     if (topAppsContainer && Array.isArray(data.topApps) && data.topApps.length > 0) {
       topAppsContainer.innerHTML = data.topApps.map(app => `
-        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
           <strong>${app.appName}</strong>
           <span style="color: var(--text-muted);">${Math.round(app.duration / 60)} mins</span>
         </div>
@@ -572,6 +601,79 @@ async function loadOverviewData() {
     }
   } catch (err) {
     console.warn('Overview telemetry fetch:', err);
+  }
+}
+
+async function loadSessions() {
+  const container = document.getElementById('sessions-list-container');
+  if (!container || !authToken) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/activity/sessions`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+    const sessions = data.sessions || [];
+
+    if (sessions.length === 0) {
+      container.innerHTML = '<div class="text-muted text-center py-4">No recorded monitoring sessions.</div>';
+      return;
+    }
+
+    container.innerHTML = sessions.map(s => `
+      <div style="padding: 14px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <strong>Session ID: ${s.id.substring(0, 8)}...</strong>
+          <span class="badge ${s.status === 'active' ? 'badge-emerald' : ''}">${s.status.toUpperCase()}</span>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted);">
+          Started: ${new Date(s.started_at).toLocaleString()} • Device: ${s.device_name || 'Workstation'}
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    container.innerHTML = '<div class="text-muted text-center py-4">Could not load session explorer.</div>';
+  }
+}
+
+async function loadAppBreakdown() {
+  const container = document.getElementById('app-breakdown-container');
+  if (!container || !authToken) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/activity/summary`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+    const topApps = data.topApps || [];
+
+    if (topApps.length === 0) {
+      container.innerHTML = '<div class="text-muted text-center py-4">No application telemetry recorded yet.</div>';
+      return;
+    }
+
+    container.innerHTML = `
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Application Name</th>
+            <th>Logged Duration</th>
+            <th>Category</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${topApps.map(a => `
+            <tr>
+              <td><strong>${a.appName}</strong></td>
+              <td>${Math.round(a.duration / 60)} minutes</td>
+              <td><span class="badge">Productivity</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (err) {
+    container.innerHTML = '<div class="text-muted text-center py-4">Could not load application matrix.</div>';
   }
 }
 
@@ -614,7 +716,7 @@ function setupSearch() {
 
 function setupExclusions() {
   document.getElementById('btn-add-exclusion')?.addEventListener('click', async () => {
-    const appName = document.getElementById('input-new-exclusion')?.value;
+    const appName = document.getElementById('input-new-exclusion')?.value?.trim();
     if (!appName) return;
 
     try {
@@ -628,8 +730,58 @@ function setupExclusions() {
       });
       alert(`Excluded ${appName} from monitoring.`);
       document.getElementById('input-new-exclusion').value = '';
+      loadExclusions();
     } catch (err) {
       alert(`Could not add exclusion: ${err.message}`);
+    }
+  });
+}
+
+async function loadExclusions() {
+  const container = document.getElementById('exclusion-chips-container');
+  if (!container || !authToken) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/activity/privacy/exclusions`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+    const exclusions = data.exclusions || [];
+
+    if (exclusions.length === 0) {
+      container.innerHTML = '<div class="text-muted py-2">No custom application exclusions configured.</div>';
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px;">
+        ${exclusions.map(ex => `
+          <span class="badge" style="background: var(--bg-surface); color: var(--accent-red); border-color: rgba(220, 38, 38, 0.2); font-size: 13px;">
+            🔒 ${ex.app_name || ex.appName}
+          </span>
+        `).join('')}
+      </div>
+    `;
+  } catch (err) {
+    container.innerHTML = '<div class="text-muted">Could not load exclusions.</div>';
+  }
+}
+
+function setupAdminControls() {
+  document.getElementById('btn-purge-now')?.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to trigger an immediate cryptographic purge of past retained data?')) {
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/admin/purge`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      alert(`Purge completed. ${data.purgedCount || 0} historical records permanently deleted.`);
+      refreshAllDashboardData();
+    } catch (err) {
+      alert(`Purge notice: ${err.message}`);
     }
   });
 }
