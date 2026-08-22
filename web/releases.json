@@ -1,0 +1,66 @@
+[
+  {
+    "platform": "windows",
+    "displayName": "Windows",
+    "icon": "windows",
+    "version": "v1.0.0",
+    "releaseDate": "2026-08-22",
+    "fileUrl": "https://github.com/tramakrishna3012/KeyFlow/releases/download/v1.0.0/KeyFlow-Windows-x64.zip",
+    "sizeMB": "12.4 MB",
+    "systemRequirements": "Windows 10 / 11 (64-bit)",
+    "changelog": [
+      "Continuous background typing history daemon",
+      "Sub-200ms global hotkey search (Ctrl+Shift+K)",
+      "Local SQLCipher AES-256 database encryption",
+      "Configurable application privacy exclusions"
+    ]
+  },
+  {
+    "platform": "macos",
+    "displayName": "macOS",
+    "icon": "apple",
+    "version": "v1.0.0",
+    "releaseDate": "2026-08-22",
+    "fileUrl": "https://github.com/tramakrishna3012/KeyFlow/releases/download/v1.0.0/KeyFlow-macOS-Universal.zip",
+    "sizeMB": "15.8 MB",
+    "systemRequirements": "macOS 12.0 Monterey or later (Apple Silicon & Intel)",
+    "changelog": [
+      "Native macOS menu bar status indicator",
+      "Universal binary supporting Apple Silicon & Intel",
+      "Spotlight-style floating quick search",
+      "Hardware-accelerated local cryptographic storage"
+    ]
+  },
+  {
+    "platform": "android",
+    "displayName": "Android",
+    "icon": "android",
+    "version": "v1.0.0",
+    "releaseDate": "2026-08-22",
+    "fileUrl": "https://github.com/tramakrishna3012/KeyFlow/releases/download/v1.0.0/app-arm64-v8a-release.apk",
+    "sizeMB": "67.0 MB",
+    "systemRequirements": "Android 8.0 (API 26) or higher",
+    "changelog": [
+      "Accessibility Service background text assist",
+      "Automatic midnight daily session rollover",
+      "Sensitive OTP and credit card redactor",
+      "Encrypted cross-device cloud synchronization"
+    ]
+  },
+  {
+    "platform": "ios",
+    "displayName": "iOS",
+    "icon": "apple",
+    "version": "v1.0.0 (Beta)",
+    "releaseDate": "2026-08-22",
+    "testflightUrl": "https://testflight.apple.com/join/KeyFlowBeta",
+    "sizeMB": "24.1 MB",
+    "systemRequirements": "iOS 15.0 or later",
+    "changelog": [
+      "KeyFlow Custom Assist Keyboard extension",
+      "Biometric FaceID / TouchID vault unlock",
+      "Instant snippet pasting widget",
+      "End-to-end encrypted relay sync"
+    ]
+  }
+]

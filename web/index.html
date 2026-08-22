@@ -3,240 +3,600 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Look System Application - Transparent, privacy-first workplace productivity and system activity monitoring dashboard.">
-  <title>Look System Application | Transparent Activity Analytics & Session Explorer</title>
+  <meta name="robots" content="noindex, nofollow">
+  <title>KeyFlow — Local-First Typing History & Assist Application</title>
+  
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-layout">
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
+  <div class="ambient-glow"></div>
+
+  <!-- =========================================================================
+       MARKETING & PRODUCT SITE (Datanova Component Customization)
+       ========================================================================= -->
+  <div id="marketing-container">
+    
+    <!-- Top Sticky Navbar -->
+    <header class="navbar">
+      <div class="nav-container">
+        <a href="#hero" class="brand-link">
+          <div class="brand-logo">KF</div>
+          <span>KeyFlow</span>
+        </a>
+
+        <nav>
+          <ul class="nav-menu">
+            <li><a href="#hero" class="nav-link active">Home</a></li>
+            <li><a href="#features" class="nav-link">Features</a></li>
+            <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+            <li><a href="#security" class="nav-link">Security & Trust</a></li>
+            <li><a href="#downloads" class="nav-link">Downloads</a></li>
+            <li><a href="#faq" class="nav-link">FAQ</a></li>
+            <li><a href="#about" class="nav-link">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-actions">
+          <button class="btn btn-sm btn-outline" id="btn-open-dashboard">Web Dashboard</button>
+          <button class="btn btn-sm btn-primary" id="btn-nav-auth">Sign In / Register</button>
         </div>
-        <div class="brand-text">
-          <span class="brand-name">LOOK SYSTEM</span>
-          <span class="brand-tag">Transparent Analytics</span>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="hero">
+      <div class="badge badge-emerald mb-2">
+        <span>●</span> Local-First • AES-256 Encrypted • Zero Telemetry by Default
+      </div>
+      <h1 class="hero-title">
+        Stop retyping repeated text.<br>
+        <span class="gradient-text">Type once, recall anywhere.</span>
+      </h1>
+      <p class="hero-subtitle">
+        KeyFlow indexes and encrypts your typing history locally across Windows, macOS, Android, and iOS. Instantly search and reuse past text snippets, with intelligent autocorrect, offline translation, and context-aware emoji suggestions.
+      </p>
+      <div class="hero-actions">
+        <a href="#downloads" class="btn btn-lg btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Download KeyFlow
+        </a>
+        <a href="#how-it-works" class="btn btn-lg btn-outline">See How It Works</a>
+      </div>
+
+      <!-- Live Search-and-Reinsert Interactive Preview Player -->
+      <div class="hero-preview-card">
+        <div class="preview-bar">
+          <span class="preview-dot dot-red"></span>
+          <span class="preview-dot dot-amber"></span>
+          <span class="preview-dot dot-green"></span>
+          <span style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">KeyFlow Instant Quick-Search (Ctrl + Shift + K)</span>
+        </div>
+        <div class="search-sim-input">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="sim-input" placeholder="Type to search past typed snippets (e.g. 'pull request', 'ssh', 'api')..." value="pull request" aria-label="Interactive preview search query">
+        </div>
+        <div class="search-sim-results" id="sim-results-container">
+          <div class="sim-snippet-item">
+            <div>
+              <strong style="color: var(--text-primary); font-size: 13px;">feat(look-system): implement hierarchical session explorer & AES-256 sync</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">VS Code • Today at 11:42 AM • 94% match</div>
+            </div>
+            <span class="badge" style="font-size: 10px;">Press Enter to Reinsert</span>
+          </div>
+          <div class="sim-snippet-item">
+            <div>
+              <strong style="color: var(--text-primary); font-size: 13px;">Reviewing pull request checklist and database migration scripts for Neon Postgres</strong>
+              <div style="font-size: 11px; color: var(--text-muted);">Google Chrome • Yesterday at 4:15 PM • 88% match</div>
+            </div>
+            <span class="badge" style="font-size: 10px;">Press Enter to Reinsert</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Feature Tabs / Product Ecosystem (PRD §5) -->
+    <section class="section" id="features">
+      <div class="section-header">
+        <div class="badge">Product Ecosystem</div>
+        <h2 class="section-title">Engineered for Frictionless Typing</h2>
+        <p class="section-desc">Five core modules integrated into a single lightweight desktop and mobile service.</p>
+      </div>
+
+      <div class="feature-tabs-nav">
+        <button class="f-tab-btn active" data-tab="f-history">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
+          Typing History & Reuse
+        </button>
+        <button class="f-tab-btn" data-tab="f-autocorrect">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          Autocorrect
+        </button>
+        <button class="f-tab-btn" data-tab="f-translation">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          Translation
+        </button>
+        <button class="f-tab-btn" data-tab="f-emoji">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+          Emoji Suggestions
+        </button>
+        <button class="f-tab-btn" data-tab="f-privacy">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          Privacy & Local Storage
+        </button>
+      </div>
+
+      <!-- Feature Panels -->
+      <div class="feature-panel active" id="f-history">
+        <div>
+          <div class="badge mb-2">PRD §5.1</div>
+          <h3 style="font-size: 26px; font-weight: 700; margin-bottom: 14px;">Instant Fuzzy Search & Hotkey Snippet Recall</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            KeyFlow records your permitted keystrokes and text inputs continuously in the background. Hit your custom hotkey (<kbd>Ctrl+Shift+K</kbd> / <kbd>Cmd+Shift+K</kbd>) to search past typed snippets in under 200ms and reinsert them into any active application.
+          </p>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+            <li>✓ <strong>Sub-200ms Query Benchmark:</strong> Rapid indexed retrieval across thousands of entries.</li>
+            <li>✓ <strong>Application Categorization:</strong> Automatically tags snippets by IDE, browser, or chat client.</li>
+            <li>✓ <strong>One-Click Reinsertion:</strong> Paste directly back into the cursor position.</li>
+          </ul>
+        </div>
+        <div style="background: rgba(0,0,0,0.5); padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary);">
+          <div style="color: var(--accent-indigo); margin-bottom: 8px;">// Search Query: "postgres connection"</div>
+          <div style="color: #F8FAFC;">[Result 1] postgresql://neondb_owner:***@ep-morning-pooler.c-4.us-east-2.aws.neon.tech/neondb</div>
+          <div style="color: var(--text-muted); font-size: 11px; margin-top: 4px;">Captured in VS Code • Encrypted (AES-256)</div>
         </div>
       </div>
 
-      <nav class="nav-links">
-        <button class="nav-item active" data-tab="overview" id="nav-overview">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-          Executive Overview
-        </button>
-        <button class="nav-item" data-tab="typing" id="nav-typing">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-          Typing History
-        </button>
-        <button class="nav-item" data-tab="sessions" id="nav-sessions">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-          Session Explorer
-        </button>
-        <button class="nav-item" data-tab="search" id="nav-search">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          Search & Filtering
-        </button>
-        <button class="nav-item" data-tab="apps" id="nav-apps">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-          App Usage Breakdown
-        </button>
-        <button class="nav-item" data-tab="admin" id="nav-admin">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-          Admin & Org Controls
-        </button>
-        <button class="nav-item" data-tab="privacy" id="nav-privacy">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-          Privacy & Exclusions
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="monitoring-pill active" id="global-status-pill">
-          <span class="pulse-dot"></span>
-          <span class="status-label">Monitoring: ACTIVE</span>
+      <div class="feature-panel" id="f-autocorrect">
+        <div>
+          <div class="badge mb-2">PRD §5.2</div>
+          <h3 style="font-size: 26px; font-weight: 700; margin-bottom: 14px;">Intelligent On-Device Autocorrect</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Leverages a local statistical n-gram model that adapts to your personal vocabulary, technical terms, and acronyms without sending a single byte to external cloud servers.
+          </p>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+            <li>✓ <strong>Zero Latency:</strong> 100% on-device inference with zero network overhead.</li>
+            <li>✓ <strong>Custom Vocabulary:</strong> Learns code syntax, domain terms, and team abbreviations.</li>
+          </ul>
         </div>
-        <div class="user-chip" id="user-chip-btn" style="cursor: pointer;" title="Click to Switch Account or Sign Out">
-          <div class="avatar" id="user-avatar">AO</div>
-          <div class="user-meta">
-            <span class="user-name" id="user-name">Authorized Owner</span>
-            <span class="user-role" id="user-role">Click to Sign In / Out</span>
+        <div style="background: rgba(0,0,0,0.5); padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-family: var(--font-mono); font-size: 13px;">
+          <div style="color: var(--text-muted);">User types: <span style="color: var(--accent-red); text-decoration: line-through;">asynk funciton</span></div>
+          <div style="color: var(--accent-emerald); margin-top: 8px;">KeyFlow corrects: async function</div>
+        </div>
+      </div>
+
+      <div class="feature-panel" id="f-translation">
+        <div>
+          <div class="badge mb-2">PRD §5.3</div>
+          <h3 style="font-size: 26px; font-weight: 700; margin-bottom: 14px;">Seamless In-Line Text Translation</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Translate text snippets across 10+ languages directly inside any native text input field without switching applications or opening a browser tab.
+          </p>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+            <li>✓ <strong>Global Hotkey Translation:</strong> Instant multi-lingual communication.</li>
+            <li>✓ <strong>Offline Fallback:</strong> Local translation dictionary with optional secure relay.</li>
+          </ul>
+        </div>
+        <div style="background: rgba(0,0,0,0.5); padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-family: var(--font-mono); font-size: 13px;">
+          <div style="color: var(--text-muted);">Source: "Thank you for reviewing the deployment runbook."</div>
+          <div style="color: var(--accent-cyan); margin-top: 8px;">Translated (ES): "Gracias por revisar el manual de despliegue."</div>
+        </div>
+      </div>
+
+      <div class="feature-panel" id="f-emoji">
+        <div>
+          <div class="badge mb-2">PRD §5.4</div>
+          <h3 style="font-size: 26px; font-weight: 700; margin-bottom: 14px;">Contextual Emoji Suggestions</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Fast semantic emoji replacement as you type. Use standard colon shortcodes or natural language keywords to enrich chat messages and documentation.
+          </p>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+            <li>✓ <strong>Shortcode Matching:</strong> <code>:rocket:</code> → 🚀, <code>:lock:</code> → 🔒, <code>:sparkles:</code> → ✨</li>
+            <li>✓ <strong>Natural Keywords:</strong> Matches intent like "celebrate" → 🎉 or "fire" → 🔥</li>
+          </ul>
+        </div>
+        <div style="background: rgba(0,0,0,0.5); padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-family: var(--font-mono); font-size: 16px;">
+          <div>:security: → 🛡️ &nbsp; :rocket: → 🚀 &nbsp; :check: → ✅</div>
+        </div>
+      </div>
+
+      <div class="feature-panel" id="f-privacy">
+        <div>
+          <div class="badge badge-emerald mb-2">PRD §5.5 & TRD §4</div>
+          <h3 style="font-size: 26px; font-weight: 700; margin-bottom: 14px;">Hardware-Backed Local Encryption</h3>
+          <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            All recorded keystrokes and snippet history are stored in a local SQLite database protected by SQLCipher and AES-256-GCM encryption. Cryptographic master keys are kept in platform-native secure enclaves (Windows Credential Manager, macOS Keychain, Android Keystore).
+          </p>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px;">
+            <li>✓ <strong>Sensitive Redaction:</strong> Passwords, credit cards, and OTPs are purged before storage.</li>
+            <li>✓ <strong>Configurable Exclusions:</strong> Blacklist password managers, banking apps, and private chats.</li>
+          </ul>
+        </div>
+        <div style="background: rgba(0,0,0,0.5); padding: 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-family: var(--font-mono); font-size: 13px;">
+          <div style="color: var(--accent-emerald);">AES-256-GCM Record-Level Encryption: ACTIVE</div>
+          <div style="color: var(--text-muted); margin-top: 8px;">Key Storage: OS Secure Enclave (DPAPI / Keychain)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3-Step Workflow Grid ("How KeyFlow Works") -->
+    <section class="section" id="how-it-works">
+      <div class="section-header">
+        <div class="badge">Workflow</div>
+        <h2 class="section-title">How KeyFlow Works</h2>
+        <p class="section-desc">Designed to fit invisibly into your daily workflow without disrupting your concentration.</p>
+      </div>
+
+      <div class="workflow-grid">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 12px;">You Type Naturally, Anywhere</h3>
+          <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.7;">
+            KeyFlow runs as a lightweight, low-resource background service across your IDE, browser, terminal, and productivity apps.
+          </p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 12px;">Filtered & Encrypted Locally</h3>
+          <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.7;">
+            Sensitive patterns (passwords, OTPs, auth tokens, card numbers) are automatically redacted in real-time before being encrypted with AES-256-GCM.
+          </p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 12px;">Search & Reuse in &lt;200ms</h3>
+          <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.7;">
+            Hit your global shortcut to summon the floating search bar, find any past snippet with fuzzy search, and paste it right where you need it.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Built for Trust Security Grid (TRD §4) -->
+    <section class="section" id="security">
+      <div class="section-header">
+        <div class="badge badge-emerald">Security Charter</div>
+        <h2 class="section-title">Built for Absolute Trust</h2>
+        <p class="section-desc">Every security requirement verified against the technical specifications in TRD §4.</p>
+      </div>
+
+      <div class="trust-grid">
+        <div class="trust-card">
+          <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <h4 style="font-size: 17px; font-weight: 700; margin-bottom: 8px;">AES-256 at Rest</h4>
+          <p style="font-size: 13px; color: var(--text-secondary);">All database records encrypted with 256-bit AES-GCM and unique IVs.</p>
+        </div>
+
+        <div class="trust-card">
+          <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+          <h4 style="font-size: 17px; font-weight: 700; margin-bottom: 8px;">Local-First Architecture</h4>
+          <p style="font-size: 13px; color: var(--text-secondary);">Zero telemetry sent to external servers unless explicitly configured by the owner.</p>
+        </div>
+
+        <div class="trust-card">
+          <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <h4 style="font-size: 17px; font-weight: 700; margin-bottom: 8px;">Visible Status Indicator</h4>
+          <p style="font-size: 13px; color: var(--text-secondary);">Always transparent with active system tray icon and foreground notifications.</p>
+        </div>
+
+        <div class="trust-card">
+          <svg class="trust-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          <h4 style="font-size: 17px; font-weight: 700; margin-bottom: 8px;">Real-Time Exclusions</h4>
+          <p style="font-size: 13px; color: var(--text-secondary);">Pre-configured redactions for passwords, auth codes, credit cards, and excluded apps.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Downloads Grid (Repurposed Datanova Pricing Grid) -->
+    <section class="section" id="downloads">
+      <div class="section-header">
+        <div class="badge">Downloads</div>
+        <h2 class="section-title">Download KeyFlow for Your Device</h2>
+        <p class="section-desc">Available for Windows, macOS, Android, and iOS. Direct downloads verified against GitHub Releases.</p>
+      </div>
+
+      <div class="downloads-grid" id="downloads-grid-container">
+        <!-- Dynamically rendered from releases.json with client-side OS auto-detection -->
+        <div class="text-muted text-center py-4">Loading verified release packages...</div>
+      </div>
+    </section>
+
+    <!-- FAQ Accordion -->
+    <section class="section" id="faq">
+      <div class="section-header">
+        <div class="badge">Frequently Asked Questions</div>
+        <h2 class="section-title">Common Questions & Answers</h2>
+        <p class="section-desc">Everything you need to know about KeyFlow's privacy, capture scope, and security model.</p>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>What does KeyFlow capture and save?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            KeyFlow captures permitted text entries and active application titles while a monitoring session is running. It indexes this data so you can search and reinsert your typing history.
           </div>
         </div>
-        <button class="btn btn-sm btn-outline w-100 mt-2" id="btn-auth-trigger">Sign In / Register</button>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>How does KeyFlow prevent capturing sensitive credentials?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            KeyFlow includes built-in real-time regex sanitizers that detect and exclude credit/debit card numbers, 4–8 digit OTPs, passwords, authentication tokens, and banking details before any record is stored or synced.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Does my data leave my computer or phone?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            By default, 100% of data is stored locally in an encrypted SQLCipher vault on your device. When optional cross-device cloud synchronization is enabled, records are transmitted encrypted with AES-256-GCM directly to your private backend instance.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>How does iOS differ from desktop and Android?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            On iOS, sandbox security policies prohibit background global keystroke monitoring. KeyFlow operates on iOS via a custom Keyboard Extension and widget that allows instant snippet search and insertion inside apps.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>How do I delete my data or revoke permissions?</span>
+            <svg class="faq-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <div class="faq-answer">
+            You can trigger an immediate one-click cryptographic wipe at any time from the Privacy & Exclusions tab in the web dashboard or inside the application settings.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lead Forms: Request Access & Notify Builds -->
+    <section class="section" id="access">
+      <div class="section-header">
+        <div class="badge">Join the Trusted Group</div>
+        <h2 class="section-title">Request Access & Stay Notified</h2>
+        <p class="section-desc">KeyFlow is currently distributed to a small trusted group. Submit your request or sign up for release updates.</p>
+      </div>
+
+      <div class="forms-grid">
+        <!-- Form 1: Request Access -->
+        <div class="form-card">
+          <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Request Group Access</h3>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Get invited to internal test builds and early releases.</p>
+          <form id="form-request-access">
+            <div class="form-group">
+              <label for="req-name">Full Name</label>
+              <input type="text" id="req-name" class="input-control" placeholder="Jane Doe" required>
+            </div>
+            <div class="form-group">
+              <label for="req-email">Work Email</label>
+              <input type="email" id="req-email" class="input-control" placeholder="jane@company.com" required>
+            </div>
+            <div class="form-group">
+              <label for="req-platform">Primary Operating System</label>
+              <select id="req-platform" class="input-control">
+                <option value="windows">Windows 10 / 11</option>
+                <option value="macos">macOS (Apple Silicon / Intel)</option>
+                <option value="android">Android</option>
+                <option value="ios">iOS (TestFlight)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-2">Submit Access Request</button>
+          </form>
+        </div>
+
+        <!-- Form 2: Notify Builds -->
+        <div class="form-card">
+          <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Notify Me About New Builds</h3>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Receive an email notification when a new version is released.</p>
+          <form id="form-notify-builds">
+            <div class="form-group">
+              <label for="notify-email">Email Address</label>
+              <input type="email" id="notify-email" class="input-control" placeholder="developer@company.com" required>
+            </div>
+            <div class="form-group">
+              <label for="notify-frequency">Notification Frequency</label>
+              <select id="notify-frequency" class="input-control">
+                <option value="stable">Stable Releases Only</option>
+                <option value="all">All Releases & Beta Builds</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-outline w-100 mt-2" style="margin-top: 52px;">Subscribe to Release Notes</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section" id="about">
+      <div class="section-header">
+        <div class="badge">About the Project</div>
+        <h2 class="section-title">High Performance. Uncompromising Privacy.</h2>
+        <p class="section-desc">KeyFlow was created to eliminate the friction of repetitive typing while keeping personal data strictly in the owner's hands.</p>
+      </div>
+
+      <div class="feature-panel active" style="grid-template-columns: 1fr; max-width: 800px; margin: 0 auto;">
+        <div style="font-size: 15px; color: var(--text-secondary); line-height: 1.8;">
+          <p style="margin-bottom: 16px;">
+            KeyFlow combines native background daemons (written in Flutter, Rust/Kotlin, and Swift) with lightweight cryptographic storage. Operating locally with less than <strong>50MB memory</strong> and <strong>&lt;1% CPU overhead</strong>, it ensures seamless indexing without impacting device performance or battery life.
+          </p>
+          <p>
+            The project follows strict privacy-by-design standards: transparent status indicators, no hidden capture mechanisms, and complete cryptographic wipe capabilities that adhere to GDPR and CCPA Data Subject Rights (DSAR).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Marketing Footer -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-brand">
+          <div class="brand-link">
+            <div class="brand-logo">KF</div>
+            <span>KeyFlow</span>
+          </div>
+          <p>Local-first typing history and assist application built for speed, transparency, and uncompromising privacy.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="#hero">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#downloads">Downloads</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Platform & Access</h4>
+          <ul class="footer-links">
+            <li><a href="#access">Request Access</a></li>
+            <li><a href="#security">Security Charter</a></li>
+            <li><a href="#" id="link-footer-dashboard">Web Dashboard</a></li>
+            <li><a href="https://github.com/tramakrishna3012/KeyFlow" target="_blank" rel="noopener">GitHub Repository</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2026 KeyFlow. Open Source & Internal Group Tool.</span>
+        <span>Version 1.0.0 • Local-First Security</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- =========================================================================
+       LOOK SYSTEM DASHBOARD & TELEMETRY CONSOLE
+       ========================================================================= -->
+  <div id="dashboard-container">
+    <aside class="sidebar">
+      <div>
+        <div class="brand-link mb-4" style="margin-bottom: 24px;">
+          <div class="brand-logo">LS</div>
+          <div>
+            <div style="font-size: 15px; font-weight: 800;">LOOK SYSTEM</div>
+            <div style="font-size: 10px; color: var(--accent-cyan); font-weight: 600;">TELEMETRY DASHBOARD</div>
+          </div>
+        </div>
+
+        <nav style="display: flex; flex-direction: column; gap: 6px;">
+          <button class="f-tab-btn active w-100" data-tab="overview" id="nav-overview" style="justify-content: flex-start;">Executive Overview</button>
+          <button class="f-tab-btn w-100" data-tab="typing" id="nav-typing" style="justify-content: flex-start;">Typing History</button>
+          <button class="f-tab-btn w-100" data-tab="sessions" id="nav-sessions" style="justify-content: flex-start;">Session Explorer</button>
+          <button class="f-tab-btn w-100" data-tab="search" id="nav-search" style="justify-content: flex-start;">Search & Filtering</button>
+          <button class="f-tab-btn w-100" data-tab="apps" id="nav-apps" style="justify-content: flex-start;">App Usage Breakdown</button>
+          <button class="f-tab-btn w-100" data-tab="admin" id="nav-admin" style="justify-content: flex-start;">Admin & Org Controls</button>
+          <button class="f-tab-btn w-100" data-tab="privacy" id="nav-privacy" style="justify-content: flex-start;">Privacy & Exclusions</button>
+        </nav>
+      </div>
+
+      <div>
+        <button class="btn btn-sm btn-outline w-100 mb-2" id="btn-back-to-site" style="margin-bottom: 12px;">← Back to Product Site</button>
+        <div class="user-chip" id="user-chip-btn" style="cursor: pointer; padding: 12px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;" title="Click to Sign In or Switch Account">
+          <div class="brand-logo" id="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">AO</div>
+          <div>
+            <div id="user-name" style="font-size: 12px; font-weight: 700;">Authorized Owner</div>
+            <div id="user-role" style="font-size: 11px; color: var(--text-muted);">Click to Sign In</div>
+          </div>
+        </div>
       </div>
     </aside>
 
-    <!-- Main Content Area -->
     <main class="main-content">
-      <!-- Top Header -->
-      <header class="top-header">
-        <div class="header-title">
-          <h1 id="page-title">Executive Overview</h1>
-          <p class="header-subtitle">Real-time productivity, session hierarchy & transparent telemetry.</p>
+      <header class="header">
+        <div>
+          <h2 id="page-title" style="font-size: 26px; font-weight: 800;">Executive Overview</h2>
+          <p style="color: var(--text-muted); font-size: 13px;">Real-time productivity, session hierarchy & transparent telemetry.</p>
         </div>
-        <div class="header-actions">
-          <div class="session-quick-controls">
-            <button class="btn btn-sm btn-primary" id="btn-start-session-header">Start Session</button>
-            <button class="btn btn-sm btn-outline" id="btn-pause-session-header">Pause</button>
-            <button class="btn btn-sm btn-danger" id="btn-stop-session-header">Stop</button>
-          </div>
-          <button class="btn btn-outline" id="btn-export-data">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Export Archive
-          </button>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-sm btn-primary" id="btn-start-session-header">Start Session</button>
+          <button class="btn btn-sm btn-outline" id="btn-pause-session-header">Pause</button>
+          <button class="btn btn-sm btn-outline" id="btn-stop-session-header" style="color: var(--accent-red);">Stop</button>
         </div>
       </header>
 
-      <!-- Transparency Banner -->
-      <div class="transparency-banner">
-        <div class="banner-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title">Today's Session Duration</div>
+          <div class="kpi-value" id="kpi-duration">0h 0m</div>
         </div>
-        <div class="banner-text">
-          <strong>Privacy-Preserving Telemetry Guarantee</strong>: Look System Application monitors active app names and permitted text only. Passwords, OTPs, auth codes, credit card numbers, and banking details are <u>never</u> recorded or stored.
+        <div class="kpi-card">
+          <div class="kpi-title">Total Activity Logs</div>
+          <div class="kpi-value" id="kpi-logs">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Focus & Productivity</div>
+          <div class="kpi-value" id="kpi-productivity">0%</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title">Authorized Devices</div>
+          <div class="kpi-value" id="kpi-devices">0 Active</div>
         </div>
       </div>
 
-      <!-- Tab 1: Executive Overview -->
+      <!-- Tab: Overview -->
       <section class="tab-content active" id="tab-overview">
-        <!-- KPI Cards Grid -->
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-header">
-              <span class="kpi-title">Today's Session Duration</span>
-              <div class="kpi-icon teal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-            </div>
-            <div class="kpi-value" id="val-active-time">0h 0m</div>
-            <div class="kpi-trend positive" id="trend-active-time">Active Work Time</div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-header">
-              <span class="kpi-title">Total Activity Logs</span>
-              <div class="kpi-icon orange"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg></div>
-            </div>
-            <div class="kpi-value" id="val-total-activity">0</div>
-            <div class="kpi-trend neutral" id="trend-total-activity">Event-driven logs</div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-header">
-              <span class="kpi-title">Focus & Productivity</span>
-              <div class="kpi-icon purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div>
-            </div>
-            <div class="kpi-value" id="val-focus-score">0%</div>
-            <div class="kpi-trend positive" id="trend-focus-score">Calculated from active apps</div>
-          </div>
-
-          <div class="kpi-card">
-            <div class="kpi-header">
-              <span class="kpi-title">Authorized Devices</span>
-              <div class="kpi-icon blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
-            </div>
-            <div class="kpi-value" id="val-devices">0 Active</div>
-            <div class="kpi-trend positive" id="trend-devices">Encrypted & Enrolled</div>
-          </div>
-        </div>
-
-        <!-- Charts Row -->
-        <div class="charts-row">
-          <div class="chart-card flex-2">
-            <div class="card-header">
-              <h3>Category Distribution</h3>
-              <span class="badge">Automatic Classification</span>
-            </div>
-            <div class="category-bars" id="category-bars-container">
-              <div class="text-muted text-center py-3">No activity logged yet. Start a session or launch the desktop client to capture telemetry.</div>
-            </div>
-          </div>
-
-          <div class="chart-card flex-1">
-            <div class="card-header">
-              <h3>Top Applications</h3>
-              <span class="badge">By Active Duration</span>
-            </div>
-            <div class="top-apps-list" id="top-apps-container">
-              <div class="text-muted text-center py-3">No applications recorded yet.</div>
-            </div>
-          </div>
+        <div class="form-card mb-4" style="margin-bottom: 24px;">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">Top Applications & Category Distribution</h3>
+          <div id="top-apps-container" class="text-muted py-2">No applications recorded yet. Start a session to record telemetry.</div>
         </div>
       </section>
 
-      <!-- Tab 2: Typing History (Cross-Device Encrypted Access) -->
+      <!-- Tab: Typing History -->
       <section class="tab-content" id="tab-typing">
-        <div class="card full-width">
-          <div class="card-header">
-            <h3>Cross-Device Typing History</h3>
-            <span class="badge">Encrypted (AES-256-GCM) • Real-Time Cloud Sync</span>
-          </div>
-          <div class="search-toolbar">
-            <div class="form-row">
-              <input type="text" id="typing-keyword-input" class="input-control" placeholder="Search across all devices & typed snippets..." aria-label="Search across all devices and typed snippets">
-              <input type="text" id="typing-app-input" class="input-control" placeholder="Filter by application (e.g. Chrome, VS Code, Notes)..." aria-label="Filter typing history by application">
+        <div class="form-card">
+          <div class="search-toolbar mb-3" style="margin-bottom: 16px;">
+            <div class="form-row" style="display: flex; gap: 12px;">
+              <input type="text" id="typing-keyword-input" class="input-control" placeholder="Search across all devices & typed snippets..." aria-label="Search typing snippets">
+              <input type="text" id="typing-app-input" class="input-control" placeholder="Filter by application (e.g. Chrome, VS Code)..." aria-label="Filter application">
               <button class="btn btn-primary" id="btn-search-typing">Search History</button>
             </div>
           </div>
-
-          <div class="typing-history-list mt-3" id="typing-history-cards-container">
+          <div class="typing-history-list" id="typing-history-cards-container">
             <div class="text-muted text-center py-4">Loading your cross-device typing history...</div>
           </div>
         </div>
       </section>
 
-      <!-- Tab 3: Session Explorer (Session -> Application -> Activity/Text) -->
+      <!-- Tab: Session Explorer -->
       <section class="tab-content" id="tab-sessions">
-        <div class="card full-width">
-          <div class="card-header">
-            <h3>Monitoring Session Explorer</h3>
-            <span class="badge">Session → Application → Activity Timeline & Permitted Text</span>
-          </div>
-
-          <div class="sessions-layout">
-            <!-- Left: Sessions List -->
-            <div class="sessions-sidebar">
-              <h4>Recent Sessions</h4>
-              <div class="sessions-list" id="sessions-list-container">
-                <!-- Dynamically populated -->
-              </div>
-            </div>
-
-            <!-- Right: Hierarchical Tree Details -->
-            <div class="session-details-panel">
-              <div id="session-details-header">
-                <h4>Select a session on the left to inspect its application hierarchy.</h4>
-              </div>
-              <div id="session-apps-tree-container" class="mt-3">
-                <!-- Dynamically populated -->
-              </div>
-            </div>
+        <div class="form-card">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Session Application Tree</h3>
+          <div id="sessions-list-container">
+            <div class="text-muted text-center py-4">No active monitoring sessions.</div>
           </div>
         </div>
       </section>
 
-      <!-- Tab 3: Search and Filtering -->
+      <!-- Tab: Search & Filtering -->
       <section class="tab-content" id="tab-search">
-        <div class="card full-width">
-          <div class="card-header">
-            <h3>Multi-Criteria Search & Filtering</h3>
-            <span class="badge">Privacy-Filtered Query Engine</span>
+        <div class="form-card">
+          <div class="form-row mb-3" style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="search-keyword-input" class="input-control" placeholder="Search keywords in window titles..." aria-label="Search keywords">
+            <input type="text" id="search-app-input" class="input-control" placeholder="Application name..." aria-label="Application name">
+            <button class="btn btn-primary" id="btn-execute-search">Execute Search</button>
           </div>
-          <div class="search-toolbar">
-            <div class="form-row">
-              <input type="text" id="search-keyword-input" class="input-control" placeholder="Search keywords in window titles or permitted text..." aria-label="Search keywords in window titles or text">
-              <input type="text" id="search-app-input" class="input-control" placeholder="Application name (e.g. Chrome, VS Code)..." aria-label="Filter by application name">
-              <button class="btn btn-primary" id="btn-execute-search">Execute Search</button>
-            </div>
-          </div>
-
-          <div class="table-responsive mt-3">
+          <div id="search-results-table-container">
             <table class="data-table">
               <thead>
                 <tr>
@@ -244,138 +604,50 @@
                   <th>Device</th>
                   <th>Application</th>
                   <th>Sanitized Window Title</th>
-                  <th>Permitted Text Preview</th>
-                  <th>Duration</th>
                 </tr>
               </thead>
               <tbody id="search-results-body">
-                <tr><td colspan="6" class="text-center text-muted">Enter query parameters and click "Execute Search".</td></tr>
+                <tr><td colspan="4" class="text-muted text-center py-4">Enter a search query to inspect records.</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- Tab 4: App Usage Breakdown -->
+      <!-- Tab: App Breakdown -->
       <section class="tab-content" id="tab-apps">
-        <div class="card full-width">
-          <div class="card-header">
-            <h3>Application Telemetry Matrix</h3>
-            <span class="badge">Privacy-Sanitized</span>
-          </div>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Application</th>
-                  <th>Category</th>
-                  <th>Sanitized Window Title</th>
-                  <th>Active Duration</th>
-                  <th>Idle Duration</th>
-                  <th>Last Seen</th>
-                </tr>
-              </thead>
-              <tbody id="app-matrix-body"></tbody>
-            </table>
-          </div>
+        <div class="form-card">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Application Usage Matrix</h3>
+          <div id="app-breakdown-container" class="text-muted text-center py-4">No application usage data logged.</div>
         </div>
       </section>
 
-      <!-- Tab 5: Admin & Org Controls -->
+      <!-- Tab: Admin Controls -->
       <section class="tab-content" id="tab-admin">
-        <div class="admin-grid">
-          <div class="card">
-            <div class="card-header">
-              <h3>Organization Retention Policy</h3>
-              <span class="badge">Auto-Purge</span>
-            </div>
-            <form id="form-retention" class="form-vertical">
-              <div class="form-group">
-                <label for="retention-days">Data Retention Window (Days)</label>
-                <input type="number" id="retention-days" min="7" max="730" value="90" class="input-control">
-                <small class="form-help">Activity older than this limit will be automatically deleted permanently.</small>
-              </div>
-              <div class="form-group checkbox-group">
-                <label>
-                  <input type="checkbox" id="auto-purge-toggle" checked>
-                  Enable Automated Daily Cryptographic Purge
-                </label>
-              </div>
-              <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Save Policy</button>
-                <button type="button" class="btn btn-outline" id="btn-purge-now">Trigger Immediate Purge</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h3>Enrolled Workstations</h3>
-              <span class="badge">Authorized Only</span>
-            </div>
-            <div class="device-list" id="admin-devices-list"></div>
-          </div>
-        </div>
-
-        <div class="card full-width mt-4">
-          <div class="card-header">
-            <h3>Security & Compliance Audit Trail</h3>
-            <span class="badge">Immutable Log</span>
-          </div>
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Action</th>
-                  <th>Resource</th>
-                  <th>Actor</th>
-                  <th>IP Address</th>
-                </tr>
-              </thead>
-              <tbody id="audit-logs-body"></tbody>
-            </table>
-          </div>
+        <div class="form-card">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Retention Policy & Organization Controls</h3>
+          <p class="text-muted" style="font-size: 14px; margin-bottom: 16px;">Configure automated data retention purge schedules across your team.</p>
+          <button class="btn btn-outline" id="btn-purge-now">Trigger Immediate Cryptographic Purge</button>
         </div>
       </section>
 
-      <!-- Tab 6: Privacy & Exclusions -->
+      <!-- Tab: Privacy & Exclusions -->
       <section class="tab-content" id="tab-privacy">
-        <div class="privacy-grid">
-          <div class="card">
-            <div class="card-header">
-              <h3>Configurable Privacy Exclusions</h3>
-              <span class="badge status-granted">Active Protection</span>
-            </div>
-            <p class="text-muted">Applications listed below will be completely bypassed from text capturing and title telemetry.</p>
-            <div class="form-row mt-3">
-              <input type="text" id="input-new-exclusion" class="input-control" placeholder="Application name (e.g. 1Password, Bitwarden, Signal)..." aria-label="Application name to exclude from recording">
-              <button class="btn btn-primary" id="btn-add-exclusion">Add Exclusion</button>
-            </div>
-            <div class="exclusion-chips mt-3" id="exclusion-chips-container"></div>
+        <div class="form-card">
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Configurable Application Exclusions</h3>
+          <div class="form-row mb-3" style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <input type="text" id="input-new-exclusion" class="input-control" placeholder="Application name (e.g. 1Password, Signal)..." aria-label="Exclude application">
+            <button class="btn btn-primary" id="btn-add-exclusion">Add Exclusion</button>
           </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h3>GDPR & CCPA Data Subject Rights (DSAR)</h3>
-              <span class="badge">Self-Service</span>
-            </div>
-            <p class="text-muted">Download an encrypted copy of all activity telemetry collected on your workstation, or request permanent deletion.</p>
-            <div class="dsar-actions mt-4">
-              <button class="btn btn-secondary w-100 mb-2" id="btn-dsar-export">
-                Download Complete Data Archive (JSON)
-              </button>
-              <button class="btn btn-danger w-100" id="btn-dsar-delete">
-                Right to be Forgotten: Erase All My Activity Records
-              </button>
-            </div>
-          </div>
+          <div id="exclusion-chips-container" class="text-muted">No custom exclusions configured.</div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- Authentication Modal (Sign In / Register) -->
+  <!-- =========================================================================
+       AUTHENTICATION MODAL (Sign In / Register)
+       ========================================================================= -->
   <div class="modal-overlay" id="auth-modal" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
@@ -390,11 +662,11 @@
       <form id="form-signin" class="modal-body">
         <div class="form-group mb-3">
           <label for="signin-email">Email Address</label>
-          <input type="email" id="signin-email" class="input-control w-100" placeholder="owner@company.com" required>
+          <input type="email" id="signin-email" class="input-control" placeholder="owner@company.com" required>
         </div>
         <div class="form-group mb-3">
           <label for="signin-password">Password</label>
-          <input type="password" id="signin-password" class="input-control w-100" placeholder="••••••••••••" required>
+          <input type="password" id="signin-password" class="input-control" placeholder="••••••••••••" required>
         </div>
         <button type="submit" class="btn btn-primary w-100 mt-2">Sign In to Workstation</button>
       </form>
@@ -403,19 +675,19 @@
       <form id="form-signup" class="modal-body" style="display: none;">
         <div class="form-group mb-3">
           <label for="signup-name">Full Name</label>
-          <input type="text" id="signup-name" class="input-control w-100" placeholder="Jane Doe" required>
+          <input type="text" id="signup-name" class="input-control" placeholder="Jane Doe" required>
         </div>
         <div class="form-group mb-3">
           <label for="signup-email">Work Email</label>
-          <input type="email" id="signup-email" class="input-control w-100" placeholder="jane@company.com" required>
+          <input type="email" id="signup-email" class="input-control" placeholder="jane@company.com" required>
         </div>
         <div class="form-group mb-3">
           <label for="signup-password">Password (min 8 characters)</label>
-          <input type="password" id="signup-password" class="input-control w-100" placeholder="••••••••••••" minlength="8" required>
+          <input type="password" id="signup-password" class="input-control" placeholder="••••••••••••" minlength="8" required>
         </div>
         <div class="form-group mb-3">
           <label for="signup-org">Organization Name</label>
-          <input type="text" id="signup-org" class="input-control w-100" placeholder="Acme Corporation" value="Default Organization">
+          <input type="text" id="signup-org" class="input-control" placeholder="Acme Corporation" value="Default Organization">
         </div>
         <button type="submit" class="btn btn-primary w-100 mt-2">Create Account & Start Session</button>
       </form>
