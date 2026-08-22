@@ -8,129 +8,55 @@ This document outlines the step-by-step production deployment strategy for KeyFl
 
 | Component | Recommended Free Provider | Free Tier Limits | Purpose |
 | :--- | :--- | :--- | :--- |
-| **Backend API** | **[Fly.io](https://fly.io/)** or **[Render.com](https://render.com/)** | 3 shared-cpu-1x VMs, 3GB persistent volume | Hosts Node.js Express REST API with SQLite disk |
+| **Backend API** | **[Render.com](https://render.com/)** or **[Fly.io](https://fly.io/)** | 750 free hrs/mo, 512MB RAM | Hosts Node.js Express REST API & WebSockets |
 | **Web Dashboard** | **[Cloudflare Pages](https://pages.cloudflare.com/)** or **[Vercel](https://vercel.com/)** | Unlimited bandwidth, 100 custom domains | Global CDN hosting for static HTML/CSS/JS |
-| **Encrypted Database** | **Fly.io Persistent Volume (SQLite)** / **[Neon.tech](https://neon.tech/)** | 3 GB Free Volume / 0.5 GB Postgres | Relational storage for sessions & encrypted logs |
+| **Encrypted Database** | **[Neon.tech](https://neon.tech/)** / **[Supabase](https://supabase.com/)** / Persistent Volume | 0.5 GB Free Postgres / SQLite volume | Relational storage for sessions & encrypted logs |
 | **App Binaries & Releases** | **[GitHub Releases](https://github.com/)** | Unlimited public release asset hosting | Distributes Windows `.exe`, macOS `.dmg`, Linux `.AppImage`, Android `.apk` |
 
 ---
 
-## 2. Step-by-Step Fly.io Deployment (Backend + Persistent SQLite Storage)
+## 2. Step 1: Deploy Encrypted Database (Free Tier)
 
-[Fly.io](https://fly.io/) is the ideal free-tier host for KeyFlow because it gives you **3GB of free persistent SSD volume storage**, allowing your encrypted SQLite database (`look_system.db`) to persist across restarts and deploys without needing an external database.
+### Option A: Free Serverless PostgreSQL (Recommended: Neon.tech / Supabase)
+1. Create a free account on [Neon.tech](https://neon.tech/) or [Supabase.com](https://supabase.com/).
+2. Create a new database project named `keyflow-production`.
+3. Copy your Postgres connection string:
+   ```env
+   DATABASE_URL=postgres://user:password@ep-cool-cloud.neon.tech/keyflow_production?sslmode=require
+   ```
 
-### Step 2.1: Install Fly CLI (`flyctl`)
-
-* **Windows (PowerShell)**:
-  ```powershell
-  pwsh -Command "iwr https://fly.io/install.ps1 -useb | iex"
-  ```
-* **macOS / Linux**:
-  ```bash
-  curl -L https://fly.io/install.sh | sh
-  ```
-
-### Step 2.2: Sign In / Register
-```bash
-fly auth signup
-# or if you already have an account:
-fly auth login
-```
+### Option B: Zero-Config SQLite (Embedded)
+If using the bundled SQLite database (`look_system.db`):
+* Deploy the backend to a host with persistent disk storage (e.g. **Fly.io** free volume: 3GB free persistent storage).
 
 ---
 
-### Step 2.3: Prepare `fly.toml` Configuration
+## 3. Step 2: Deploy Backend API to Render (100% Free)
 
-Inside the `backend/` directory, create a `fly.toml` file (or let Fly generate one):
-
-```toml
-# backend/fly.toml
-app = "keyflow-api"
-primary_region = "iad" # Choose closest region: e.g. iad, sin, fra, lhr, sjc
-
-[build]
-  dockerfile = "../Dockerfile.backend"
-
-[env]
-  NODE_ENV = "production"
-  PORT = "4000"
-  DB_PATH = "/data/look_system.db"
-  DEFAULT_RETENTION_DAYS = "90"
-
-[mounts]
-  source = "keyflow_data"
-  destination = "/data"
-
-[http_service]
-  internal_port = 4000
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 1
-  processes = ['app']
-
-[[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
-```
+1. Sign up at [Render.com](https://render.com/) using your GitHub account.
+2. Click **New +** → **Web Service** → Connect your repository: `tramakrishna3012/KeyFlow`.
+3. Configure the service:
+   * **Root Directory**: `backend`
+   * **Environment**: `Node`
+   * **Build Command**: `npm install --omit=dev`
+   * **Start Command**: `node src/server.js`
+   * **Instance Type**: `Free`
+4. Add **Environment Variables** under Settings:
+   ```env
+   NODE_ENV=production
+   PORT=10000
+   JWT_SECRET=your_super_secret_32_character_key_here!
+   JWT_EXPIRES_IN=24h
+   DEFAULT_RETENTION_DAYS=90
+   ```
+5. Click **Create Web Service**. Your API will be live at:
+   `https://keyflow-backend.onrender.com`
 
 ---
 
-### Step 2.4: Create Free 1GB Persistent Volume for SQLite
+## 4. Step 3: Deploy Web Dashboard to Cloudflare Pages / Vercel (100% Free)
 
-Run this command to create a persistent disk in your chosen region (e.g. `iad` for US East, `sin` for Singapore, `fra` for Europe):
-
-```bash
-fly volumes create keyflow_data --size 1 --region iad
-```
-
----
-
-### Step 2.5: Set Production Secrets
-
-Set your cryptographic keys and JWT secrets securely on Fly:
-
-```bash
-fly secrets set JWT_SECRET="your_secure_random_32_character_jwt_secret_key!"
-```
-
----
-
-### Step 2.6: Deploy the Backend API
-
-From the root project folder:
-
-```bash
-fly deploy --config backend/fly.toml --dockerfile Dockerfile.backend
-```
-
-Once deployment completes, Fly will output your live URL:
-`https://keyflow-api.fly.dev`
-
-You can verify health by navigating to:
-`https://keyflow-api.fly.dev/api/v1/health`
-
----
-
-### Step 2.7: Useful Fly Management Commands
-
-* **View live server logs**:
-  ```bash
-  fly logs --app keyflow-api
-  ```
-* **Check VM & Volume status**:
-  ```bash
-  fly status --app keyflow-api
-  ```
-* **SSH into your running backend machine**:
-  ```bash
-  fly ssh console --app keyflow-api
-  ```
-
----
-
-## 3. Step 3: Deploy Web Dashboard to Cloudflare Pages (100% Free)
-
+### Deploying via Cloudflare Pages:
 1. Sign up at [Cloudflare](https://dash.cloudflare.com/) → Navigate to **Workers & Pages**.
 2. Click **Create Application** → **Pages** → **Connect to Git**.
 3. Select `tramakrishna3012/KeyFlow`.
@@ -140,14 +66,14 @@ You can verify health by navigating to:
    * **Root directory**: `web`
 5. Click **Save and Deploy**. Your dashboard will be live at:
    `https://keyflow-web.pages.dev`
-6. In `web/app.js`, set your Fly.io API URL:
+6. Update `web/app.js` with your production API URL:
    ```javascript
-   const API_BASE = 'https://keyflow-api.fly.dev/api/v1';
+   const API_BASE = 'https://keyflow-backend.onrender.com/api/v1';
    ```
 
 ---
 
-## 4. Step 4: Automate Desktop & Mobile Builds (GitHub Actions Releases)
+## 5. Step 4: Automate Desktop & Mobile Builds (GitHub Actions Releases)
 
 The existing GitHub Actions workflows in `.github/workflows/` automatically package and upload releases:
 
@@ -165,10 +91,11 @@ The existing GitHub Actions workflows in `.github/workflows/` automatically pack
 
 ---
 
-## 5. Free Tier Cost & Limits Summary
+## 6. Free Tier Cost & Limits Summary
 
 | Service | Cost | Constraints | Mitigation |
 | :--- | :--- | :--- | :--- |
-| **Fly.io VM + Volume** | **$0 / month** | 3 shared-cpu-1x VMs, 3GB volume free | `auto_start_machines = true` handles auto-wake on request |
+| **Render Web Service** | **$0 / month** | Spins down after 15 mins of inactivity | Desktop client ping / free uptime monitor (e.g. UptimeRobot) keeps it active |
 | **Cloudflare Pages** | **$0 / month** | Unlimited requests & bandwidth | Always fast via 300+ global edge data centers |
+| **Neon / Supabase Postgres** | **$0 / month** | 0.5 GB storage | Automatic 90-day retention purge job keeps DB lean |
 | **GitHub Releases** | **$0 / month** | 2 GB per file limit | Application binaries are ~35-50 MB |
