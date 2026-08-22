@@ -6,6 +6,10 @@
   <meta name="robots" content="noindex, nofollow">
   <title>KeyFlow — Local-First Typing History & Assist Application</title>
   
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.svg">
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -666,11 +670,11 @@
       <form id="form-signin" class="modal-body">
         <div class="form-group mb-3">
           <label for="signin-email">Email Address</label>
-          <input type="email" id="signin-email" class="input-control" placeholder="owner@company.com" required>
+          <input type="email" id="signin-email" class="input-control" placeholder="owner@company.com" autocomplete="email" required>
         </div>
         <div class="form-group mb-3">
           <label for="signin-password">Password</label>
-          <input type="password" id="signin-password" class="input-control" placeholder="••••••••••••" required>
+          <input type="password" id="signin-password" class="input-control" placeholder="••••••••••••" autocomplete="current-password" required>
         </div>
         <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-submit-signin">Sign In to Workstation</button>
       </form>
@@ -679,19 +683,19 @@
       <form id="form-signup" class="modal-body" style="display: none;">
         <div class="form-group mb-3">
           <label for="signup-name">Full Name</label>
-          <input type="text" id="signup-name" class="input-control" placeholder="Jane Doe" required>
+          <input type="text" id="signup-name" class="input-control" placeholder="Jane Doe" autocomplete="name" required>
         </div>
         <div class="form-group mb-3">
           <label for="signup-email">Work Email</label>
-          <input type="email" id="signup-email" class="input-control" placeholder="jane@company.com" required>
+          <input type="email" id="signup-email" class="input-control" placeholder="jane@company.com" autocomplete="email" required>
         </div>
         <div class="form-group mb-3">
           <label for="signup-password">Password (min 8 characters)</label>
-          <input type="password" id="signup-password" class="input-control" placeholder="••••••••••••" minlength="8" required>
+          <input type="password" id="signup-password" class="input-control" placeholder="••••••••••••" minlength="8" autocomplete="new-password" required>
         </div>
         <div class="form-group mb-3">
           <label for="signup-org">Organization Name</label>
-          <input type="text" id="signup-org" class="input-control" placeholder="Acme Corporation" value="Default Organization">
+          <input type="text" id="signup-org" class="input-control" placeholder="Acme Corporation" value="Default Organization" autocomplete="organization">
         </div>
         <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-submit-signup">Create Account & Start Session</button>
       </form>
