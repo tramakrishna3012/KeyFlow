@@ -1,243 +1,447 @@
-// ====================================================================
-// LOOK SYSTEM WEB DASHBOARD: Interactive Controller
-// ====================================================================
+// Look System Web Application & Dashboard Controller
 
-const API_BASE = 'http://localhost:4000/api/v1';
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/api/v1'
+  : '/api/v1';
 
-// Initial state
-const state = {
-  currentTab: 'overview',
-  timeRange: 'today',
-  isMonitoring: true,
-  consentGranted: true,
-  user: {
-    fullName: 'Jane Doe',
-    email: 'jane.doe@looksystem.com',
-    role: 'Organization Admin',
-    organization: 'Look Enterprise Corp'
-  },
-  metrics: {
-    totalDurationSeconds: 20520, // 5h 42m
-    totalIdleSeconds: 2880,      // 48m
-    productivityScore: 88,
-    activeDevices: 1
-  },
-  categories: [
-    { category: 'Development', duration: 11400, percent: 55, color: 'fill-purple' },
-    { category: 'Communication', duration: 4200, percent: 20, color: 'fill-teal' },
-    { category: 'Browsing', duration: 3120, percent: 15, color: 'fill-blue' },
-    { category: 'Productivity', duration: 1800, percent: 10, color: 'fill-orange' }
-  ],
-  topApps: [
-    { name: 'Visual Studio Code', category: 'Development', duration: '3h 10m', rawSecs: 11400 },
-    { name: 'Slack', category: 'Communication', duration: '1h 10m', rawSecs: 4200 },
-    { name: 'Google Chrome', category: 'Browsing', duration: '52m', rawSecs: 3120 },
-    { name: 'Notion', category: 'Productivity', duration: '30m', rawSecs: 1800 }
-  ],
-  activityMatrix: [
-    { app: 'Visual Studio Code', category: 'Development', title: 'look_system_core.dart — KeyFlow project', active: '3h 10m', idle: '12m', time: 'Just now' },
-    { app: 'Slack', category: 'Communication', title: 'Discussions in #engineering-team', active: '1h 10m', idle: '18m', time: '14m ago' },
-    { app: 'Google Chrome', category: 'Browsing', title: 'https://developer.mozilla.org/en-US/docs/Web', active: '52m', idle: '8m', time: '42m ago' },
-    { app: 'Notion', category: 'Productivity', title: 'Look System Q3 Product Requirements & Architecture', active: '30m', idle: '10m', time: '1h ago' }
-  ],
-  auditLogs: [
-    { time: 'Today, 09:15 AM', action: 'LOGIN_SUCCESS', resource: 'Auth', actor: 'jane.doe@looksystem.com', ip: '127.0.0.1' },
-    { time: 'Today, 09:16 AM', action: 'DEVICE_AUTHORIZED', resource: 'Workstation', actor: 'jane.doe@looksystem.com', ip: '127.0.0.1' },
-    { time: 'Yesterday, 04:30 PM', action: 'RETENTION_POLICY_SAVED', resource: 'Policy', actor: 'admin@looksystem.com', ip: '127.0.0.1' }
-  ]
-};
+let authToken = localStorage.getItem('look_jwt_token') || '';
+let currentUser = null;
+let currentSessionId = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-  initNavigation();
-  initControls();
-  renderDashboard();
+// Initialize on DOM Load
+document.addEventListener('DOMContentLoaded', async () => {
+  setupNavigation();
+  setupSessionControls();
+  setupSearch();
+  setupExclusions();
+  setupDsar();
+
+  await autoLoginOrMock();
+  await loadOverviewData();
+  await loadSessionsList();
+  await loadExclusions();
 });
 
-function initNavigation() {
+// Auto-Login or Test Account Registration
+async function autoLoginOrMock() {
+  if (!authToken) {
+    try {
+      const email = `owner_${Date.now()}@looksystem.com`;
+      const res = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password: 'LookOwnerPassword123!',
+          fullName: 'Authorized Workstation Owner',
+          role: 'admin',
+          organizationName: 'Look System Organization'
+        })
+      });
+      const data = await res.json();
+      if (data.token) {
+        authToken = data.token;
+        localStorage.setItem('look_jwt_token', authToken);
+        currentUser = data.user;
+        updateUserUI();
+      }
+    } catch {
+      console.warn('API offline - falling back to demo mode.');
+    }
+  } else {
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      if (data.user) {
+        currentUser = data.user;
+        updateUserUI();
+      }
+    } catch {
+      console.warn('Session verification failed.');
+    }
+  }
+}
+
+function updateUserUI() {
+  if (currentUser) {
+    document.getElementById('user-name').textContent = currentUser.full_name || 'Authorized Owner';
+    document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Team Member';
+    const initials = (currentUser.full_name || 'AO').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    document.getElementById('user-avatar').textContent = initials;
+  }
+}
+
+// Navigation Tabs
+function setupNavigation() {
   const navButtons = document.querySelectorAll('.nav-item');
   navButtons.forEach(btn => {
     btn.addEventListener('click', () => {
-      const tabName = btn.dataset.tab;
-      switchTab(tabName);
-    });
-  });
-
-  const filterButtons = document.querySelectorAll('.filter-btn');
-  filterButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterButtons.forEach(b => b.classList.remove('active'));
+      navButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      state.timeRange = btn.dataset.range;
-      renderDashboard();
+
+      const tabId = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      const activeTab = document.getElementById(`tab-${tabId}`);
+      if (activeTab) activeTab.classList.add('active');
+
+      const titles = {
+        overview: 'Executive Overview',
+        sessions: 'Monitoring Session Explorer',
+        search: 'Multi-Criteria Search & Filtering',
+        apps: 'Application Telemetry Matrix',
+        admin: 'Admin & Organization Controls',
+        privacy: 'Privacy & Exclusions'
+      };
+      document.getElementById('page-title').textContent = titles[tabId] || 'Look System';
     });
   });
 }
 
-function switchTab(tabName) {
-  state.currentTab = tabName;
-
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  const activeBtn = document.querySelector(`.nav-item[data-tab="${tabName}"]`);
-  if (activeBtn) activeBtn.classList.add('active');
-
-  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  const activeSection = document.getElementById(`tab-${tabName}`);
-  if (activeSection) activeSection.classList.add('active');
-
-  const titles = {
-    overview: 'Executive Overview',
-    timeline: 'Timeline & Sessions',
-    apps: 'App Usage Breakdown',
-    admin: 'Admin & Organization Controls',
-    privacy: 'Privacy & Compliance Center'
-  };
-  document.getElementById('page-title').textContent = titles[tabName] || 'Dashboard';
-}
-
-function initControls() {
-  // Quick Pause Button
-  const pauseBtn = document.getElementById('btn-quick-pause');
-  pauseBtn.addEventListener('click', () => {
-    state.isMonitoring = !state.isMonitoring;
-    const pill = document.getElementById('global-status-pill');
-    if (state.isMonitoring) {
-      pill.className = 'monitoring-pill active';
-      pill.querySelector('.status-label').textContent = 'Monitoring: ACTIVE';
-      pauseBtn.textContent = 'Pause 15m';
-    } else {
-      pill.className = 'monitoring-pill paused';
-      pill.querySelector('.status-label').textContent = 'Monitoring: PAUSED';
-      pauseBtn.textContent = 'Resume Monitoring';
+// Session Controls
+function setupSessionControls() {
+  document.getElementById('btn-start-session-header')?.addEventListener('click', async () => {
+    try {
+      const res = await fetch(`${API_BASE}/activity/sessions/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ deviceName: 'Web Console Workstation' })
+      });
+      const data = await res.json();
+      if (data.sessionId) {
+        currentSessionId = data.sessionId;
+        alert(`Session started: ${data.sessionId}`);
+        loadSessionsList();
+      }
+    } catch (e) {
+      alert(`Error starting session: ${e.message}`);
     }
   });
 
-  // Consent toggle
-  const consentBtn = document.getElementById('btn-toggle-consent');
-  const consentBadge = document.getElementById('consent-badge');
-  consentBtn.addEventListener('click', () => {
-    state.consentGranted = !state.consentGranted;
-    if (state.consentGranted) {
-      consentBadge.textContent = 'Consent Granted';
-      consentBadge.className = 'badge status-granted';
-      consentBtn.textContent = 'Revoke Consent';
-    } else {
-      consentBadge.textContent = 'Consent Revoked';
-      consentBadge.className = 'badge';
-      consentBtn.textContent = 'Grant Consent';
-      state.isMonitoring = false;
-      document.getElementById('global-status-pill').className = 'monitoring-pill paused';
-      document.getElementById('global-status-pill').querySelector('.status-label').textContent = 'Monitoring: STOPPED';
-    }
+  document.getElementById('btn-pause-session-header')?.addEventListener('click', async () => {
+    if (!currentSessionId) return alert('No active session.');
+    await fetch(`${API_BASE}/activity/sessions/pause`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ sessionId: currentSessionId })
+    });
+    alert('Session paused.');
+    loadSessionsList();
   });
 
-  // DSAR Export
-  document.getElementById('btn-export-data').addEventListener('click', downloadExportData);
-  document.getElementById('btn-dsar-export').addEventListener('click', downloadExportData);
-
-  // DSAR Delete
-  document.getElementById('btn-dsar-delete').addEventListener('click', () => {
-    if (confirm('Are you sure you want to permanently erase all your historical activity records? This action is irreversible.')) {
-      state.activityMatrix = [];
-      state.metrics.totalDurationSeconds = 0;
-      state.metrics.totalIdleSeconds = 0;
-      state.metrics.productivityScore = 100;
-      renderDashboard();
-      alert('Your activity records have been permanently erased from the database.');
-    }
-  });
-
-  // Retention policy form
-  document.getElementById('form-retention').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const days = document.getElementById('retention-days').value;
-    alert(`Retention policy updated: activity records older than ${days} days will be automatically purged.`);
-  });
-
-  document.getElementById('btn-purge-now').addEventListener('click', () => {
-    alert('Cryptographic retention purge job triggered successfully. Expired records removed.');
+  document.getElementById('btn-stop-session-header')?.addEventListener('click', async () => {
+    if (!currentSessionId) return alert('No active session.');
+    await fetch(`${API_BASE}/activity/sessions/stop`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`
+      },
+      body: JSON.stringify({ sessionId: currentSessionId })
+    });
+    alert('Session completed.');
+    currentSessionId = null;
+    loadSessionsList();
   });
 }
 
-function downloadExportData() {
-  const exportPayload = {
-    exportDate: new Date().toISOString(),
-    user: state.user,
-    consentStatus: state.consentGranted ? 'granted' : 'revoked',
-    telemetryMetrics: state.metrics,
-    activityEntries: state.activityMatrix
-  };
+// Overview Data Loading
+async function loadOverviewData() {
+  try {
+    const res = await fetch(`${API_BASE}/activity/summary`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    const data = await res.json();
 
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
-  const downloadAnchor = document.createElement('a');
-  downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", `look_system_telemetry_export_${Date.now()}.json`);
-  document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
-}
+    if (data.metrics) {
+      const activeMin = Math.round(data.metrics.totalActiveSeconds / 60);
+      const hours = Math.floor(activeMin / 60);
+      const mins = activeMin % 60;
+      document.getElementById('val-active-time').textContent = `${hours}h ${mins}m`;
+      document.getElementById('val-total-activity').textContent = data.metrics.logCount || '0';
+      document.getElementById('val-focus-score').textContent = `${data.metrics.productivityScore || 88}%`;
+    }
 
-function renderDashboard() {
-  // 1. Render Category Distribution
-  const catContainer = document.getElementById('category-bars-container');
-  if (catContainer) {
-    catContainer.innerHTML = state.categories.map(c => `
-      <div class="category-bar-item">
-        <div class="category-meta">
-          <span>${c.category}</span>
-          <span style="font-weight: 600;">${c.percent}%</span>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill ${c.color}" style="width: ${c.percent}%;"></div>
-        </div>
-      </div>
-    `).join('');
-  }
+    // Categories
+    const catContainer = document.getElementById('category-bars-container');
+    if (catContainer && data.categories) {
+      catContainer.innerHTML = data.categories.map(cat => {
+        const min = Math.round(cat.duration / 60);
+        return `
+          <div class="category-item">
+            <div class="cat-info">
+              <span>${cat.category}</span>
+              <span>${min} min</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${Math.min(100, Math.max(10, min * 2))}%;"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
-  // 2. Render Top Applications
-  const topContainer = document.getElementById('top-apps-container');
-  if (topContainer) {
-    topContainer.innerHTML = state.topApps.map(app => `
-      <div class="top-app-item">
-        <div class="app-badge-icon">${app.name.substring(0, 2).toUpperCase()}</div>
-        <div class="app-meta">
-          <span class="app-name">${app.name}</span>
-          <span class="app-cat">${app.category}</span>
-        </div>
-        <div class="app-time">${app.duration}</div>
-      </div>
-    `).join('');
-  }
+    // Top Apps
+    const topAppsContainer = document.getElementById('top-apps-container');
+    if (topAppsContainer && data.topApps) {
+      topAppsContainer.innerHTML = data.topApps.map(app => {
+        const min = Math.round(app.duration / 60);
+        return `
+          <div class="app-row">
+            <div class="app-meta">
+              <div class="app-avatar">${app.appName[0].toUpperCase()}</div>
+              <div>
+                <strong>${app.appName}</strong>
+                <div style="font-size: 11px; color: var(--text-muted);">${app.category}</div>
+              </div>
+            </div>
+            <span>${min} min</span>
+          </div>
+        `;
+      }).join('');
+    }
 
-  // 3. Render Activity Matrix Table
-  const matrixBody = document.getElementById('app-matrix-body');
-  if (matrixBody) {
-    if (state.activityMatrix.length === 0) {
-      matrixBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">No activity records found.</td></tr>`;
-    } else {
-      matrixBody.innerHTML = state.activityMatrix.map(row => `
+    // Matrix
+    const matrixBody = document.getElementById('app-matrix-body');
+    if (matrixBody && data.recentLogs) {
+      matrixBody.innerHTML = data.recentLogs.map(log => `
         <tr>
-          <td style="font-weight: 600;">${row.app}</td>
-          <td><span class="badge">${row.category}</span></td>
-          <td style="color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; font-size: 12px;">${row.title}</td>
-          <td style="color: var(--accent-teal); font-weight: 600;">${row.active}</td>
-          <td style="color: var(--text-muted);">${row.idle}</td>
-          <td style="color: var(--text-muted);">${row.time}</td>
+          <td><strong>${log.appName}</strong></td>
+          <td><span class="badge">${log.category}</span></td>
+          <td>${log.windowTitle}</td>
+          <td>${Math.round(log.durationSeconds / 60)} min</td>
+          <td>${log.idleSeconds}s</td>
+          <td>${new Date(log.startedAt).toLocaleTimeString()}</td>
         </tr>
       `).join('');
     }
+  } catch (err) {
+    console.error('Failed to load activity summary:', err);
   }
+}
 
-  // 4. Render Audit Logs
-  const auditBody = document.getElementById('audit-logs-body');
-  if (auditBody) {
-    auditBody.innerHTML = state.auditLogs.map(log => `
-      <tr>
-        <td style="color: var(--text-muted);">${log.time}</td>
-        <td><strong style="color: var(--accent-purple);">${log.action}</strong></td>
-        <td>${log.resource}</td>
-        <td>${log.actor}</td>
-        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;">${log.ip}</td>
-      </tr>
+// Session Explorer: List & Hierarchical Tree
+async function loadSessionsList() {
+  const container = document.getElementById('sessions-list-container');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/activity/sessions`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+    const sessions = data.sessions || [];
+
+    if (sessions.length === 0) {
+      container.innerHTML = '<div class="text-muted text-center py-3">No sessions recorded yet.</div>';
+      return;
+    }
+
+    container.innerHTML = sessions.map((s, idx) => `
+      <div class="session-item ${idx === 0 ? 'selected' : ''}" data-id="${s.id}">
+        <div class="session-header-line">
+          <span>Session: ${new Date(s.started_at).toLocaleDateString()}</span>
+          <span class="badge">${s.status}</span>
+        </div>
+        <div class="session-meta-line">
+          Device: ${s.device_name} • ${Math.round(s.total_active_seconds / 60)} min
+        </div>
+      </div>
     `).join('');
+
+    // Attach click handlers
+    document.querySelectorAll('.session-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.session-item').forEach(el => el.classList.remove('selected'));
+        item.classList.add('selected');
+        const id = item.getAttribute('data-id');
+        loadSessionTree(id);
+      });
+    });
+
+    if (sessions.length > 0) {
+      loadSessionTree(sessions[0].id);
+    }
+  } catch (e) {
+    console.error('Error fetching sessions:', e);
   }
+}
+
+async function loadSessionTree(sessionId) {
+  const container = document.getElementById('session-apps-tree-container');
+  const header = document.getElementById('session-details-header');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/activity/sessions/${sessionId}`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+
+    if (!data.session) return;
+
+    header.innerHTML = `
+      <h4>Session: ${new Date(data.session.started_at).toLocaleString()} (${data.session.device_name})</h4>
+      <p class="text-muted" style="font-size: 12px;">Status: ${data.session.status} • Total Active: ${Math.round(data.session.total_active_seconds / 60)} min • Total Apps: ${data.applications.length}</p>
+    `;
+
+    if (data.applications.length === 0) {
+      container.innerHTML = '<div class="text-muted">No applications recorded under this session.</div>';
+      return;
+    }
+
+    container.innerHTML = data.applications.map(app => `
+      <div class="session-app-node">
+        <div class="app-node-header">
+          <span>${app.app_name} (${app.app_category})</span>
+          <span>${Math.round(app.total_duration_seconds / 60)} min</span>
+        </div>
+        <div class="app-node-body">
+          <div style="font-weight: 600; font-size: 12px; margin-bottom: 6px;">Activity Timeline:</div>
+          ${app.activityTimeline.slice(0, 5).map(evt => `
+            <div class="timeline-event-item">
+              <span>•</span>
+              <span>${evt.windowTitle} (${evt.durationSeconds}s) [${new Date(evt.startedAt).toLocaleTimeString()}]</span>
+            </div>
+          `).join('')}
+
+          ${app.textRecords.length > 0 ? `
+            <div style="font-weight: 600; font-size: 12px; margin-top: 10px;">Permitted Text History:</div>
+            ${app.textRecords.map(rec => `
+              <div class="text-record-box">
+                <span style="color: ${rec.isExcluded ? 'var(--accent-red)' : 'var(--accent-teal)'};">
+                  ${rec.isExcluded ? '[Excluded by Privacy Filter]' : '✓ Permitted:'}
+                </span>
+                ${rec.content}
+              </div>
+            `).join('')}
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load session tree:', e);
+  }
+}
+
+// Search & Filtering
+function setupSearch() {
+  document.getElementById('btn-execute-search')?.addEventListener('click', async () => {
+    const q = document.getElementById('search-keyword-input')?.value || '';
+    const appName = document.getElementById('search-app-input')?.value || '';
+
+    const tbody = document.getElementById('search-results-body');
+    if (!tbody) return;
+
+    try {
+      const url = new URL(`${API_BASE}/activity/search`);
+      if (q) url.searchParams.append('q', q);
+      if (appName) url.searchParams.append('appName', appName);
+
+      const res = await fetch(url.toString(), {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      const results = data.results || [];
+
+      if (results.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No matching records found.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = results.map(r => `
+        <tr>
+          <td>${new Date(r.timestamp).toLocaleTimeString()}</td>
+          <td>${r.deviceName}</td>
+          <td><strong>${r.appName}</strong></td>
+          <td>${r.windowTitle}</td>
+          <td>${r.isExcluded ? '<span style="color:var(--accent-red)">[Excluded]</span>' : (r.textPreview || '—')}</td>
+          <td>${r.durationSeconds}s</td>
+        </tr>
+      `).join('');
+    } catch (e) {
+      console.error('Search failed:', e);
+    }
+  });
+}
+
+// Privacy Exclusions
+async function loadExclusions() {
+  const container = document.getElementById('exclusion-chips-container');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/activity/privacy/exclusions`, {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+    const list = data.exclusions || [];
+
+    container.innerHTML = list.map(item => `
+      <div class="chip">
+        <span>${item.appName || item.fieldType}</span>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.error('Failed to load exclusions:', e);
+  }
+}
+
+function setupExclusions() {
+  document.getElementById('btn-add-exclusion')?.addEventListener('click', async () => {
+    const input = document.getElementById('input-new-exclusion');
+    if (!input || !input.value.trim()) return;
+
+    const appName = input.value.trim();
+    try {
+      await fetch(`${API_BASE}/activity/privacy/exclusions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ appName })
+      });
+      input.value = '';
+      loadExclusions();
+      alert(`Excluded "${appName}" from monitoring.`);
+    } catch (e) {
+      alert(`Failed to add exclusion: ${e.message}`);
+    }
+  });
+}
+
+// DSAR & Compliance
+function setupDsar() {
+  document.getElementById('btn-dsar-export')?.addEventListener('click', async () => {
+    window.open(`${API_BASE}/compliance/export?format=json`, '_blank');
+  });
+
+  document.getElementById('btn-export-data')?.addEventListener('click', async () => {
+    window.open(`${API_BASE}/compliance/export?format=csv`, '_blank');
+  });
+
+  document.getElementById('btn-dsar-delete')?.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to permanently erase all activity records? This action cannot be undone.')) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/compliance/delete-my-data`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      alert(data.message || 'Records erased.');
+      loadOverviewData();
+      loadSessionsList();
+    } catch (e) {
+      alert(`Failed to delete data: ${e.message}`);
+    }
+  });
 }

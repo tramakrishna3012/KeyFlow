@@ -1,5 +1,5 @@
 const crypto = require('node:crypto');
-const { run, get, all } = require('./db');
+const { run, get, all, encryptRecord, decryptRecord } = require('./db');
 
 const CATEGORY_MAP = {
   // Development
@@ -58,8 +58,24 @@ const CATEGORY_MAP = {
   'brave': 'Browsing'
 };
 
+// Sensitive patterns: passwords, OTPs, auth codes, credit cards, banking info
+const SENSITIVE_PATTERNS = [
+  /\b(?:\d[ -]*?){13,16}\b/g, // Credit card numbers
+  /\b(?:\d{3}-\d{2}-\d{4})\b/g, // SSN
+  /\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret)\s*[:=]\s*\S+/gi,
+  /\b(?:\d{6,8})\b/g, // 6-8 digit OTPs
+];
+
+function isSensitiveFieldOrText(text = '') {
+  if (!text) return false;
+  for (const pattern of SENSITIVE_PATTERNS) {
+    if (pattern.test(text)) return true;
+  }
+  return false;
+}
+
 function inferCategory(appName = '', windowTitle = '') {
-  const cleanApp = appName.toLowerCase();
+  const cleanApp = (appName || '').toLowerCase();
   for (const [key, category] of Object.entries(CATEGORY_MAP)) {
     if (cleanApp.includes(key)) {
       return category;
@@ -85,6 +101,11 @@ function sanitizeWindowTitle(rawTitle = '') {
   // Strip emails
   sanitized = sanitized.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, '[Redacted Email]');
 
+  // Strip credit cards & sensitive patterns
+  for (const pattern of SENSITIVE_PATTERNS) {
+    sanitized = sanitized.replace(pattern, '[Redacted Sensitive]');
+  }
+
   // Strip token-like alphanumeric strings (> 24 hex/b64 chars)
   sanitized = sanitized.replace(/\b[A-Za-z0-9-_]{24,}\b/g, '[Redacted Token]');
 
@@ -108,50 +129,315 @@ async function registerOrGetDevice({ userId, deviceName, osInfo, agentVersion })
   return device.id;
 }
 
-async function ingestBatchActivity({ userId, deviceId, entries }) {
+async function checkUserExclusions(userId, appName) {
+  const exclusions = await all(
+    'SELECT excluded_app_name, excluded_field_type FROM privacy_exclusions WHERE user_id = ? AND is_active = 1',
+    [userId]
+  );
+  const cleanApp = (appName || '').toLowerCase();
+  for (const item of exclusions) {
+    if (item.excluded_app_name && cleanApp.includes(item.excluded_app_name.toLowerCase())) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function startSession({ userId, deviceId, deviceName }) {
+  const finalDeviceId = deviceId || await registerOrGetDevice({ userId, deviceName: deviceName || 'Default Workstation' });
+  const sessionId = crypto.randomUUID();
+  await run(
+    `INSERT INTO sessions (id, user_id, device_id, started_at, status, created_at)
+     VALUES (?, ?, ?, datetime('now'), 'active', datetime('now'))`,
+    [sessionId, userId, finalDeviceId]
+  );
+  return { sessionId, deviceId: finalDeviceId, status: 'active' };
+}
+
+async function pauseSession({ sessionId, userId }) {
+  await run('UPDATE sessions SET status = "paused" WHERE id = ? AND user_id = ?', [sessionId, userId]);
+  return { sessionId, status: 'paused' };
+}
+
+async function resumeSession({ sessionId, userId }) {
+  await run('UPDATE sessions SET status = "active" WHERE id = ? AND user_id = ?', [sessionId, userId]);
+  return { sessionId, status: 'active' };
+}
+
+async function stopSession({ sessionId, userId }) {
+  const session = await get('SELECT started_at FROM sessions WHERE id = ? AND user_id = ?', [sessionId, userId]);
+  if (!session) throw new Error('Session not found');
+
+  const now = new Date();
+  const startTime = new Date(session.started_at);
+  const durationSec = Math.max(0, Math.round((now.getTime() - startTime.getTime()) / 1000));
+
+  await run(
+    `UPDATE sessions 
+     SET status = "completed", ended_at = datetime('now'), total_active_seconds = ?
+     WHERE id = ? AND user_id = ?`,
+    [durationSec, sessionId, userId]
+  );
+
+  return { sessionId, status: 'completed', durationSeconds: durationSec };
+}
+
+async function listSessions({ userId, limit = 20, offset = 0, status, startDate, endDate }) {
+  let query = 'SELECT s.*, d.device_name, d.os_info FROM sessions s JOIN devices d ON s.device_id = d.id WHERE s.user_id = ?';
+  const params = [userId];
+
+  if (status) {
+    query += ' AND s.status = ?';
+    params.push(status);
+  }
+  if (startDate) {
+    query += ' AND s.started_at >= ?';
+    params.push(startDate);
+  }
+  if (endDate) {
+    query += ' AND s.started_at <= ?';
+    params.push(endDate);
+  }
+
+  query += ' ORDER BY s.started_at DESC LIMIT ? OFFSET ?';
+  params.push(Number(limit), Number(offset));
+
+  const sessions = await all(query, params);
+  return sessions;
+}
+
+async function getSessionTree({ sessionId, userId }) {
+  const session = await get(
+    `SELECT s.*, d.device_name, d.os_info 
+     FROM sessions s 
+     JOIN devices d ON s.device_id = d.id 
+     WHERE s.id = ? AND s.user_id = ?`,
+    [sessionId, userId]
+  );
+  if (!session) return null;
+
+  const apps = await all(
+    'SELECT * FROM applications WHERE session_id = ? ORDER BY total_duration_seconds DESC',
+    [sessionId]
+  );
+
+  for (const app of apps) {
+    app.activityTimeline = await all(
+      `SELECT id, event_type as eventType, started_at as startedAt, ended_at as endedAt,
+              duration_seconds as durationSeconds, is_idle as isIdle, window_title_sanitized as windowTitle
+       FROM activity_events
+       WHERE application_id = ?
+       ORDER BY started_at ASC`,
+      [app.id]
+    );
+
+    const textRecords = await all(
+      `SELECT id, encrypted_content, iv, auth_tag, sanitized_preview, captured_at as capturedAt, is_excluded as isExcluded
+       FROM text_records
+       WHERE application_id = ?
+       ORDER BY captured_at ASC`,
+      [app.id]
+    );
+
+    app.textRecords = textRecords.map((rec) => {
+      const decrypted = rec.isExcluded ? '[Excluded by privacy rule]' : decryptRecord(rec.encrypted_content, rec.iv, rec.auth_tag);
+      return {
+        id: rec.id,
+        capturedAt: rec.capturedAt,
+        sanitizedPreview: rec.sanitized_preview,
+        content: decrypted,
+        isExcluded: Boolean(rec.isExcluded)
+      };
+    });
+  }
+
+  return {
+    session,
+    applications: apps
+  };
+}
+
+async function ingestBatchActivity({ userId, deviceId, sessionId, entries }) {
   if (!Array.isArray(entries) || entries.length === 0) {
     return { ingestedCount: 0 };
+  }
+
+  // Ensure active session exists or create/reuse
+  let activeSessionId = sessionId;
+  if (!activeSessionId) {
+    const active = await get('SELECT id FROM sessions WHERE user_id = ? AND status = "active" ORDER BY started_at DESC LIMIT 1', [userId]);
+    if (active) {
+      activeSessionId = active.id;
+    } else {
+      const created = await startSession({ userId, deviceId });
+      activeSessionId = created.sessionId;
+    }
   }
 
   let count = 0;
   for (const entry of entries) {
     const {
+      id: clientEventId,
       appName,
       windowTitle,
+      textRecord,
       durationSeconds = 0,
       idleSeconds = 0,
       isIdle = false,
-      startedAt,
-      endedAt
+      startedAt = new Date().toISOString(),
+      endedAt = new Date().toISOString()
     } = entry;
 
-    if (!appName || !startedAt || !endedAt) continue;
+    if (!appName) continue;
 
-    const id = crypto.randomUUID();
+    // Deduplication check if client passed UUID
+    if (clientEventId) {
+      const existing = await get('SELECT id FROM activity_events WHERE id = ?', [clientEventId]);
+      if (existing) continue;
+    }
+
+    const isExcluded = await checkUserExclusions(userId, appName);
     const category = inferCategory(appName, windowTitle);
     const sanitizedTitle = sanitizeWindowTitle(windowTitle);
 
+    // Get or create application node under session
+    let appRecord = await get(
+      'SELECT id, total_duration_seconds FROM applications WHERE session_id = ? AND app_name = ?',
+      [activeSessionId, appName]
+    );
+
+    let appId;
+    if (!appRecord) {
+      appId = crypto.randomUUID();
+      await run(
+        `INSERT INTO applications (id, session_id, app_name, app_category, total_duration_seconds, created_at)
+         VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+        [appId, activeSessionId, appName, category, Math.max(0, Number(durationSeconds) || 0)]
+      );
+    } else {
+      appId = appRecord.id;
+      await run(
+        'UPDATE applications SET total_duration_seconds = total_duration_seconds + ? WHERE id = ?',
+        [Math.max(0, Number(durationSeconds) || 0), appId]
+      );
+    }
+
+    // Insert activity event
+    const eventId = clientEventId || crypto.randomUUID();
+    await run(
+      `INSERT INTO activity_events (id, session_id, application_id, event_type, started_at, ended_at, duration_seconds, is_idle, window_title_sanitized, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      [
+        eventId,
+        activeSessionId,
+        appId,
+        isIdle ? 'idle' : 'active',
+        startedAt,
+        endedAt,
+        Math.max(0, Number(durationSeconds) || 0),
+        isIdle ? 1 : 0,
+        sanitizedTitle
+      ]
+    );
+
+    // If text record is included and not excluded/sensitive, encrypt at rest
+    if (textRecord && typeof textRecord === 'string' && textRecord.trim().length > 0) {
+      const isSensitive = isSensitiveFieldOrText(textRecord);
+      const markExcluded = isExcluded || isSensitive;
+      const sanitizedPreview = markExcluded ? '[Redacted Privacy Record]' : sanitizeWindowTitle(textRecord.substring(0, 60));
+      const encrypted = encryptRecord(markExcluded ? '[Redacted Content]' : textRecord);
+
+      await run(
+        `INSERT INTO text_records (id, session_id, application_id, encrypted_content, iv, auth_tag, sanitized_preview, captured_at, is_excluded, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+        [
+          crypto.randomUUID(),
+          activeSessionId,
+          appId,
+          encrypted.ciphertext,
+          encrypted.iv,
+          encrypted.authTag,
+          sanitizedPreview,
+          startedAt,
+          markExcluded ? 1 : 0
+        ]
+      );
+    }
+
+    // Also populate legacy activity_logs for backward compatibility
     await run(
       `INSERT INTO activity_logs (id, user_id, device_id, app_name, app_category, window_title_sanitized, duration_seconds, idle_seconds, is_idle, started_at, ended_at, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
       [
-        id,
+        crypto.randomUUID(),
         userId,
         deviceId,
         appName,
         category,
         sanitizedTitle,
-        Math.max(0, Number.parseInt(durationSeconds, 10) || 0),
-        Math.max(0, Number.parseInt(idleSeconds, 10) || 0),
+        Math.max(0, Number(durationSeconds) || 0),
+        Math.max(0, Number(idleSeconds) || 0),
         isIdle ? 1 : 0,
         startedAt,
         endedAt
       ]
     );
+
     count++;
   }
 
-  return { ingestedCount: count };
+  return { ingestedCount: count, sessionId: activeSessionId };
+}
+
+async function searchActivityRecords({ userId, query, appName, startDate, endDate, sessionId, limit = 50 }) {
+  let sql = `
+    SELECT 
+      ae.id,
+      ae.session_id as sessionId,
+      s.started_at as sessionDate,
+      d.device_name as deviceName,
+      a.app_name as appName,
+      a.app_category as category,
+      ae.window_title_sanitized as windowTitle,
+      ae.duration_seconds as durationSeconds,
+      ae.started_at as timestamp,
+      tr.sanitized_preview as textPreview,
+      tr.is_excluded as isExcluded
+    FROM activity_events ae
+    JOIN sessions s ON ae.session_id = s.id
+    JOIN devices d ON s.device_id = d.id
+    JOIN applications a ON ae.application_id = a.id
+    LEFT JOIN text_records tr ON tr.application_id = a.id AND tr.session_id = s.id
+    WHERE s.user_id = ?
+  `;
+  const params = [userId];
+
+  if (sessionId) {
+    sql += ' AND s.id = ?';
+    params.push(sessionId);
+  }
+  if (appName) {
+    sql += ' AND a.app_name LIKE ?';
+    params.push(`%${appName}%`);
+  }
+  if (startDate) {
+    sql += ' AND ae.started_at >= ?';
+    params.push(startDate);
+  }
+  if (endDate) {
+    sql += ' AND ae.started_at <= ?';
+    params.push(endDate);
+  }
+  if (query) {
+    sql += ' AND (a.app_name LIKE ? OR ae.window_title_sanitized LIKE ? OR tr.sanitized_preview LIKE ?)';
+    params.push(`%${query}%`, `%${query}%`, `%${query}%`);
+  }
+
+  sql += ' ORDER BY ae.started_at DESC LIMIT ?';
+  params.push(Number(limit));
+
+  const results = await all(sql, params);
+  return results;
 }
 
 async function getActivitySummary({ userId, startDate, endDate }) {
@@ -234,7 +520,16 @@ async function getActivitySummary({ userId, startDate, endDate }) {
 module.exports = {
   inferCategory,
   sanitizeWindowTitle,
+  isSensitiveFieldOrText,
   registerOrGetDevice,
+  checkUserExclusions,
+  startSession,
+  pauseSession,
+  resumeSession,
+  stopSession,
+  listSessions,
+  getSessionTree,
   ingestBatchActivity,
+  searchActivityRecords,
   getActivitySummary
 };

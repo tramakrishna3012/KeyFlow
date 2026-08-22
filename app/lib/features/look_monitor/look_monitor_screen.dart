@@ -1,241 +1,215 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/widgets/keyflow_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'look_activity_models.dart';
 import 'look_monitor_service.dart';
 
-class LookMonitorScreen extends StatefulWidget {
-  const LookMonitorScreen({super.key, required this.service});
+final lookMonitorServiceProvider =
+    ChangeNotifierProvider<LookMonitorService>((ref) => LookMonitorService()..startSession());
 
-  final LookMonitorService service;
+class LookMonitorScreen extends ConsumerStatefulWidget {
+  const LookMonitorScreen({super.key});
 
   @override
-  State<LookMonitorScreen> createState() => _LookMonitorScreenState();
+  ConsumerState<LookMonitorScreen> createState() => _LookMonitorScreenState();
 }
 
-class _LookMonitorScreenState extends State<LookMonitorScreen> {
-  @override
-  void initState() {
-    super.initState();
-    widget.service.addListener(_onServiceUpdate);
-  }
-
-  @override
-  void dispose() {
-    widget.service.removeListener(_onServiceUpdate);
-    super.dispose();
-  }
-
-  void _onServiceUpdate() {
-    if (mounted) setState(() {});
-  }
+class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
+  String _searchQuery = '';
+  String _selectedCategory = 'All';
 
   @override
   Widget build(BuildContext context) {
-    final status = widget.service.status;
-    final consent = widget.service.consentState;
+    final monitor = ref.watch(lookMonitorServiceProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final session = monitor.currentSession;
+    final apps = session?.applications ?? [];
+    final filteredApps = apps.where((app) {
+      final matchesCat =
+          _selectedCategory == 'All' || app.category == _selectedCategory;
+      final matchesQuery =
+          _searchQuery.isEmpty ||
+          app.appName.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesCat && matchesQuery;
+    }).toList();
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Row(
           children: [
-            Icon(Icons.remove_red_eye_outlined, color: AppColors.primary),
-            SizedBox(width: 10),
-            Text(
-              'Look System Application',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Icon(Icons.remove_red_eye_outlined, color: Colors.blueAccent),
+            SizedBox(width: 8),
+            Text('Look System Monitor', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
-        actions: [_buildStatusBadge(status), const SizedBox(width: 16)],
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          children: [
-            // 1. Transparency & Privacy Notice Banner
-            _buildPrivacyBanner(consent),
-
-            const SizedBox(height: 16),
-
-            // 2. Active Application & Live Control Card
-            _buildLiveStatusCard(status),
-
-            const SizedBox(height: 16),
-
-            // 3. Quick Action Controls
-            _buildControlBar(status),
-
-            const SizedBox(height: 24),
-
-            // 4. Recent Activity Stream
-            Text(
-              'Recent Activity Logs (Privacy-Sanitized)',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            _buildActivityList(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(LookMonitoringStatus status) {
-    Color bg;
-    Color dot;
-    String text;
-
-    switch (status) {
-      case LookMonitoringStatus.active:
-        bg = const Color(0x2E00D4AA);
-        dot = AppColors.secondary;
-        text = 'Monitoring Active';
-        break;
-      case LookMonitoringStatus.paused:
-        bg = const Color(0x2EFF9A3C);
-        dot = AppColors.accentOrange;
-        text = 'Paused';
-        break;
-      case LookMonitoringStatus.stopped:
-        bg = const Color(0x2E737373);
-        dot = Colors.grey;
-        text = 'Stopped';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: dot.withAlpha(80)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shield_outlined),
+            tooltip: 'Privacy Exclusions',
+            onPressed: () => _showPrivacyModal(context, monitor),
           ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              color: dot,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPrivacyBanner(LookConsentState consent) {
-    final isGranted = consent == LookConsentState.granted;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.verified_user_outlined,
-            color: AppColors.secondary,
-            size: 28,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Transparent Workplace Monitoring',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  isGranted
-                      ? 'Capturing active window metadata & idle intervals only. No keystrokes, passwords, or communications are recorded.'
-                      : 'Monitoring is suspended because consent has not been provided.',
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: isGranted,
-            activeThumbColor: AppColors.secondary,
-            onChanged: (val) {
-              widget.service.setConsent(
-                val ? LookConsentState.granted : LookConsentState.revoked,
-              );
+          IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: 'Sync Offline Queue (${monitor.offlineQueue.length})',
+            onPressed: () async {
+              final count = await monitor.flushOfflineQueue();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Synced $count items successfully.')),
+                );
+              }
             },
           ),
         ],
       ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSessionControlCard(context, monitor),
+            const SizedBox(height: 16),
+            _buildMetricsRow(context, monitor),
+            const SizedBox(height: 16),
+            _buildFilterBar(context),
+            const SizedBox(height: 16),
+            Text(
+              'Session Application Hierarchy',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (filteredApps.isEmpty)
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: Center(
+                    child: Text('No activity records captured in this session yet.'),
+                  ),
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredApps.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final app = filteredApps[index];
+                  return _buildApplicationCard(context, app);
+                },
+              ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildLiveStatusCard(LookMonitoringStatus status) {
-    final isRunning = status == LookMonitoringStatus.active;
+  Widget _buildSessionControlCard(BuildContext context, LookMonitorService monitor) {
+    final status = monitor.status;
+    final isActive = status == LookMonitoringStatus.active;
+    final isPaused = status == LookMonitoringStatus.paused;
 
-    return KeyFlowCard(
+    Color statusColor;
+    String statusText;
+    switch (status) {
+      case LookMonitoringStatus.active:
+        statusColor = Colors.greenAccent;
+        statusText = 'MONITORING ACTIVE';
+        break;
+      case LookMonitoringStatus.paused:
+        statusColor = Colors.amberAccent;
+        statusText = 'SESSION PAUSED';
+        break;
+      case LookMonitoringStatus.stopped:
+      case LookMonitoringStatus.completed:
+        statusColor = Colors.redAccent;
+        statusText = 'MONITORING STOPPED';
+        break;
+    }
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Current Foreground App',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-                ),
-                Text(
-                  widget.service.isCurrentlyIdle
-                      ? 'Status: IDLE'
-                      : 'Status: ACTIVE',
-                  style: TextStyle(
-                    color: widget.service.isCurrentlyIdle
-                        ? AppColors.accentOrange
-                        : AppColors.secondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    shape: BoxShape.circle,
                   ),
                 ),
+                const SizedBox(width: 8),
+                Text(
+                  statusText,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                const Spacer(),
+                if (monitor.offlineQueue.isNotEmpty)
+                  Chip(
+                    avatar: const Icon(Icons.cloud_off, size: 16),
+                    label: Text('${monitor.offlineQueue.length} offline queued'),
+                    visualDensity: VisualDensity.compact,
+                  ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Text(
-              isRunning
-                  ? widget.service.currentApp
-                  : 'Monitoring Paused / Suspended',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+              'Active App: ${monitor.currentApp}',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 4),
             Text(
-              isRunning
-                  ? 'Window: ${widget.service.currentWindowTitle}'
-                  : 'No telemetry is currently recorded.',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
+              'Window: ${monitor.currentWindowTitle}',
+              style: TextStyle(color: Colors.grey[400], fontSize: 13),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              children: [
+                if (!isActive)
+                  FilledButton.icon(
+                    onPressed: monitor.startSession,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Start Session'),
+                  ),
+                if (isActive)
+                  FilledButton.tonalIcon(
+                    onPressed: monitor.pauseSession,
+                    icon: const Icon(Icons.pause),
+                    label: const Text('Pause'),
+                  ),
+                if (isPaused)
+                  FilledButton.icon(
+                    onPressed: monitor.resumeSession,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Resume'),
+                  ),
+                if (isActive || isPaused)
+                  OutlinedButton.icon(
+                    onPressed: monitor.stopSession,
+                    icon: const Icon(Icons.stop),
+                    label: const Text('Stop Session'),
+                  ),
+              ],
             ),
           ],
         ),
@@ -243,111 +217,225 @@ class _LookMonitorScreenState extends State<LookMonitorScreen> {
     );
   }
 
-  Widget _buildControlBar(LookMonitoringStatus status) {
-    final isActive = status == LookMonitoringStatus.active;
+  Widget _buildMetricsRow(BuildContext context, LookMonitorService monitor) {
+    final session = monitor.currentSession;
+    final totalSec = session?.applications.fold<int>(
+          0,
+          (sum, a) => sum + a.totalDurationSeconds,
+        ) ??
+        0;
+    final appCount = session?.applications.length ?? 0;
 
     return Row(
       children: [
-        if (isActive) ...[
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.pause, size: 18),
-              label: const Text('Pause 15m'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.elevatedSurface,
-              ),
-              onPressed: () =>
-                  widget.service.pauseMonitoring(const Duration(minutes: 15)),
-            ),
+        Expanded(
+          child: _buildMetricTile(
+            context,
+            title: 'Session Duration',
+            value: '${(totalSec / 60).toStringAsFixed(1)} min',
+            icon: Icons.timer_outlined,
+            color: Colors.blueAccent,
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.pause_circle_outline, size: 18),
-              label: const Text('Pause 1 Hour'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.elevatedSurface,
-              ),
-              onPressed: () =>
-                  widget.service.pauseMonitoring(const Duration(hours: 1)),
-            ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildMetricTile(
+            context,
+            title: 'Apps Used',
+            value: '$appCount',
+            icon: Icons.apps_outlined,
+            color: Colors.purpleAccent,
           ),
-          const SizedBox(width: 10),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.destructive,
-            ),
-            child: const Text('Stop'),
-            onPressed: () => widget.service.stopMonitoring(),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _buildMetricTile(
+            context,
+            title: 'Privacy Status',
+            value: 'Protected',
+            icon: Icons.lock_outline,
+            color: Colors.tealAccent,
           ),
-        ] else ...[
-          Expanded(
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Resume Monitoring'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              onPressed: () => widget.service.resumeMonitoring(),
-            ),
-          ),
-        ],
+        ),
       ],
     );
   }
 
-  Widget _buildActivityList() {
-    final logs = widget.service.activityLogs;
-
-    if (logs.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        alignment: Alignment.center,
-        child: const Text(
-          'No activity intervals recorded yet.',
-          style: TextStyle(color: AppColors.textMuted),
+  Widget _buildMetricTile(
+    BuildContext context, {
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) => Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 20),
+            const SizedBox(height: 8),
+            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(title, style: TextStyle(color: Colors.grey[400], fontSize: 11)),
+          ],
         ),
-      );
-    }
+      ),
+    );
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: logs.length,
-      itemBuilder: (ctx, idx) {
-        final item = logs[idx];
-        return Card(
-          color: AppColors.cardSurface,
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: AppColors.primarySubtle,
-              child: Text(
-                item.appName.isNotEmpty ? item.appName[0].toUpperCase() : 'A',
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+  Widget _buildFilterBar(BuildContext context) => Row(
+      children: [
+        Expanded(
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Search applications & keywords...',
+              prefixIcon: const Icon(Icons.search),
+              isDense: true,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onChanged: (val) => setState(() => _searchQuery = val),
+          ),
+        ),
+        const SizedBox(width: 8),
+        DropdownButton<String>(
+          value: _selectedCategory,
+          items: const [
+            DropdownMenuItem(value: 'All', child: Text('All Categories')),
+            DropdownMenuItem(value: 'Development', child: Text('Development')),
+            DropdownMenuItem(value: 'Browsing', child: Text('Browsing')),
+            DropdownMenuItem(value: 'Communication', child: Text('Communication')),
+            DropdownMenuItem(value: 'Productivity', child: Text('Productivity')),
+            DropdownMenuItem(value: 'Design', child: Text('Design')),
+          ],
+          onChanged: (val) {
+            if (val != null) setState(() => _selectedCategory = val);
+          },
+        ),
+      ],
+    );
+
+  Widget _buildApplicationCard(BuildContext context, MonitoredApplication app) => Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
+          child: Text(
+            app.appName.isNotEmpty ? app.appName[0].toUpperCase() : '?',
+            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
+          ),
+        ),
+        title: Text(app.appName, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(
+          '${app.category} • ${(app.totalDurationSeconds / 60).toStringAsFixed(1)} min • ${app.activityTimeline.length} events',
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Activity Timeline:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                ...app.activityTimeline.take(5).map(
+                  (evt) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.circle, size: 6, color: Colors.blueGrey),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${evt.windowTitle} (${evt.durationSeconds}s)',
+                            style: const TextStyle(fontSize: 12),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            title: Text(
-              item.appName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              '${item.appCategory} • ${item.durationSeconds}s duration (${item.idleSeconds}s idle)\n${item.windowTitle}',
-              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-            ),
-            trailing: Text(
-              '${item.startedAt.hour.toString().padLeft(2, '0')}:${item.startedAt.minute.toString().padLeft(2, '0')}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
+                if (app.textRecords.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text('Permitted Text Records:', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  ...app.textRecords.take(3).map(
+                    (rec) => Card(
+                      color: Colors.black26,
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          children: [
+                            Icon(
+                              rec.isExcluded ? Icons.lock : Icons.notes,
+                              size: 14,
+                              color: rec.isExcluded ? Colors.redAccent : Colors.tealAccent,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                rec.isExcluded ? '[Excluded by Privacy Filter]' : rec.sanitizedPreview,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: rec.isExcluded ? FontStyle.italic : FontStyle.normal,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-        );
-      },
+        ],
+      ),
+    );
+
+  void _showPrivacyModal(BuildContext context, LookMonitorService monitor) {
+    final textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Privacy Exclusions'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Add applications to exclude from text and window monitoring:'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: textController,
+                decoration: const InputDecoration(
+                  labelText: 'Application Name (e.g. 1Password, Bitwarden)',
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 6,
+                children: monitor.privacyExclusions.map((rule) => Chip(
+                    label: Text(rule.appName),
+                    onDeleted: () => monitor.removePrivacyExclusion(rule.appName),
+                  )).toList(),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              if (textController.text.trim().isNotEmpty) {
+                monitor.addPrivacyExclusion(textController.text.trim());
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Add & Close'),
+          ),
+        ],
+      ),
     );
   }
 }
