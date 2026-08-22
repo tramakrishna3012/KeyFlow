@@ -1,8 +1,8 @@
 // Look System Web Application & Dashboard Controller
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000/api/v1'
-  : '/api/v1';
+  ? 'http://localhost:4000/api/v1'
+  : 'https://keyflow-dnsd.onrender.com/api/v1';
 
 let authToken = localStorage.getItem('look_jwt_token') || '';
 let currentUser = null;
