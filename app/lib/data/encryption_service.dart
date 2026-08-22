@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:encrypt/encrypt.dart' as encrypt;
@@ -108,20 +109,12 @@ class EncryptionService {
   }
 
   Uint8List _generateSecureRandom(int length) {
-    final secureRandom = pc.FortunaRandom();
-    final seedSource = pc.SecureRandom('Fortuna')
-      ..seed(
-        pc.KeyParameter(
-          Uint8List.fromList(
-            List<int>.generate(
-              32,
-              (_) => DateTime.now().microsecondsSinceEpoch % 256,
-            ),
-          ),
-        ),
-      );
-    secureRandom.seed(pc.KeyParameter(seedSource.nextBytes(32)));
-    return secureRandom.nextBytes(length);
+    final random = Random.secure();
+    final values = Uint8List(length);
+    for (var i = 0; i < length; i++) {
+      values[i] = random.nextInt(256);
+    }
+    return values;
   }
 }
 
