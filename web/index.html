@@ -41,7 +41,7 @@
         </nav>
 
         <div class="nav-actions">
-          <button class="btn btn-sm btn-outline" id="btn-open-dashboard">Web Dashboard</button>
+          <button class="btn btn-sm btn-outline" id="btn-open-dashboard" style="display: none;">Web Dashboard</button>
           <button class="btn btn-sm btn-primary" id="btn-nav-auth">Sign In / Register</button>
         </div>
       </div>
@@ -510,13 +510,14 @@
 
       <div>
         <button class="btn btn-sm btn-outline w-100 mb-2" id="btn-back-to-site" style="margin-bottom: 12px;">← Back to Product Site</button>
-        <div class="user-chip" id="user-chip-btn" style="cursor: pointer; padding: 12px; background: rgba(255,255,255,0.03); border-radius: var(--radius-sm); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;" title="Click to Sign In or Switch Account">
+        <div class="user-chip" id="user-chip-btn" style="cursor: pointer; padding: 12px; background: var(--bg-surface); border-radius: var(--radius-sm); border: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;" title="Click to Sign In or Switch Account">
           <div class="brand-logo" id="user-avatar" style="width: 28px; height: 28px; font-size: 11px;">AO</div>
           <div>
             <div id="user-name" style="font-size: 12px; font-weight: 700;">Authorized Owner</div>
             <div id="user-role" style="font-size: 11px; color: var(--text-muted);">Click to Sign In</div>
           </div>
         </div>
+        <button class="btn btn-sm btn-outline w-100" id="btn-logout" style="color: var(--accent-red); font-size: 12px; display: none;">Sign Out</button>
       </div>
     </aside>
 

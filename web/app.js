@@ -1,5 +1,5 @@
 // ==========================================================================
-// KeyFlow & Look System — Web Application & Marketing Controller
+// KeyFlow & Look System — Web Application & Marketing Controller (Light Theme)
 // ==========================================================================
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -22,8 +22,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupAuthModal();
 
   await verifyAuthOrPrompt();
-  await loadOverviewData();
-  await loadTypingHistory();
+  if (currentUser) {
+    await loadOverviewData();
+    await loadTypingHistory();
+  }
 });
 
 // ==========================================================================
@@ -84,18 +86,26 @@ function setupMarketingSite() {
     }
   });
 
-  // Switch between Marketing & Live Dashboard View
+  // Switch between Marketing & Live Dashboard View (Protected by Auth)
   const btnOpenDash = document.getElementById('btn-open-dashboard');
   const btnBackSite = document.getElementById('btn-back-to-site');
   const linkFooterDash = document.getElementById('link-footer-dashboard');
 
   btnOpenDash?.addEventListener('click', () => {
+    if (!currentUser || !authToken) {
+      document.getElementById('auth-modal').style.display = 'flex';
+      return;
+    }
     document.body.classList.add('dashboard-mode');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   linkFooterDash?.addEventListener('click', (e) => {
     e.preventDefault();
+    if (!currentUser || !authToken) {
+      document.getElementById('auth-modal').style.display = 'flex';
+      return;
+    }
     document.body.classList.add('dashboard-mode');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
@@ -188,7 +198,7 @@ function detectVisitorOS() {
   if (ua.includes('mac') && !ua.includes('iphone') && !ua.includes('ipad')) return 'macos';
   if (ua.includes('android')) return 'android';
   if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) return 'ios';
-  return 'windows'; // fallback
+  return 'windows';
 }
 
 // ==========================================================================
@@ -199,6 +209,7 @@ function setupAuthModal() {
   const modal = document.getElementById('auth-modal');
   const btnNavTrigger = document.getElementById('btn-nav-auth');
   const userChip = document.getElementById('user-chip-btn');
+  const btnLogout = document.getElementById('btn-logout');
   const btnClose = document.getElementById('btn-close-auth');
   const tabSignIn = document.getElementById('tab-btn-signin');
   const tabSignUp = document.getElementById('tab-btn-signup');
@@ -208,9 +219,27 @@ function setupAuthModal() {
   const showModal = () => { if (modal) modal.style.display = 'flex'; };
   const hideModal = () => { if (modal) modal.style.display = 'none'; };
 
-  btnNavTrigger?.addEventListener('click', showModal);
+  btnNavTrigger?.addEventListener('click', () => {
+    if (currentUser) {
+      // Toggle Dashboard or show info
+      document.body.classList.toggle('dashboard-mode');
+    } else {
+      showModal();
+    }
+  });
+
   userChip?.addEventListener('click', showModal);
   btnClose?.addEventListener('click', hideModal);
+
+  // Logout Handler
+  btnLogout?.addEventListener('click', () => {
+    localStorage.removeItem('look_jwt_token');
+    authToken = '';
+    currentUser = null;
+    updateUserUI();
+    document.body.classList.remove('dashboard-mode');
+    alert('You have been signed out.');
+  });
 
   tabSignIn?.addEventListener('click', () => {
     tabSignIn.classList.add('active');
@@ -245,7 +274,8 @@ function setupAuthModal() {
       currentUser = data.user;
       updateUserUI();
       hideModal();
-      alert('Signed in successfully!');
+      alert('Signed in successfully! Launching Web Dashboard.');
+      document.body.classList.add('dashboard-mode');
       loadOverviewData();
       loadTypingHistory();
     } catch (err) {
@@ -275,7 +305,8 @@ function setupAuthModal() {
       currentUser = data.user;
       updateUserUI();
       hideModal();
-      alert('Account created and signed in!');
+      alert('Account created! Launching Web Dashboard.');
+      document.body.classList.add('dashboard-mode');
       loadOverviewData();
       loadTypingHistory();
     } catch (err) {
@@ -294,21 +325,46 @@ async function verifyAuthOrPrompt() {
       if (data.user) {
         currentUser = data.user;
         updateUserUI();
+      } else {
+        authToken = '';
+        localStorage.removeItem('look_jwt_token');
+        updateUserUI();
       }
     } catch {
       console.warn('Session verification failed.');
+      updateUserUI();
     }
+  } else {
+    updateUserUI();
   }
 }
 
 function updateUserUI() {
-  if (currentUser) {
-    document.getElementById('user-name').textContent = currentUser.full_name || 'Authorized Owner';
-    document.getElementById('user-role').textContent = currentUser.role === 'admin' ? 'Administrator' : 'Team Member';
+  const dashBtn = document.getElementById('btn-open-dashboard');
+  const logoutBtn = document.getElementById('btn-logout');
+  const navAuthBtn = document.getElementById('btn-nav-auth');
+  const userName = document.getElementById('user-name');
+  const userRole = document.getElementById('user-role');
+  const userAvatar = document.getElementById('user-avatar');
+
+  if (currentUser && authToken) {
+    // Show Dashboard Button & Logout
+    if (dashBtn) dashBtn.style.display = 'inline-flex';
+    if (logoutBtn) logoutBtn.style.display = 'block';
+    if (userName) userName.textContent = currentUser.full_name || 'Authorized Owner';
+    if (userRole) userRole.textContent = currentUser.role === 'admin' ? 'Administrator' : 'Team Member';
+    
     const initials = (currentUser.full_name || 'AO').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    document.getElementById('user-avatar').textContent = initials;
-    const navBtn = document.getElementById('btn-nav-auth');
-    if (navBtn) navBtn.textContent = `Signed In: ${currentUser.full_name || 'Owner'}`;
+    if (userAvatar) userAvatar.textContent = initials;
+    if (navAuthBtn) navAuthBtn.textContent = `Dashboard (${currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'Owner'})`;
+  } else {
+    // Hide Dashboard Button & Logout
+    if (dashBtn) dashBtn.style.display = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (userName) userName.textContent = 'Guest / Visitor';
+    if (userRole) userRole.textContent = 'Click to Sign In';
+    if (userAvatar) userAvatar.textContent = 'KF';
+    if (navAuthBtn) navAuthBtn.textContent = 'Sign In / Register';
   }
 }
 
@@ -462,7 +518,6 @@ async function loadTypingHistory(q = '', appName = '') {
 
     container.innerHTML = history.map((item) => {
       const formattedDate = new Date(item.capturedAt).toLocaleString();
-      const escapedContent = (item.content || '').replace(/"/g, '&quot;');
 
       return `
         <div class="typing-card">
