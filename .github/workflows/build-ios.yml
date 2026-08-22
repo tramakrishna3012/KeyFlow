@@ -17,10 +17,10 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
     - name: Setup Flutter
-      uses: subosito/flutter-action@v2
+      uses: subosito/flutter-action@f59149128a37095408e7c1152a6442624cde3fb8 # v2.18.0
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         cache: true
@@ -38,7 +38,7 @@ jobs:
         flutter build ios --release --no-codesign
         
     - name: Upload iOS build artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: ios-build
         path: app/build/ios/iphoneos/
@@ -50,10 +50,10 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
     - name: Setup Flutter
-      uses: subosito/flutter-action@v2
+      uses: subosito/flutter-action@f59149128a37095408e7c1152a6442624cde3fb8 # v2.18.0
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         cache: true

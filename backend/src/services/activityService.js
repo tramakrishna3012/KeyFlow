@@ -82,8 +82,8 @@ function sanitizeWindowTitle(rawTitle = '') {
     }
   });
 
-  // Strip emails (linear non-backtracking)
-  sanitized = sanitized.replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[Redacted Email]');
+  // Strip emails
+  sanitized = sanitized.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, '[Redacted Email]');
 
   // Strip token-like alphanumeric strings (> 24 hex/b64 chars)
   sanitized = sanitized.replace(/\b[A-Za-z0-9-_]{24,}\b/g, '[Redacted Token]');

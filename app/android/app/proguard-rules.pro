@@ -17,6 +17,7 @@
 # Supabase / HTTP / OkHttp / WebSockets
 -dontwarn okhttp3.**
 -dontwarn okio.**
+-dontwarn **
 -keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod
 
 # KeyFlow native Accessibility & capture plugin
