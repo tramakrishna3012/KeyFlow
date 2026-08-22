@@ -6,7 +6,33 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
   ? 'http://localhost:4000/api/v1'
   : 'https://keyflow-dnsd.onrender.com/api/v1';
 
-let authToken = localStorage.getItem('look_jwt_token') || '';
+// Safe Storage Helper (prevents SecurityError if third-party cookies/storage are blocked)
+const memoryStore = {};
+function safeGetItem(key) {
+  try {
+    return window.localStorage ? window.localStorage.getItem(key) || '' : (memoryStore[key] || '');
+  } catch {
+    return memoryStore[key] || '';
+  }
+}
+
+function safeSetItem(key, value) {
+  try {
+    if (window.localStorage) window.localStorage.setItem(key, value);
+  } catch {
+    memoryStore[key] = value;
+  }
+}
+
+function safeRemoveItem(key) {
+  try {
+    if (window.localStorage) window.localStorage.removeItem(key);
+  } catch {
+    delete memoryStore[key];
+  }
+}
+
+let authToken = safeGetItem('look_jwt_token');
 let currentUser = null;
 let currentSessionId = null;
 
@@ -297,7 +323,7 @@ function setupAuthModal() {
 
   // Logout Handler
   btnLogout?.addEventListener('click', () => {
-    localStorage.removeItem('look_jwt_token');
+    safeRemoveItem('look_jwt_token');
     authToken = '';
     currentUser = null;
     currentSessionId = null;
@@ -347,7 +373,7 @@ function setupAuthModal() {
       }
 
       authToken = data.token;
-      localStorage.setItem('look_jwt_token', authToken);
+      safeSetItem('look_jwt_token', authToken);
       currentUser = data.user;
       updateUserUI();
       hideModal();
@@ -406,7 +432,7 @@ function setupAuthModal() {
       }
 
       authToken = data.token;
-      localStorage.setItem('look_jwt_token', authToken);
+      safeSetItem('look_jwt_token', authToken);
       currentUser = data.user;
       updateUserUI();
       hideModal();
@@ -439,11 +465,10 @@ async function verifyAuthOrPrompt() {
         updateUserUI();
       } else {
         authToken = '';
-        localStorage.removeItem('look_jwt_token');
+        safeRemoveItem('look_jwt_token');
         updateUserUI();
       }
     } catch {
-      console.warn('Session verification failed.');
       updateUserUI();
     }
   } else {
