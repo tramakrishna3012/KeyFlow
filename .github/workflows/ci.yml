@@ -83,10 +83,35 @@ jobs:
         cd app
         flutter pub get --enforce-lockfile
         
+    - name: Configure Android Signing Keystore
+      env:
+        ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      run: |
+        if [ -n "$ANDROID_KEYSTORE" ]; then
+          echo "$ANDROID_KEYSTORE" | base64 --decode > app/android/android_keystore.jks
+          cat > app/android/key.properties <<EOF
+        storePassword=$ANDROID_KEYSTORE_PASSWORD
+        keyPassword=$ANDROID_KEY_PASSWORD
+        keyAlias=$ANDROID_KEY_ALIAS
+        storeFile=android_keystore.jks
+        EOF
+        else
+          keytool -genkeypair -v -keystore app/android/android_keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias keyflow -dname "CN=KeyFlow, OU=CI, O=KeyFlow, L=City, ST=State, C=US" -storepass "KeyFlowPass2026!" -keypass "KeyFlowPass2026!"
+          cat > app/android/key.properties <<EOF
+        storePassword=KeyFlowPass2026!
+        keyPassword=KeyFlowPass2026!
+        keyAlias=keyflow
+        storeFile=android_keystore.jks
+        EOF
+        fi
+        
     - name: Build Android APK
       run: |
         cd app
-        flutter build apk --release
+        flutter build apk --release --no-tree-shake-icons
         
     - name: Upload Android APK artifact
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3

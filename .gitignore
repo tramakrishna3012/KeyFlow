@@ -20,6 +20,10 @@ app/android/captures/
 *.apk
 *.aab
 *.zip
+*.jks
+*.keystore
+key.properties
+app/android/key.properties
 
 # OS & IDE
 .DS_Store

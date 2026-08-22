@@ -45,7 +45,7 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
         
-    - name: Configure Keystore Signing (if secret provided)
+    - name: Configure Android Signing Keystore
       env:
         ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
         ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -60,9 +60,16 @@ jobs:
         keyAlias=$ANDROID_KEY_ALIAS
         storeFile=android_keystore.jks
         EOF
-          echo "Release keystore configured successfully."
+          echo "Release keystore configured from repository secret."
         else
-          echo "No ANDROID_KEYSTORE secret found. Falling back to debug signing."
+          keytool -genkeypair -v -keystore app/android/android_keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias keyflow -dname "CN=KeyFlow, OU=CI, O=KeyFlow, L=City, ST=State, C=US" -storepass "KeyFlowPass2026!" -keypass "KeyFlowPass2026!"
+          cat > app/android/key.properties <<EOF
+        storePassword=KeyFlowPass2026!
+        keyPassword=KeyFlowPass2026!
+        keyAlias=keyflow
+        storeFile=android_keystore.jks
+        EOF
+          echo "Generated automated release keystore for CI build."
         fi
         
     - name: Build Android App Bundle
