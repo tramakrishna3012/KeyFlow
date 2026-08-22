@@ -19,19 +19,19 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
-    if (
-      !origin ||
+    const isAllowed = !origin ||
       allowedOrigins.includes('*') ||
       allowedOrigins.includes(origin) ||
       origin.endsWith('.pages.dev') ||
       origin.endsWith('.workers.dev') ||
       origin.includes('localhost') ||
       origin.includes('127.0.0.1') ||
-      process.env.NODE_ENV !== 'production'
-    ) {
+      process.env.NODE_ENV !== 'production';
+
+    if (isAllowed) {
       callback(null, true);
     } else {
-      callback(null, true);
+      callback(new Error('Cross-Origin Request blocked by CORS policy'));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

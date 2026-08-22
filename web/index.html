@@ -179,8 +179,8 @@
           </div>
           <div class="search-toolbar">
             <div class="form-row">
-              <input type="text" id="typing-keyword-input" class="input-control" placeholder="Search across all devices & typed snippets...">
-              <input type="text" id="typing-app-input" class="input-control" placeholder="Filter by application (e.g. Chrome, VS Code, Notes)...">
+              <input type="text" id="typing-keyword-input" class="input-control" placeholder="Search across all devices & typed snippets..." aria-label="Search across all devices and typed snippets">
+              <input type="text" id="typing-app-input" class="input-control" placeholder="Filter by application (e.g. Chrome, VS Code, Notes)..." aria-label="Filter typing history by application">
               <button class="btn btn-primary" id="btn-search-typing">Search History</button>
             </div>
           </div>
@@ -230,8 +230,8 @@
           </div>
           <div class="search-toolbar">
             <div class="form-row">
-              <input type="text" id="search-keyword-input" class="input-control" placeholder="Search keywords in window titles or permitted text...">
-              <input type="text" id="search-app-input" class="input-control" placeholder="Application name (e.g. Chrome, VS Code)...">
+              <input type="text" id="search-keyword-input" class="input-control" placeholder="Search keywords in window titles or permitted text..." aria-label="Search keywords in window titles or text">
+              <input type="text" id="search-app-input" class="input-control" placeholder="Application name (e.g. Chrome, VS Code)..." aria-label="Filter by application name">
               <button class="btn btn-primary" id="btn-execute-search">Execute Search</button>
             </div>
           </div>
@@ -349,7 +349,7 @@
             </div>
             <p class="text-muted">Applications listed below will be completely bypassed from text capturing and title telemetry.</p>
             <div class="form-row mt-3">
-              <input type="text" id="input-new-exclusion" class="input-control" placeholder="Application name (e.g. 1Password, Bitwarden, Signal)...">
+              <input type="text" id="input-new-exclusion" class="input-control" placeholder="Application name (e.g. 1Password, Bitwarden, Signal)..." aria-label="Application name to exclude from recording">
               <button class="btn btn-primary" id="btn-add-exclusion">Add Exclusion</button>
             </div>
             <div class="exclusion-chips mt-3" id="exclusion-chips-container"></div>
