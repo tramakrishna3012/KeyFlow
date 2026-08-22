@@ -3,9 +3,7 @@ import 'look_activity_models.dart';
 /// Sanitizes application window titles and permitted text records to prevent leakage
 /// of credentials, passwords, OTPs, credit cards, URL query parameters, or personal tokens.
 class LookWindowSanitizer {
-  const LookWindowSanitizer({
-    this.customExclusions = const [],
-  });
+  const LookWindowSanitizer({this.customExclusions = const []});
 
   final List<PrivacyExclusionRule> customExclusions;
 
@@ -17,9 +15,7 @@ class LookWindowSanitizer {
     r'\b[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\b',
     caseSensitive: false,
   );
-  static final RegExp _creditCardRegex = RegExp(
-    r'\b(?:\d[ -]*?){13,16}\b',
-  );
+  static final RegExp _creditCardRegex = RegExp(r'\b(?:\d[ -]*?){13,16}\b');
   static final RegExp _tokenRegex = RegExp(r'\b[A-Za-z0-9-_]{24,}\b');
   static final RegExp _authSecretRegex = RegExp(
     r'\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret|password)\s*[:=]\s*\S+',

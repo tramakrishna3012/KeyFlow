@@ -26,11 +26,17 @@ void main() {
 
       service.pauseSession();
       expect(service.status, equals(LookMonitoringStatus.paused));
-      expect(service.currentSession!.status, equals(LookMonitoringStatus.paused));
+      expect(
+        service.currentSession!.status,
+        equals(LookMonitoringStatus.paused),
+      );
 
       service.resumeSession();
       expect(service.status, equals(LookMonitoringStatus.active));
-      expect(service.currentSession!.status, equals(LookMonitoringStatus.active));
+      expect(
+        service.currentSession!.status,
+        equals(LookMonitoringStatus.active),
+      );
 
       service.stopSession();
       expect(service.status, equals(LookMonitoringStatus.stopped));
@@ -39,58 +45,78 @@ void main() {
       expect(service.sessionHistory.first.sessionId, equals('sess-test-101'));
     });
 
-    test('2. Application-Level Organization (Session -> App -> Timeline & Text)', () {
-      service
-        ..startSession(customSessionId: 'sess-hierarchical-002')
-        ..updateForegroundWindow(
-          appName: 'Google Chrome',
-          rawTitle: 'KeyFlow Pull Request #14',
-          textContent: 'Reviewing session hierarchy and offline sync.',
-        )
-        ..updateForegroundWindow(
-          appName: 'Visual Studio Code',
-          rawTitle: 'look_monitor_service.dart',
-          textContent: 'Writing unit tests for desktop client.',
+    test(
+      '2. Application-Level Organization (Session -> App -> Timeline & Text)',
+      () {
+        service
+          ..startSession(customSessionId: 'sess-hierarchical-002')
+          ..updateForegroundWindow(
+            appName: 'Google Chrome',
+            rawTitle: 'KeyFlow Pull Request #14',
+            textContent: 'Reviewing session hierarchy and offline sync.',
+          )
+          ..updateForegroundWindow(
+            appName: 'Visual Studio Code',
+            rawTitle: 'look_monitor_service.dart',
+            textContent: 'Writing unit tests for desktop client.',
+          );
+
+        final session = service.currentSession!;
+        expect(session.applications.length, equals(2));
+
+        final chromeApp = session.applications.firstWhere(
+          (a) => a.appName == 'Google Chrome',
+        );
+        expect(chromeApp.category, equals('Browsing'));
+        expect(chromeApp.activityTimeline.isNotEmpty, isTrue);
+        expect(chromeApp.textRecords.isNotEmpty, isTrue);
+        expect(
+          chromeApp.textRecords.first.content,
+          contains('Reviewing session hierarchy'),
         );
 
-      final session = service.currentSession!;
-      expect(session.applications.length, equals(2));
-
-      final chromeApp = session.applications.firstWhere((a) => a.appName == 'Google Chrome');
-      expect(chromeApp.category, equals('Browsing'));
-      expect(chromeApp.activityTimeline.isNotEmpty, isTrue);
-      expect(chromeApp.textRecords.isNotEmpty, isTrue);
-      expect(chromeApp.textRecords.first.content, contains('Reviewing session hierarchy'));
-
-      final vscodeApp = session.applications.firstWhere((a) => a.appName == 'Visual Studio Code');
-      expect(vscodeApp.category, equals('Development'));
-    });
-
-    test('3. Privacy Sanitizer: Redacts passwords, credit cards, OTPs, and tokens', () {
-      const rawWithSensitive = 'Login with secret: 4111-2222-3333-4444 and otp=892314 for user john.doe@keyflow.io';
-      final sanitized = sanitizer.sanitizeTextRecord(rawWithSensitive);
-
-      expect(sanitized, isNot(contains('4111-2222-3333-4444')));
-      expect(sanitized, isNot(contains('john.doe@keyflow.io')));
-      expect(sanitized, contains('[Redacted Sensitive Record]'));
-    });
-
-    test('4. Privacy Exclusions: Completely blocks configured applications', () {
-      expect(sanitizer.isApplicationExcluded('1Password'), isTrue);
-      expect(sanitizer.isApplicationExcluded('Bitwarden Vault'), isTrue);
-      expect(sanitizer.isApplicationExcluded('Google Chrome'), isFalse);
-
-      service
-        ..startSession()
-        ..updateForegroundWindow(
-          appName: '1Password',
-          rawTitle: 'Master Password Vault',
-          textContent: 'Master password string',
+        final vscodeApp = session.applications.firstWhere(
+          (a) => a.appName == 'Visual Studio Code',
         );
+        expect(vscodeApp.category, equals('Development'));
+      },
+    );
 
-      final session = service.currentSession!;
-      expect(session.applications.any((a) => a.appName == '1Password'), isFalse);
-    });
+    test(
+      '3. Privacy Sanitizer: Redacts passwords, credit cards, OTPs, and tokens',
+      () {
+        const rawWithSensitive =
+            'Login with secret: 4111-2222-3333-4444 and otp=892314 for user john.doe@keyflow.io';
+        final sanitized = sanitizer.sanitizeTextRecord(rawWithSensitive);
+
+        expect(sanitized, isNot(contains('4111-2222-3333-4444')));
+        expect(sanitized, isNot(contains('john.doe@keyflow.io')));
+        expect(sanitized, contains('[Redacted Sensitive Record]'));
+      },
+    );
+
+    test(
+      '4. Privacy Exclusions: Completely blocks configured applications',
+      () {
+        expect(sanitizer.isApplicationExcluded('1Password'), isTrue);
+        expect(sanitizer.isApplicationExcluded('Bitwarden Vault'), isTrue);
+        expect(sanitizer.isApplicationExcluded('Google Chrome'), isFalse);
+
+        service
+          ..startSession()
+          ..updateForegroundWindow(
+            appName: '1Password',
+            rawTitle: 'Master Password Vault',
+            textContent: 'Master password string',
+          );
+
+        final session = service.currentSession!;
+        expect(
+          session.applications.any((a) => a.appName == '1Password'),
+          isFalse,
+        );
+      },
+    );
 
     test('5. Offline Sync Queue Enqueues & Flushes on Reconnection', () async {
       service
@@ -111,34 +137,49 @@ void main() {
 
     test('6. Auto-Starts Session Immediately on User First Login', () {
       final unstartedService = LookMonitorService(sanitizer: sanitizer);
-      expect(unstartedService.currentSession, isNotNull); // auto-started on construction / login
+      expect(
+        unstartedService.currentSession,
+        isNotNull,
+      ); // auto-started on construction / login
       expect(unstartedService.status, equals(LookMonitoringStatus.active));
-      expect(unstartedService.currentSession!.sessionId, contains('daily-session'));
+      expect(
+        unstartedService.currentSession!.sessionId,
+        contains('daily-session'),
+      );
     });
 
-    test('7. Continuous Typing History Capture & Privacy Exclusion in Active App', () {
-      service
-        ..autoStartOnLogin()
-        ..recordTypingText(
+    test(
+      '7. Continuous Typing History Capture & Privacy Exclusion in Active App',
+      () {
+        service
+          ..autoStartOnLogin()
+          ..recordTypingText(
+            appName: 'Sublime Text',
+            windowTitle: 'notes.txt',
+            textContent: 'Sprint planning and release architecture discussion.',
+          );
+
+        final session = service.currentSession!;
+        final sublimeApp = session.applications.firstWhere(
+          (a) => a.appName == 'Sublime Text',
+        );
+        expect(sublimeApp.textRecords.isNotEmpty, isTrue);
+        expect(
+          sublimeApp.textRecords.first.content,
+          contains('Sprint planning'),
+        );
+        expect(sublimeApp.textRecords.first.isExcluded, isFalse);
+
+        // Record sensitive credential snippet (must be redacted/excluded)
+        service.recordTypingText(
           appName: 'Sublime Text',
-          windowTitle: 'notes.txt',
-          textContent: 'Sprint planning and release architecture discussion.',
+          windowTitle: 'credentials.txt',
+          textContent:
+              'password=supersecret123 otp=992813 card=4111-2222-3333-4444',
         );
 
-      final session = service.currentSession!;
-      final sublimeApp = session.applications.firstWhere((a) => a.appName == 'Sublime Text');
-      expect(sublimeApp.textRecords.isNotEmpty, isTrue);
-      expect(sublimeApp.textRecords.first.content, contains('Sprint planning'));
-      expect(sublimeApp.textRecords.first.isExcluded, isFalse);
-
-      // Record sensitive credential snippet (must be redacted/excluded)
-      service.recordTypingText(
-        appName: 'Sublime Text',
-        windowTitle: 'credentials.txt',
-        textContent: 'password=supersecret123 otp=992813 card=4111-2222-3333-4444',
-      );
-
-      expect(sublimeApp.textRecords.first.isExcluded, isTrue);
-    });
+        expect(sublimeApp.textRecords.first.isExcluded, isTrue);
+      },
+    );
   });
 }

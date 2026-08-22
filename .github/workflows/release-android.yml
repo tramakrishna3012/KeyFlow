@@ -2,8 +2,16 @@ name: Release Android
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release Tag / Version (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+  push:
+    tags:
+      - 'v*'
   release:
-    types: [created]
+    types: [created, published]
 
 env:
   FLUTTER_VERSION: '3.44.7'
@@ -11,6 +19,8 @@ env:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout repository
@@ -35,24 +45,25 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
         
-    - name: Decode signing keystore
+    - name: Configure Keystore Signing (if secret provided)
       env:
         ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
-      run: |
-        echo "$ANDROID_KEYSTORE" | base64 --decode > android_keystore.jks
-        
-    - name: Create key.properties
-      env:
         ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       run: |
-        cat > app/android/key.properties <<EOF
+        if [ -n "$ANDROID_KEYSTORE" ]; then
+          echo "$ANDROID_KEYSTORE" | base64 --decode > android_keystore.jks
+          cat > app/android/key.properties <<EOF
         storePassword=$ANDROID_KEYSTORE_PASSWORD
         keyPassword=$ANDROID_KEY_PASSWORD
         keyAlias=$ANDROID_KEY_ALIAS
         storeFile=../../android_keystore.jks
         EOF
+          echo "Release keystore configured successfully."
+        else
+          echo "No ANDROID_KEYSTORE secret found. Falling back to debug signing."
+        fi
         
     - name: Build Android App Bundle
       run: |
@@ -79,7 +90,7 @@ jobs:
         retention-days: 30
         
     - name: Upload to GitHub Release
-      if: github.event_name == 'release'
+      if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
       with:
         files: |

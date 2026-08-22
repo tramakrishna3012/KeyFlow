@@ -42,9 +42,12 @@ class LookMonitorService extends ChangeNotifier {
   LookMonitoringStatus get status => _status;
   LookConsentState get consentState => _consentState;
   LookMonitoringSession? get currentSession => _currentSession;
-  List<LookMonitoringSession> get sessionHistory => List.unmodifiable(_sessionHistory);
-  List<OfflineSyncQueueItem> get offlineQueue => List.unmodifiable(_offlineQueue);
-  List<PrivacyExclusionRule> get privacyExclusions => List.unmodifiable(_privacyExclusions);
+  List<LookMonitoringSession> get sessionHistory =>
+      List.unmodifiable(_sessionHistory);
+  List<OfflineSyncQueueItem> get offlineQueue =>
+      List.unmodifiable(_offlineQueue);
+  List<PrivacyExclusionRule> get privacyExclusions =>
+      List.unmodifiable(_privacyExclusions);
 
   String get currentApp => _currentApp;
   String get currentWindowTitle => _currentWindowTitle;
@@ -58,8 +61,11 @@ class LookMonitorService extends ChangeNotifier {
   void autoStartOnLogin({String? userId, String? deviceName}) {
     if (_currentSession == null || _status == LookMonitoringStatus.stopped) {
       final now = DateTime.now();
-      final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      startSession(customSessionId: 'daily-session-$dateKey-${now.millisecondsSinceEpoch}');
+      final dateKey =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      startSession(
+        customSessionId: 'daily-session-$dateKey-${now.millisecondsSinceEpoch}',
+      );
     }
   }
 
@@ -73,12 +79,12 @@ class LookMonitorService extends ChangeNotifier {
     }
 
     final now = DateTime.now();
-    final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    final id = customSessionId ?? 'daily-session-$dateKey-${now.millisecondsSinceEpoch}';
-    _currentSession = LookMonitoringSession(
-      sessionId: id,
-      startedAt: now,
-    );
+    final dateKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final id =
+        customSessionId ??
+        'daily-session-$dateKey-${now.millisecondsSinceEpoch}';
+    _currentSession = LookMonitoringSession(sessionId: id, startedAt: now);
 
     _status = LookMonitoringStatus.active;
     _currentIntervalStart = now;
@@ -140,15 +146,18 @@ class LookMonitorService extends ChangeNotifier {
   void _checkAndPerformDailyRollover(DateTime now) {
     if (_currentSession != null &&
         (_currentSession!.startedAt.day != now.day ||
-         _currentSession!.startedAt.month != now.month ||
-         _currentSession!.startedAt.year != now.year)) {
-      debugPrint('[LookMonitor] Midnight boundary reached: Rolling over to new daily session.');
+            _currentSession!.startedAt.month != now.month ||
+            _currentSession!.startedAt.year != now.year)) {
+      debugPrint(
+        '[LookMonitor] Midnight boundary reached: Rolling over to new daily session.',
+      );
       _recordCurrentInterval();
       _currentSession!.endedAt = now;
       _currentSession!.status = LookMonitoringStatus.completed;
       _sessionHistory.insert(0, _currentSession!);
 
-      final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final dateKey =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       _currentSession = LookMonitoringSession(
         sessionId: 'daily-session-$dateKey-${now.millisecondsSinceEpoch}',
         startedAt: now,
@@ -172,7 +181,10 @@ class LookMonitorService extends ChangeNotifier {
 
     final sanitizedTitle = _sanitizer.sanitize(windowTitle, appName: appName);
     final isExcluded = _sanitizer.containsSensitiveContent(textContent);
-    final safeContent = _sanitizer.sanitizeTextRecord(textContent, appName: appName);
+    final safeContent = _sanitizer.sanitizeTextRecord(
+      textContent,
+      appName: appName,
+    );
 
     if (_currentSession != null) {
       final category = _inferCategory(appName);
@@ -195,7 +207,9 @@ class LookMonitorService extends ChangeNotifier {
           id: logId,
           capturedAt: now,
           content: safeContent,
-          sanitizedPreview: safeContent.length > 50 ? '${safeContent.substring(0, 47)}...' : safeContent,
+          sanitizedPreview: safeContent.length > 50
+              ? '${safeContent.substring(0, 47)}...'
+              : safeContent,
           isExcluded: isExcluded,
         ),
       );
@@ -329,14 +343,19 @@ class LookMonitorService extends ChangeNotifier {
 
       if (textContent != null && textContent.trim().isNotEmpty) {
         final isExcluded = _sanitizer.containsSensitiveContent(textContent);
-        final safeContent = _sanitizer.sanitizeTextRecord(textContent, appName: _currentApp);
+        final safeContent = _sanitizer.sanitizeTextRecord(
+          textContent,
+          appName: _currentApp,
+        );
 
         appNode.textRecords.add(
           PermittedTextRecord(
             id: 'txt-${DateTime.now().millisecondsSinceEpoch}',
             capturedAt: now,
             content: safeContent,
-            sanitizedPreview: safeContent.length > 50 ? '${safeContent.substring(0, 47)}...' : safeContent,
+            sanitizedPreview: safeContent.length > 50
+                ? '${safeContent.substring(0, 47)}...'
+                : safeContent,
             isExcluded: isExcluded,
           ),
         );
@@ -349,7 +368,9 @@ class LookMonitorService extends ChangeNotifier {
         sessionId: _currentSession?.sessionId ?? 'default',
         appName: _currentApp,
         windowTitle: _currentWindowTitle,
-        textRecord: textContent != null ? _sanitizer.sanitizeTextRecord(textContent, appName: _currentApp) : null,
+        textRecord: textContent != null
+            ? _sanitizer.sanitizeTextRecord(textContent, appName: _currentApp)
+            : null,
         durationSeconds: 1,
         timestamp: _currentIntervalStart,
       ),
@@ -386,7 +407,9 @@ class LookMonitorService extends ChangeNotifier {
       }
 
       if (_currentSession != null) {
-        final appNode = _currentSession!.applications.where((a) => a.appName == _currentApp).firstOrNull;
+        final appNode = _currentSession!.applications
+            .where((a) => a.appName == _currentApp)
+            .firstOrNull;
         if (appNode != null) {
           appNode.totalDurationSeconds += (duration > 0 ? duration : 1);
         }

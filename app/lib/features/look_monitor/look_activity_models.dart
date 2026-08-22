@@ -176,7 +176,9 @@ class OfflineSyncQueueItem {
     'textRecord': textRecord,
     'durationSeconds': durationSeconds,
     'startedAt': timestamp.toIso8601String(),
-    'endedAt': timestamp.add(Duration(seconds: durationSeconds)).toIso8601String(),
+    'endedAt': timestamp
+        .add(Duration(seconds: durationSeconds))
+        .toIso8601String(),
   };
 }
 

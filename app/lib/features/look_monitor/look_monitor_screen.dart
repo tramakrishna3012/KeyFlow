@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'look_activity_models.dart';
 import 'look_monitor_service.dart';
 
-final lookMonitorServiceProvider =
-    ChangeNotifierProvider<LookMonitorService>((ref) => LookMonitorService()..startSession());
+final lookMonitorServiceProvider = ChangeNotifierProvider<LookMonitorService>(
+  (ref) => LookMonitorService()..startSession(),
+);
 
 class LookMonitorScreen extends ConsumerStatefulWidget {
   const LookMonitorScreen({super.key});
@@ -35,13 +36,18 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF0F172A)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Row(
           children: [
             Icon(Icons.remove_red_eye_outlined, color: Colors.blueAccent),
             SizedBox(width: 8),
-            Text('Look System Monitor', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              'Look System Monitor',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ],
         ),
         actions: [
@@ -90,7 +96,9 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
                 child: const Padding(
                   padding: EdgeInsets.all(24.0),
                   child: Center(
-                    child: Text('No activity records captured in this session yet.'),
+                    child: Text(
+                      'No activity records captured in this session yet.',
+                    ),
                   ),
                 ),
               )
@@ -111,7 +119,10 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
     );
   }
 
-  Widget _buildSessionControlCard(BuildContext context, LookMonitorService monitor) {
+  Widget _buildSessionControlCard(
+    BuildContext context,
+    LookMonitorService monitor,
+  ) {
     final status = monitor.status;
     final isActive = status == LookMonitoringStatus.active;
     final isPaused = status == LookMonitoringStatus.paused;
@@ -165,7 +176,9 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
                 if (monitor.offlineQueue.isNotEmpty)
                   Chip(
                     avatar: const Icon(Icons.cloud_off, size: 16),
-                    label: Text('${monitor.offlineQueue.length} offline queued'),
+                    label: Text(
+                      '${monitor.offlineQueue.length} offline queued',
+                    ),
                     visualDensity: VisualDensity.compact,
                   ),
               ],
@@ -219,7 +232,8 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
 
   Widget _buildMetricsRow(BuildContext context, LookMonitorService monitor) {
     final session = monitor.currentSession;
-    final totalSec = session?.applications.fold<int>(
+    final totalSec =
+        session?.applications.fold<int>(
           0,
           (sum, a) => sum + a.totalDurationSeconds,
         ) ??
@@ -268,130 +282,165 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
     required IconData icon,
     required Color color,
   }) => Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            Text(title, style: TextStyle(color: Colors.grey[400], fontSize: 11)),
-          ],
-        ),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          Text(title, style: TextStyle(color: Colors.grey[400], fontSize: 11)),
+        ],
       ),
-    );
+    ),
+  );
 
   Widget _buildFilterBar(BuildContext context) => Row(
-      children: [
-        Expanded(
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search applications & keywords...',
-              prefixIcon: const Icon(Icons.search),
-              isDense: true,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onChanged: (val) => setState(() => _searchQuery = val),
+    children: [
+      Expanded(
+        child: TextField(
+          decoration: InputDecoration(
+            hintText: 'Search applications & keywords...',
+            prefixIcon: const Icon(Icons.search),
+            isDense: true,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
+          onChanged: (val) => setState(() => _searchQuery = val),
         ),
-        const SizedBox(width: 8),
-        DropdownButton<String>(
-          value: _selectedCategory,
-          items: const [
-            DropdownMenuItem(value: 'All', child: Text('All Categories')),
-            DropdownMenuItem(value: 'Development', child: Text('Development')),
-            DropdownMenuItem(value: 'Browsing', child: Text('Browsing')),
-            DropdownMenuItem(value: 'Communication', child: Text('Communication')),
-            DropdownMenuItem(value: 'Productivity', child: Text('Productivity')),
-            DropdownMenuItem(value: 'Design', child: Text('Design')),
-          ],
-          onChanged: (val) {
-            if (val != null) setState(() => _selectedCategory = val);
-          },
-        ),
-      ],
-    );
+      ),
+      const SizedBox(width: 8),
+      DropdownButton<String>(
+        value: _selectedCategory,
+        items: const [
+          DropdownMenuItem(value: 'All', child: Text('All Categories')),
+          DropdownMenuItem(value: 'Development', child: Text('Development')),
+          DropdownMenuItem(value: 'Browsing', child: Text('Browsing')),
+          DropdownMenuItem(
+            value: 'Communication',
+            child: Text('Communication'),
+          ),
+          DropdownMenuItem(value: 'Productivity', child: Text('Productivity')),
+          DropdownMenuItem(value: 'Design', child: Text('Design')),
+        ],
+        onChanged: (val) {
+          if (val != null) setState(() => _selectedCategory = val);
+        },
+      ),
+    ],
+  );
 
-  Widget _buildApplicationCard(BuildContext context, MonitoredApplication app) => Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ExpansionTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
-          child: Text(
-            app.appName.isNotEmpty ? app.appName[0].toUpperCase() : '?',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
+  Widget _buildApplicationCard(
+    BuildContext context,
+    MonitoredApplication app,
+  ) => Card(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: ExpansionTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.blueAccent.withValues(alpha: 0.2),
+        child: Text(
+          app.appName.isNotEmpty ? app.appName[0].toUpperCase() : '?',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.blueAccent,
           ),
         ),
-        title: Text(app.appName, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(
-          '${app.category} • ${(app.totalDurationSeconds / 60).toStringAsFixed(1)} min • ${app.activityTimeline.length} events',
-        ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Activity Timeline:', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                ...app.activityTimeline.take(5).map(
-                  (evt) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2.0),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.circle, size: 6, color: Colors.blueGrey),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            '${evt.windowTitle} (${evt.durationSeconds}s)',
-                            style: const TextStyle(fontSize: 12),
-                            overflow: TextOverflow.ellipsis,
+      ),
+      title: Text(
+        app.appName,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(
+        '${app.category} • ${(app.totalDurationSeconds / 60).toStringAsFixed(1)} min • ${app.activityTimeline.length} events',
+      ),
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Activity Timeline:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              ...app.activityTimeline
+                  .take(5)
+                  .map(
+                    (evt) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.circle,
+                            size: 6,
+                            color: Colors.blueGrey,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (app.textRecords.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  const Text('Permitted Text Records:', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  ...app.textRecords.take(3).map(
-                    (rec) => Card(
-                      color: Colors.black26,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            Icon(
-                              rec.isExcluded ? Icons.lock : Icons.notes,
-                              size: 14,
-                              color: rec.isExcluded ? Colors.redAccent : Colors.tealAccent,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '${evt.windowTitle} (${evt.durationSeconds}s)',
+                              style: const TextStyle(fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                rec.isExcluded ? '[Excluded by Privacy Filter]' : rec.sanitizedPreview,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontStyle: rec.isExcluded ? FontStyle.italic : FontStyle.normal,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
+              if (app.textRecords.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Permitted Text Records:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                ...app.textRecords
+                    .take(3)
+                    .map(
+                      (rec) => Card(
+                        color: Colors.black26,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              Icon(
+                                rec.isExcluded ? Icons.lock : Icons.notes,
+                                size: 14,
+                                color: rec.isExcluded
+                                    ? Colors.redAccent
+                                    : Colors.tealAccent,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  rec.isExcluded
+                                      ? '[Excluded by Privacy Filter]'
+                                      : rec.sanitizedPreview,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontStyle: rec.isExcluded
+                                        ? FontStyle.italic
+                                        : FontStyle.normal,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
               ],
-            ),
+            ],
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
 
   void _showPrivacyModal(BuildContext context, LookMonitorService monitor) {
     final textController = TextEditingController();
@@ -404,7 +453,9 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Add applications to exclude from text and window monitoring:'),
+              const Text(
+                'Add applications to exclude from text and window monitoring:',
+              ),
               const SizedBox(height: 8),
               TextField(
                 controller: textController,
@@ -416,10 +467,15 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
               const SizedBox(height: 12),
               Wrap(
                 spacing: 6,
-                children: monitor.privacyExclusions.map((rule) => Chip(
-                    label: Text(rule.appName),
-                    onDeleted: () => monitor.removePrivacyExclusion(rule.appName),
-                  )).toList(),
+                children: monitor.privacyExclusions
+                    .map(
+                      (rule) => Chip(
+                        label: Text(rule.appName),
+                        onDeleted: () =>
+                            monitor.removePrivacyExclusion(rule.appName),
+                      ),
+                    )
+                    .toList(),
               ),
             ],
           ),
