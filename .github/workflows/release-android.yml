@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       
     - name: Setup Flutter
-      uses: subosito/flutter-action@f59149128a37095408e7c1152a6442624cde3fb8 # v2.18.0
+      uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff # v2.18.0
       with:
         flutter-version: ${{ env.FLUTTER_VERSION }}
         cache: true
@@ -80,7 +80,7 @@ jobs:
         
     - name: Upload to GitHub Release
       if: github.event_name == 'release'
-      uses: softprops/action-gh-release@c062e49d01eb946f041285265fb207011d8c1c4e # v2.0.8
+      uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
       with:
         files: |
           app/build/app/outputs/bundle/release/app-release.aab
