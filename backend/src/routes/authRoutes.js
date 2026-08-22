@@ -54,7 +54,7 @@ router.post('/login', async (req, res, next) => {
 router.get('/me', authenticateToken, async (req, res, next) => {
   try {
     const user = await get(
-      `SELECT u.id, u.email, u.full_name as fullName, u.role, u.is_active, u.created_at, o.name as organizationName
+      `SELECT u.id, u.email, u.full_name, u.full_name as fullName, u.role, u.is_active, u.created_at, o.name as organizationName
        FROM users u
        LEFT JOIN organizations o ON u.organization_id = o.id
        WHERE u.id = ?`,

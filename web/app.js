@@ -367,13 +367,24 @@ function updateUserUI() {
   const userAvatar = document.getElementById('user-avatar');
 
   if (currentUser && authToken) {
+    const nameStr = currentUser.fullName || 
+                    currentUser.fullname || 
+                    currentUser.full_name || 
+                    (currentUser.email ? currentUser.email.split('@')[0] : 'Rama Krishna');
+
     if (dashBtn) dashBtn.style.display = 'inline-flex';
     if (logoutBtn) logoutBtn.style.display = 'block';
-    if (userName) userName.textContent = currentUser.fullName || currentUser.full_name || 'Authorized Owner';
+    if (userName) userName.textContent = nameStr;
     if (userRole) userRole.textContent = currentUser.role === 'admin' ? 'Administrator' : 'Team Member';
     
-    const nameStr = currentUser.fullName || currentUser.full_name || 'AO';
-    const initials = nameStr.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const initials = nameStr
+      .split(/[ ._@]+/)
+      .filter(Boolean)
+      .map(n => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase() || 'RK';
+
     if (userAvatar) userAvatar.textContent = initials;
     if (navAuthBtn) navAuthBtn.textContent = `Dashboard (${nameStr.split(' ')[0]})`;
   } else {
