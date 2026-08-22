@@ -19,8 +19,9 @@ async function startServer() {
       }
     }, 24 * 60 * 60 * 1000);
 
-    app.listen(PORT, () => {
-      console.log(`[Look System API] Server running on http://localhost:${PORT}`);
+    const port = Number(PORT) || 4000;
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`[Look System API] Server running on port ${port} (0.0.0.0)`);
     });
   } catch (err) {
     console.error('[Look System Startup Error]', err);

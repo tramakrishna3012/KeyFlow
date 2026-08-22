@@ -59,13 +59,14 @@
           <span class="pulse-dot"></span>
           <span class="status-label">Monitoring: ACTIVE</span>
         </div>
-        <div class="user-chip">
-          <div class="avatar" id="user-avatar">JD</div>
+        <div class="user-chip" id="user-chip-btn" style="cursor: pointer;" title="Click to Switch Account or Sign Out">
+          <div class="avatar" id="user-avatar">AO</div>
           <div class="user-meta">
             <span class="user-name" id="user-name">Authorized Owner</span>
-            <span class="user-role" id="user-role">Administrator</span>
+            <span class="user-role" id="user-role">Click to Sign In / Out</span>
           </div>
         </div>
+        <button class="btn btn-sm btn-outline w-100 mt-2" id="btn-auth-trigger">Sign In / Register</button>
       </div>
     </aside>
 
@@ -109,8 +110,8 @@
               <span class="kpi-title">Today's Session Duration</span>
               <div class="kpi-icon teal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
             </div>
-            <div class="kpi-value" id="val-active-time">5h 42m</div>
-            <div class="kpi-trend positive">Active Work Time</div>
+            <div class="kpi-value" id="val-active-time">0h 0m</div>
+            <div class="kpi-trend positive" id="trend-active-time">Active Work Time</div>
           </div>
 
           <div class="kpi-card">
@@ -118,8 +119,8 @@
               <span class="kpi-title">Total Activity Logs</span>
               <div class="kpi-icon orange"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg></div>
             </div>
-            <div class="kpi-value" id="val-total-activity">1,248</div>
-            <div class="kpi-trend neutral">Event-driven logs</div>
+            <div class="kpi-value" id="val-total-activity">0</div>
+            <div class="kpi-trend neutral" id="trend-total-activity">Event-driven logs</div>
           </div>
 
           <div class="kpi-card">
@@ -127,8 +128,8 @@
               <span class="kpi-title">Focus & Productivity</span>
               <div class="kpi-icon purple"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></div>
             </div>
-            <div class="kpi-value" id="val-focus-score">88%</div>
-            <div class="kpi-trend positive">Deep work target met</div>
+            <div class="kpi-value" id="val-focus-score">0%</div>
+            <div class="kpi-trend positive" id="trend-focus-score">Calculated from active apps</div>
           </div>
 
           <div class="kpi-card">
@@ -136,8 +137,8 @@
               <span class="kpi-title">Authorized Devices</span>
               <div class="kpi-icon blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
             </div>
-            <div class="kpi-value" id="val-devices">1 Active</div>
-            <div class="kpi-trend positive">Encrypted & Enrolled</div>
+            <div class="kpi-value" id="val-devices">0 Active</div>
+            <div class="kpi-trend positive" id="trend-devices">Encrypted & Enrolled</div>
           </div>
         </div>
 
@@ -148,7 +149,9 @@
               <h3>Category Distribution</h3>
               <span class="badge">Automatic Classification</span>
             </div>
-            <div class="category-bars" id="category-bars-container"></div>
+            <div class="category-bars" id="category-bars-container">
+              <div class="text-muted text-center py-3">No activity logged yet. Start a session or launch the desktop client to capture telemetry.</div>
+            </div>
           </div>
 
           <div class="chart-card flex-1">
@@ -156,7 +159,9 @@
               <h3>Top Applications</h3>
               <span class="badge">By Active Duration</span>
             </div>
-            <div class="top-apps-list" id="top-apps-container"></div>
+            <div class="top-apps-list" id="top-apps-container">
+              <div class="text-muted text-center py-3">No applications recorded yet.</div>
+            </div>
           </div>
         </div>
       </section>
@@ -343,6 +348,53 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- Authentication Modal (Sign In / Register) -->
+  <div class="modal-overlay" id="auth-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-tabs">
+          <button class="modal-tab active" id="tab-btn-signin">Sign In</button>
+          <button class="modal-tab" id="tab-btn-signup">Create Account</button>
+        </div>
+        <button class="modal-close" id="btn-close-auth">&times;</button>
+      </div>
+
+      <!-- Sign In Form -->
+      <form id="form-signin" class="modal-body">
+        <div class="form-group mb-3">
+          <label for="signin-email">Email Address</label>
+          <input type="email" id="signin-email" class="input-control w-100" placeholder="owner@company.com" required>
+        </div>
+        <div class="form-group mb-3">
+          <label for="signin-password">Password</label>
+          <input type="password" id="signin-password" class="input-control w-100" placeholder="••••••••••••" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 mt-2">Sign In to Workstation</button>
+      </form>
+
+      <!-- Sign Up Form -->
+      <form id="form-signup" class="modal-body" style="display: none;">
+        <div class="form-group mb-3">
+          <label for="signup-name">Full Name</label>
+          <input type="text" id="signup-name" class="input-control w-100" placeholder="Jane Doe" required>
+        </div>
+        <div class="form-group mb-3">
+          <label for="signup-email">Work Email</label>
+          <input type="email" id="signup-email" class="input-control w-100" placeholder="jane@company.com" required>
+        </div>
+        <div class="form-group mb-3">
+          <label for="signup-password">Password (min 8 characters)</label>
+          <input type="password" id="signup-password" class="input-control w-100" placeholder="••••••••••••" minlength="8" required>
+        </div>
+        <div class="form-group mb-3">
+          <label for="signup-org">Organization Name</label>
+          <input type="text" id="signup-org" class="input-control w-100" placeholder="Acme Corporation" value="Default Organization">
+        </div>
+        <button type="submit" class="btn btn-primary w-100 mt-2">Create Account & Start Session</button>
+      </form>
+    </div>
   </div>
 
   <script src="app.js"></script>

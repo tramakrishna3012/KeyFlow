@@ -15,40 +15,106 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupSearch();
   setupExclusions();
   setupDsar();
+  setupAuthModal();
 
-  await autoLoginOrMock();
+  await verifyAuthOrPrompt();
   await loadOverviewData();
   await loadSessionsList();
   await loadExclusions();
 });
 
-// Auto-Login or Test Account Registration
-async function autoLoginOrMock() {
-  if (!authToken) {
+// Authentication Modal & Handlers
+function setupAuthModal() {
+  const modal = document.getElementById('auth-modal');
+  const btnTrigger = document.getElementById('btn-auth-trigger');
+  const userChip = document.getElementById('user-chip-btn');
+  const btnClose = document.getElementById('btn-close-auth');
+  const tabSignIn = document.getElementById('tab-btn-signin');
+  const tabSignUp = document.getElementById('tab-btn-signup');
+  const formSignIn = document.getElementById('form-signin');
+  const formSignUp = document.getElementById('form-signup');
+
+  const showModal = () => { if (modal) modal.style.display = 'flex'; };
+  const hideModal = () => { if (modal) modal.style.display = 'none'; };
+
+  btnTrigger?.addEventListener('click', showModal);
+  userChip?.addEventListener('click', showModal);
+  btnClose?.addEventListener('click', hideModal);
+
+  tabSignIn?.addEventListener('click', () => {
+    tabSignIn.classList.add('active');
+    tabSignUp?.classList.remove('active');
+    formSignIn.style.display = 'block';
+    formSignUp.style.display = 'none';
+  });
+
+  tabSignUp?.addEventListener('click', () => {
+    tabSignUp.classList.add('active');
+    tabSignIn?.classList.remove('active');
+    formSignUp.style.display = 'block';
+    formSignIn.style.display = 'none';
+  });
+
+  // Handle Sign In Submit
+  formSignIn?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('signin-email')?.value;
+    const password = document.getElementById('signin-password')?.value;
     try {
-      const email = `owner_${Date.now()}@looksystem.com`;
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Login failed');
+
+      authToken = data.token;
+      localStorage.setItem('look_jwt_token', authToken);
+      currentUser = data.user;
+      updateUserUI();
+      hideModal();
+      alert('Signed in successfully!');
+      loadOverviewData();
+      loadSessionsList();
+    } catch (err) {
+      alert(`Sign In Error: ${err.message}`);
+    }
+  });
+
+  // Handle Sign Up Submit
+  formSignUp?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fullName = document.getElementById('signup-name')?.value;
+    const email = document.getElementById('signup-email')?.value;
+    const password = document.getElementById('signup-password')?.value;
+    const organizationName = document.getElementById('signup-org')?.value;
+
+    try {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          password: 'LookOwnerPassword123!',
-          fullName: 'Authorized Workstation Owner',
-          role: 'admin',
-          organizationName: 'Look System Organization'
-        })
+        body: JSON.stringify({ fullName, email, password, organizationName, role: 'admin' })
       });
       const data = await res.json();
-      if (data.token) {
-        authToken = data.token;
-        localStorage.setItem('look_jwt_token', authToken);
-        currentUser = data.user;
-        updateUserUI();
-      }
-    } catch {
-      console.warn('API offline - falling back to demo mode.');
+      if (!res.ok) throw new Error(data.message || 'Registration failed');
+
+      authToken = data.token;
+      localStorage.setItem('look_jwt_token', authToken);
+      currentUser = data.user;
+      updateUserUI();
+      hideModal();
+      alert('Account created and signed in!');
+      loadOverviewData();
+      loadSessionsList();
+    } catch (err) {
+      alert(`Registration Error: ${err.message}`);
     }
-  } else {
+  });
+}
+
+async function verifyAuthOrPrompt() {
+  if (authToken) {
     try {
       const res = await fetch(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${authToken}` }
@@ -166,7 +232,7 @@ async function loadOverviewData() {
       const mins = activeMin % 60;
       document.getElementById('val-active-time').textContent = `${hours}h ${mins}m`;
       document.getElementById('val-total-activity').textContent = data.metrics.logCount || '0';
-      document.getElementById('val-focus-score').textContent = `${data.metrics.productivityScore || 88}%`;
+      document.getElementById('val-focus-score').textContent = `${data.metrics.productivityScore || 0}%`;
     }
 
     // Categories
