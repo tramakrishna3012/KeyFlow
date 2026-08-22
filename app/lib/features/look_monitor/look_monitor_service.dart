@@ -14,7 +14,9 @@ import 'look_window_sanitizer.dart';
 /// - Zero performance overhead / low CPU consumption
 class LookMonitorService extends ChangeNotifier {
   LookMonitorService({LookWindowSanitizer? sanitizer})
-    : _sanitizer = sanitizer ?? const LookWindowSanitizer();
+    : _sanitizer = sanitizer ?? const LookWindowSanitizer() {
+    autoStartOnLogin();
+  }
 
   LookWindowSanitizer _sanitizer;
   Timer? _pollingTimer;
@@ -53,6 +55,14 @@ class LookMonitorService extends ChangeNotifier {
   // Session Lifecycle Management
   // ---------------------------------------------------------------------------
 
+  void autoStartOnLogin({String? userId, String? deviceName}) {
+    if (_currentSession == null || _status == LookMonitoringStatus.stopped) {
+      final now = DateTime.now();
+      final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      startSession(customSessionId: 'daily-session-$dateKey-${now.millisecondsSinceEpoch}');
+    }
+  }
+
   void startSession({String? customSessionId}) {
     _resumeTimer?.cancel();
     if (_consentState != LookConsentState.granted) {
@@ -62,14 +72,16 @@ class LookMonitorService extends ChangeNotifier {
       return;
     }
 
-    final id = customSessionId ?? 'sess-${DateTime.now().millisecondsSinceEpoch}';
+    final now = DateTime.now();
+    final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final id = customSessionId ?? 'daily-session-$dateKey-${now.millisecondsSinceEpoch}';
     _currentSession = LookMonitoringSession(
       sessionId: id,
-      startedAt: DateTime.now(),
+      startedAt: now,
     );
 
     _status = LookMonitoringStatus.active;
-    _currentIntervalStart = DateTime.now();
+    _currentIntervalStart = now;
     _startPolling();
     _startSyncTimer();
     notifyListeners();
@@ -120,6 +132,89 @@ class LookMonitorService extends ChangeNotifier {
           .inSeconds;
       _sessionHistory.insert(0, _currentSession!);
       _currentSession = null;
+    }
+
+    notifyListeners();
+  }
+
+  void _checkAndPerformDailyRollover(DateTime now) {
+    if (_currentSession != null &&
+        (_currentSession!.startedAt.day != now.day ||
+         _currentSession!.startedAt.month != now.month ||
+         _currentSession!.startedAt.year != now.year)) {
+      debugPrint('[LookMonitor] Midnight boundary reached: Rolling over to new daily session.');
+      _recordCurrentInterval();
+      _currentSession!.endedAt = now;
+      _currentSession!.status = LookMonitoringStatus.completed;
+      _sessionHistory.insert(0, _currentSession!);
+
+      final dateKey = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      _currentSession = LookMonitoringSession(
+        sessionId: 'daily-session-$dateKey-${now.millisecondsSinceEpoch}',
+        startedAt: now,
+      );
+      _currentIntervalStart = now;
+      notifyListeners();
+    }
+  }
+
+  /// Direct method for recording permitted typing history into active app hierarchy
+  void recordTypingText({
+    required String appName,
+    required String windowTitle,
+    required String textContent,
+  }) {
+    if (_status != LookMonitoringStatus.active) return;
+    if (_sanitizer.isApplicationExcluded(appName)) return;
+
+    final now = DateTime.now();
+    _checkAndPerformDailyRollover(now);
+
+    final sanitizedTitle = _sanitizer.sanitize(windowTitle, appName: appName);
+    final isExcluded = _sanitizer.containsSensitiveContent(textContent);
+    final safeContent = _sanitizer.sanitizeTextRecord(textContent, appName: appName);
+
+    if (_currentSession != null) {
+      final category = _inferCategory(appName);
+      final appNode = _currentSession!.applications.firstWhere(
+        (a) => a.appName == appName,
+        orElse: () {
+          final newNode = MonitoredApplication(
+            appName: appName,
+            category: category,
+          );
+          _currentSession!.applications.add(newNode);
+          return newNode;
+        },
+      );
+
+      final logId = 'txt-${DateTime.now().millisecondsSinceEpoch}';
+      appNode.textRecords.insert(
+        0,
+        PermittedTextRecord(
+          id: logId,
+          capturedAt: now,
+          content: safeContent,
+          sanitizedPreview: safeContent.length > 50 ? '${safeContent.substring(0, 47)}...' : safeContent,
+          isExcluded: isExcluded,
+        ),
+      );
+    }
+
+    _offlineQueue.add(
+      OfflineSyncQueueItem(
+        id: 'txt-${DateTime.now().millisecondsSinceEpoch}',
+        sessionId: _currentSession?.sessionId ?? 'default',
+        appName: appName,
+        windowTitle: sanitizedTitle,
+        textRecord: safeContent,
+        durationSeconds: 1,
+        timestamp: now,
+      ),
+    );
+
+    if (_offlineQueue.length > 500) {
+      _offlineQueue.removeAt(0);
     }
 
     notifyListeners();
@@ -303,8 +398,10 @@ class LookMonitorService extends ChangeNotifier {
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (_status == LookMonitoringStatus.active) {
+        final now = DateTime.now();
+        _checkAndPerformDailyRollover(now);
         _recordCurrentInterval();
-        _currentIntervalStart = DateTime.now();
+        _currentIntervalStart = now;
         notifyListeners();
       }
     });

@@ -108,5 +108,37 @@ void main() {
       expect(flushed, greaterThan(0));
       expect(service.offlineQueue.isEmpty, isTrue);
     });
+
+    test('6. Auto-Starts Session Immediately on User First Login', () {
+      final unstartedService = LookMonitorService(sanitizer: sanitizer);
+      expect(unstartedService.currentSession, isNotNull); // auto-started on construction / login
+      expect(unstartedService.status, equals(LookMonitoringStatus.active));
+      expect(unstartedService.currentSession!.sessionId, contains('daily-session'));
+    });
+
+    test('7. Continuous Typing History Capture & Privacy Exclusion in Active App', () {
+      service
+        ..autoStartOnLogin()
+        ..recordTypingText(
+          appName: 'Sublime Text',
+          windowTitle: 'notes.txt',
+          textContent: 'Sprint planning and release architecture discussion.',
+        );
+
+      final session = service.currentSession!;
+      final sublimeApp = session.applications.firstWhere((a) => a.appName == 'Sublime Text');
+      expect(sublimeApp.textRecords.isNotEmpty, isTrue);
+      expect(sublimeApp.textRecords.first.content, contains('Sprint planning'));
+      expect(sublimeApp.textRecords.first.isExcluded, isFalse);
+
+      // Record sensitive credential snippet (must be redacted/excluded)
+      service.recordTypingText(
+        appName: 'Sublime Text',
+        windowTitle: 'credentials.txt',
+        textContent: 'password=supersecret123 otp=992813 card=4111-2222-3333-4444',
+      );
+
+      expect(sublimeApp.textRecords.first.isExcluded, isTrue);
+    });
   });
 }

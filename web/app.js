@@ -12,6 +12,7 @@ let currentSessionId = null;
 document.addEventListener('DOMContentLoaded', async () => {
   setupNavigation();
   setupSessionControls();
+  setupTypingHistory();
   setupSearch();
   setupExclusions();
   setupDsar();
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await verifyAuthOrPrompt();
   await loadOverviewData();
+  await loadTypingHistory();
   await loadSessionsList();
   await loadExclusions();
 });
@@ -154,6 +156,7 @@ function setupNavigation() {
 
       const titles = {
         overview: 'Executive Overview',
+        typing: 'Cross-Device Typing History',
         sessions: 'Monitoring Session Explorer',
         search: 'Multi-Criteria Search & Filtering',
         apps: 'Application Telemetry Matrix',
@@ -161,8 +164,103 @@ function setupNavigation() {
         privacy: 'Privacy & Exclusions'
       };
       document.getElementById('page-title').textContent = titles[tabId] || 'Look System';
+
+      if (tabId === 'typing') {
+        loadTypingHistory();
+      }
     });
   });
+}
+
+// Typing History Controller
+function setupTypingHistory() {
+  document.getElementById('btn-search-typing')?.addEventListener('click', () => {
+    const q = document.getElementById('typing-keyword-input')?.value || '';
+    const appName = document.getElementById('typing-app-input')?.value || '';
+    loadTypingHistory(q, appName);
+  });
+
+  document.getElementById('typing-keyword-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const q = document.getElementById('typing-keyword-input')?.value || '';
+      const appName = document.getElementById('typing-app-input')?.value || '';
+      loadTypingHistory(q, appName);
+    }
+  });
+}
+
+async function loadTypingHistory(q = '', appName = '') {
+  const container = document.getElementById('typing-history-cards-container');
+  if (!container) return;
+
+  if (!authToken) {
+    container.innerHTML = '<div class="text-muted text-center py-4">Please sign in to access your cross-device typing history.</div>';
+    return;
+  }
+
+  try {
+    const url = new URL(`${API_BASE}/activity/typing-history`);
+    if (q) url.searchParams.append('q', q);
+    if (appName) url.searchParams.append('appName', appName);
+
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    const data = await res.json();
+    const history = data.history || [];
+
+    if (history.length === 0) {
+      container.innerHTML = `
+        <div class="text-muted text-center py-4">
+          No typing snippets found. As you type on any enrolled device, permitted snippets will appear here automatically.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = history.map((item) => {
+      const formattedDate = new Date(item.capturedAt).toLocaleString();
+      const escapedContent = (item.content || '').replace(/"/g, '&quot;');
+
+      return `
+        <div class="typing-card">
+          <div class="typing-card-header">
+            <div class="typing-card-meta">
+              <span class="device-badge">${item.deviceName || 'Workstation'}</span>
+              <strong style="color: var(--accent-purple);">${item.appName}</strong>
+              <span>•</span>
+              <span>${formattedDate}</span>
+            </div>
+            ${item.isExcluded ? '<span class="badge" style="color: var(--accent-red);">Excluded by Privacy</span>' : ''}
+          </div>
+          <div class="typing-card-content">${item.content || '—'}</div>
+          <div class="typing-card-actions">
+            <button class="btn btn-sm btn-outline btn-copy-snippet" data-content="${escapedContent}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              Copy Snippet
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach copy button listeners
+    container.querySelectorAll('.btn-copy-snippet').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const text = btn.getAttribute('data-content');
+        if (text) {
+          navigator.clipboard.writeText(text).then(() => {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✓ Copied!';
+            setTimeout(() => { btn.innerHTML = originalText; }, 1800);
+          });
+        }
+      });
+    });
+  } catch (err) {
+    console.error('Failed to fetch typing history:', err);
+    container.innerHTML = `<div class="text-muted text-center py-4">Unable to connect to typing history service.</div>`;
+  }
 }
 
 // Session Controls

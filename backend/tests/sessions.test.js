@@ -217,4 +217,13 @@ test('Look System: Full Session Lifecycle & Application Hierarchy', async () => 
   });
   assert.strictEqual(getExclRes.status, 200);
   assert.ok(getExclRes.body.exclusions.some(e => e.appName === '1Password'));
+
+  // 10. Cross-Device Typing History Retrieval
+  const typingRes = await request('/api/v1/activity/typing-history?appName=Visual', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  assert.strictEqual(typingRes.status, 200);
+  assert.ok(typingRes.body.history.length >= 1);
+  assert.strictEqual(typingRes.body.history[0].appName, 'Visual Studio Code');
+  assert.match(typingRes.body.history[0].content, /Implementing event-driven low CPU/);
 });

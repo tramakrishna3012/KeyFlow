@@ -12,6 +12,7 @@ const {
   getSessionTree,
   ingestBatchActivity,
   searchActivityRecords,
+  getTypingHistory,
   getActivitySummary
 } = require('../services/activityService');
 const { run, all } = require('../services/db');
@@ -65,6 +66,26 @@ router.get('/search', authenticateToken, async (req, res, next) => {
     });
 
     res.json({ success: true, count: results.length, results });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Cross-device typing history retrieval (decrypted permitted records)
+router.get('/typing-history', authenticateToken, async (req, res, next) => {
+  try {
+    const { q, appName, startDate, endDate, limit, offset } = req.query;
+    const history = await getTypingHistory({
+      userId: req.user.id,
+      q,
+      appName,
+      startDate,
+      endDate,
+      limit: limit ? Number.parseInt(limit, 10) : 50,
+      offset: offset ? Number.parseInt(offset, 10) : 0
+    });
+
+    res.json({ success: true, count: history.length, history });
   } catch (err) {
     next(err);
   }

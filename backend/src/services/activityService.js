@@ -517,6 +517,69 @@ async function getActivitySummary({ userId, startDate, endDate }) {
   };
 }
 
+async function getTypingHistory({ userId, limit = 50, offset = 0, appName, startDate, endDate, q }) {
+  let sql = `
+    SELECT tr.id, tr.encrypted_content, tr.iv, tr.auth_tag, tr.sanitized_preview, tr.captured_at, tr.is_excluded,
+           a.app_name, a.app_category,
+           s.id as session_id, s.started_at as session_started_at,
+           d.device_name, d.os_info
+    FROM text_records tr
+    JOIN applications a ON tr.application_id = a.id
+    JOIN sessions s ON a.session_id = s.id
+    JOIN devices d ON s.device_id = d.id
+    WHERE s.user_id = ?
+  `;
+  const params = [userId];
+
+  if (appName) {
+    sql += ' AND a.app_name LIKE ?';
+    params.push(`%${appName}%`);
+  }
+  if (startDate) {
+    sql += ' AND tr.captured_at >= ?';
+    params.push(startDate);
+  }
+  if (endDate) {
+    sql += ' AND tr.captured_at <= ?';
+    params.push(endDate);
+  }
+  if (q) {
+    sql += ' AND (a.app_name LIKE ? OR tr.sanitized_preview LIKE ?)';
+    params.push(`%${q}%`, `%${q}%`);
+  }
+
+  sql += ' ORDER BY tr.captured_at DESC LIMIT ? OFFSET ?';
+  params.push(Number(limit), Number(offset));
+
+  const rows = await all(sql, params);
+
+  return rows.map((r) => {
+    let decryptedText = '';
+    if (r.is_excluded) {
+      decryptedText = '[Content Excluded by Privacy Filter]';
+    } else {
+      try {
+        decryptedText = decryptRecord(r.encrypted_content, r.iv, r.auth_tag);
+      } catch {
+        decryptedText = r.sanitized_preview || '';
+      }
+    }
+
+    return {
+      id: r.id,
+      sessionId: r.session_id,
+      deviceName: r.device_name,
+      osInfo: r.os_info,
+      appName: r.app_name,
+      appCategory: r.app_category,
+      sanitizedPreview: r.sanitized_preview,
+      content: decryptedText,
+      isExcluded: Boolean(r.is_excluded),
+      capturedAt: r.captured_at
+    };
+  });
+}
+
 module.exports = {
   inferCategory,
   sanitizeWindowTitle,
@@ -531,5 +594,6 @@ module.exports = {
   getSessionTree,
   ingestBatchActivity,
   searchActivityRecords,
+  getTypingHistory,
   getActivitySummary
 };
