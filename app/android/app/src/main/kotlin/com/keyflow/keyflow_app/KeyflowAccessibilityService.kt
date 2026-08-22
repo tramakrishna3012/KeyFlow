@@ -51,7 +51,9 @@ class KeyflowAccessibilityService : AccessibilityService() {
         }
     }
 
-    override fun onInterrupt() {}
+    override fun onInterrupt() {
+        // No-op: KeyFlow accessibility service interruption handling is managed lifecycle-wide.
+    }
 
     override fun onDestroy() {
         super.onDestroy()
