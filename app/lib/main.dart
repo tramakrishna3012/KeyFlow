@@ -6,12 +6,16 @@ import 'core/router/app_router.dart';
 import 'core/services/cache_cleanup_service.dart';
 import 'core/services/permission_helper.dart';
 import 'core/theme/app_theme.dart';
+import 'data/auth_service.dart';
 import 'data/providers.dart';
 import 'data/secure_auth_storage.dart';
 import 'features/history/history_providers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize unified authentication service
+  await AuthService.instance.initialize();
 
   // Load configuration from environment defines (--dart-define) with fallback
   const supabaseUrl = String.fromEnvironment(
@@ -32,10 +36,6 @@ void main() async {
     } on Object catch (e) {
       debugPrint('Supabase init skipped/error: $e');
     }
-  } else {
-    debugPrint(
-      'Supabase credentials not provided via --dart-define; running in offline mode.',
-    );
   }
 
   // Setup app lifecycle listener to purge temp cache on exit

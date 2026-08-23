@@ -2,14 +2,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../features/capture/capture_service.dart';
+import 'auth_service.dart';
 import 'database_helper.dart';
 import 'encryption_service.dart';
 import 'history_repository.dart';
+import 'models/user_model.dart';
 import 'retention_service.dart';
 import 'secure_key_storage.dart';
 import 'sqlite_history_repository.dart';
 import 'supabase_history_repository.dart';
 import 'sync_service.dart';
+
+final authServiceProvider = ChangeNotifierProvider<AuthService>((ref) {
+  final service = AuthService();
+  service.initialize();
+  return service;
+});
+
+final currentUserProvider = Provider<UserModel?>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  return authService.currentUser;
+});
 
 final secureKeyStorageProvider = Provider<SecureKeyStorage>(
   (ref) => SecureKeyStorage(),
@@ -26,10 +39,14 @@ final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
 });
 
 final encryptionServiceProvider = Provider<EncryptionService?>((ref) {
-  try {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return null;
+  final user = ref.watch(currentUserProvider);
+  if (user != null) {
     return EncryptionService(userId: user.id);
+  }
+  try {
+    final supaUser = Supabase.instance.client.auth.currentUser;
+    if (supaUser == null) return null;
+    return EncryptionService(userId: supaUser.id);
   } catch (_) {
     return null;
   }

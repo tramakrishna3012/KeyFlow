@@ -2,8 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/router/supabase_auth_notifier.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
+import '../../data/providers.dart';
 import 'settings_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -36,6 +38,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             Text('Settings', style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 20),
+
+            // 0. USER ACCOUNT & SYNC SECTION
+            _buildSectionHeader('ACCOUNT & CLOUD SYNC'),
+            const SizedBox(height: 8),
+            _buildAccountCard(),
+
+            const SizedBox(height: 24),
 
             // 1. EXCLUSION LIST SECTION
             _buildSectionHeader('EXCLUSION LIST'),
@@ -93,6 +102,104 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       color: AppColors.textMuted,
     ),
   );
+
+  // 0. User Account Card
+  Widget _buildAccountCard() {
+    final user = ref.watch(currentUserProvider);
+    final authService = ref.watch(authServiceProvider);
+
+    final name = user?.fullName ?? user?.email.split('@')[0] ?? 'Offline User';
+    final email = user?.email ?? 'Operating in Local-Only Mode';
+    final role = user?.role == 'admin' ? 'Administrator' : 'Verified Member';
+
+    return KeyFlowCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.primary.withOpacity(0.15),
+                child: Text(
+                  name.isNotEmpty ? name[0].toUpperCase() : 'K',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  role,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                AppAuthNotifier.debugAuthenticatedOverride = null;
+                await authService.logout();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('You have been signed out.')),
+                  );
+                }
+              },
+              icon: const Icon(Icons.logout, size: 16),
+              label: const Text('Sign Out of KeyFlow Workstation'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.destructive,
+                side: BorderSide(
+                  color: AppColors.destructive.withOpacity(0.3),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   // 1. Exclusion List Card
   Widget _buildExclusionCard(

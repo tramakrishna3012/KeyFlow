@@ -1,45 +1,41 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../data/auth_service.dart';
 
-/// A [ChangeNotifier] that listens to Supabase auth state changes.
+/// A [ChangeNotifier] that listens to unified authentication state changes.
 ///
 /// Pass an instance of this to [GoRouter.refreshListenable] so the
 /// router re-evaluates its `redirect` callback whenever the user
-/// signs in, signs out, or the session token refreshes.
-class SupabaseAuthNotifier extends ChangeNotifier {
-  SupabaseAuthNotifier() {
-    try {
-      _subscription = Supabase.instance.client.auth.onAuthStateChange.listen((
-        data,
-      ) {
-        notifyListeners();
-      });
-    } on Object catch (_) {
-      // Safe fallback when Supabase is uninitialized (e.g. unit tests or offline mode)
-      _subscription = null;
-    }
+/// signs in, signs out, or switches offline.
+class AppAuthNotifier extends ChangeNotifier {
+  AppAuthNotifier({AuthService? authService})
+      : _authService = authService ?? AuthService.instance {
+    _authService?.addListener(_onAuthChanged);
   }
 
+  final AuthService? _authService;
   static bool? debugAuthenticatedOverride;
-  StreamSubscription<AuthState>? _subscription;
 
-  /// Whether the user currently has an active Supabase session.
+  void _onAuthChanged() {
+    notifyListeners();
+  }
+
+  /// Whether the user currently has an active session or offline access.
   bool get isAuthenticated {
     if (debugAuthenticatedOverride != null) {
       return debugAuthenticatedOverride!;
     }
-    try {
-      return Supabase.instance.client.auth.currentSession != null;
-    } on Object catch (_) {
-      return false;
+    if (_authService != null) {
+      return _authService.isAuthenticated;
     }
+    return false;
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _authService?.removeListener(_onAuthChanged);
     super.dispose();
   }
 }
+
+/// Backwards compatibility alias for existing router imports
+typedef SupabaseAuthNotifier = AppAuthNotifier;

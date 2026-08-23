@@ -1,18 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/router/supabase_auth_notifier.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/auth_service.dart';
 
-/// Authentication screen providing email/password sign-in and sign-up.
-///
-/// Uses Supabase client methods directly:
-/// - [SupabaseClient.auth.signInWithPassword] for login.
-/// - [SupabaseClient.auth.signUp] for registration.
-///
-/// On successful authentication the [GoRouter] redirect takes the user
-/// to `/home` automatically via the [SupabaseAuthNotifier] refresh.
+/// Unified Authentication screen connecting to the KeyFlow Express backend.
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -21,6 +14,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -29,25 +23,11 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  bool get _isSupabaseInitialized {
-    try {
-      Supabase.instance.client;
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  SupabaseClient? get _supabase {
-    try {
-      return Supabase.instance.client;
-    } catch (_) {
-      return null;
-    }
-  }
+  AuthService get _authService => AuthService.instance;
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -56,58 +36,62 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (!_isSupabaseInitialized || _supabase == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Cloud authentication is not configured (missing SUPABASE_ANON_KEY). Please configure credentials or continue in offline mode.',
-            ),
-            backgroundColor: AppColors.destructive,
-          ),
-        );
-      }
-      return;
-    }
-
     setState(() => _isLoading = true);
 
     try {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
+      final fullName = _nameController.text.trim();
 
       if (_isSignUp) {
-        await _supabase!.auth.signUp(email: email, password: password);
+        final res = await _authService.register(
+          email: email,
+          password: password,
+          fullName: fullName.isEmpty ? email.split('@')[0] : fullName,
+        );
+
+        if (!mounted) return;
+
+        if (res.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Account created! Welcome, ${res.user?.fullName ?? email}.'),
+              backgroundColor: AppColors.primary,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res.errorMessage ?? 'Registration failed'),
+              backgroundColor: AppColors.destructive,
+            ),
+          );
+        }
       } else {
-        await _supabase!.auth.signInWithPassword(
+        final res = await _authService.login(
           email: email,
           password: password,
         );
-      }
 
-      // On success the SupabaseAuthNotifier fires and GoRouter redirects
-      // to /home. If we're still mounted show a brief confirmation.
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isSignUp
-                  ? 'Account created! Check your email to confirm.'
-                  : 'Signed in successfully.',
+        if (!mounted) return;
+
+        if (res.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Welcome back, ${res.user?.fullName ?? email}!'),
+              backgroundColor: AppColors.primary,
             ),
-          ),
-        );
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res.errorMessage ?? 'Invalid email or password'),
+              backgroundColor: AppColors.destructive,
+            ),
+          );
+        }
       }
-    } on AuthException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: AppColors.destructive,
-          ),
-        );
-      }
-    } on Exception catch (e) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -122,7 +106,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _continueOffline() {
-    SupabaseAuthNotifier.debugAuthenticatedOverride = true;
+    AppAuthNotifier.debugAuthenticatedOverride = true;
     if (mounted) {
       GoRouter.of(context).go('/home');
     }
@@ -160,39 +144,26 @@ class _AuthScreenState extends State<AuthScreen> {
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
-                if (!_isSupabaseInitialized) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(bottom: 20),
-                    decoration: BoxDecoration(
-                      color: AppColors.destructive.withOpacity(0.1),
-                      border: Border.all(
-                        color: AppColors.destructive.withOpacity(0.3),
-                      ),
-                      borderRadius: BorderRadius.circular(12),
+                // Full Name (Only on Sign Up)
+                if (_isSignUp) ...[
+                  TextFormField(
+                    controller: _nameController,
+                    keyboardType: TextInputType.name,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Full Name',
+                      prefixIcon: Icon(Icons.person_outline, size: 20),
                     ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: AppColors.destructive,
-                          size: 20,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Cloud authentication not configured (missing SUPABASE_ANON_KEY). You can continue in offline mode.',
-                            style: TextStyle(
-                              color: AppColors.destructive,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    validator: (val) {
+                      if (_isSignUp && (val == null || val.trim().isEmpty)) {
+                        return 'Full name is required';
+                      }
+                      return null;
+                    },
                   ),
+                  const SizedBox(height: 16),
                 ],
 
                 // Email field
@@ -201,7 +172,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Email',
+                    labelText: 'Email Address',
                     prefixIcon: Icon(Icons.email_outlined, size: 20),
                   ),
                   validator: (val) {
@@ -240,8 +211,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     if (val == null || val.isEmpty) {
                       return 'Password is required';
                     }
-                    if (val.length < 6) {
-                      return 'Password must be at least 6 characters';
+                    if (val.length < 8) {
+                      return 'Password must be at least 8 characters';
                     }
                     return null;
                   },
@@ -317,7 +288,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => setState(() => _isSignUp = !_isSignUp),
+                      onPressed: () => setState(() {
+                        _isSignUp = !_isSignUp;
+                        _formKey.currentState?.reset();
+                      }),
                       child: Text(
                         _isSignUp ? 'Sign In' : 'Sign Up',
                         style: const TextStyle(
