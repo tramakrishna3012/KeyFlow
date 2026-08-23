@@ -26,9 +26,13 @@ final historyRepositoryProvider = Provider<HistoryRepository>((ref) {
 });
 
 final encryptionServiceProvider = Provider<EncryptionService?>((ref) {
-  final user = Supabase.instance.client.auth.currentUser;
-  if (user == null) return null;
-  return EncryptionService(userId: user.id);
+  try {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return null;
+    return EncryptionService(userId: user.id);
+  } catch (_) {
+    return null;
+  }
 });
 
 final supabaseHistoryRepositoryProvider = Provider<SupabaseHistoryRepository?>((
@@ -37,10 +41,14 @@ final supabaseHistoryRepositoryProvider = Provider<SupabaseHistoryRepository?>((
   final encryption = ref.watch(encryptionServiceProvider);
   if (encryption == null) return null;
 
-  return SupabaseHistoryRepository(
-    client: Supabase.instance.client,
-    encryptionService: encryption,
-  );
+  try {
+    return SupabaseHistoryRepository(
+      client: Supabase.instance.client,
+      encryptionService: encryption,
+    );
+  } catch (_) {
+    return null;
+  }
 });
 
 final syncServiceProvider = Provider<SyncService?>((ref) {

@@ -6,7 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../theme/app_colors.dart';
 
-/// Requests camera, storage, and notification permissions at app startup.
+/// Requests notification permissions at app startup for sync and daemon alerts.
 ///
 /// Only executes on Android and iOS — desktop platforms do not use the
 /// [permission_handler] runtime permission flow.
@@ -20,8 +20,6 @@ Future<Map<Permission, PermissionStatus>> requestStartupPermissions() async {
   }
 
   final statuses = await [
-    Permission.camera,
-    Permission.storage,
     Permission.notification,
   ].request();
 
@@ -38,14 +36,6 @@ void handlePermissionDegradation(
   if (statuses[Permission.notification]?.isDenied == true ||
       statuses[Permission.notification]?.isPermanentlyDenied == true) {
     denied.add('Notifications (sync alerts)');
-  }
-  if (statuses[Permission.camera]?.isDenied == true ||
-      statuses[Permission.camera]?.isPermanentlyDenied == true) {
-    denied.add('Camera (OCR scanning)');
-  }
-  if (statuses[Permission.storage]?.isDenied == true ||
-      statuses[Permission.storage]?.isPermanentlyDenied == true) {
-    denied.add('Storage (export/backup)');
   }
 
   if (denied.isNotEmpty && context.mounted) {

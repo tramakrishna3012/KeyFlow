@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/router/supabase_auth_notifier.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Authentication screen providing email/password sign-in and sign-up.
@@ -28,7 +29,22 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  SupabaseClient get _supabase => Supabase.instance.client;
+  bool get _isSupabaseInitialized {
+    try {
+      Supabase.instance.client;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  SupabaseClient? get _supabase {
+    try {
+      return Supabase.instance.client;
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   void dispose() {
@@ -40,6 +56,20 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (!_isSupabaseInitialized || _supabase == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Cloud authentication is not configured (missing SUPABASE_ANON_KEY). Please configure credentials or continue in offline mode.',
+            ),
+            backgroundColor: AppColors.destructive,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -47,9 +77,9 @@ class _AuthScreenState extends State<AuthScreen> {
       final password = _passwordController.text;
 
       if (_isSignUp) {
-        await _supabase.auth.signUp(email: email, password: password);
+        await _supabase!.auth.signUp(email: email, password: password);
       } else {
-        await _supabase.auth.signInWithPassword(
+        await _supabase!.auth.signInWithPassword(
           email: email,
           password: password,
         );
@@ -91,6 +121,13 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  void _continueOffline() {
+    SupabaseAuthNotifier.debugAuthenticatedOverride = true;
+    if (mounted) {
+      GoRouter.of(context).go('/home');
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     body: SafeArea(
@@ -123,7 +160,40 @@ class _AuthScreenState extends State<AuthScreen> {
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 36),
+                const SizedBox(height: 24),
+
+                if (!_isSupabaseInitialized) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: AppColors.destructive.withOpacity(0.1),
+                      border: Border.all(
+                        color: AppColors.destructive.withOpacity(0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: AppColors.destructive,
+                          size: 20,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Cloud authentication not configured (missing SUPABASE_ANON_KEY). You can continue in offline mode.',
+                            style: TextStyle(
+                              color: AppColors.destructive,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
 
                 // Email field
                 TextFormField(
@@ -161,7 +231,6 @@ class _AuthScreenState extends State<AuthScreen> {
                         _obscurePassword
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
-                        size: 20,
                       ),
                       onPressed: () =>
                           setState(() => _obscurePassword = !_obscurePassword),
@@ -208,6 +277,27 @@ class _AuthScreenState extends State<AuthScreen> {
                               fontSize: 14,
                             ),
                           ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Offline Mode Alternative
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: _continueOffline,
+                    icon: const Icon(Icons.cloud_off_outlined, size: 18),
+                    label: const Text('Continue in Offline Mode'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      side: BorderSide(
+                        color: AppColors.textSecondary.withOpacity(0.3),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),

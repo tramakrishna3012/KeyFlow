@@ -2,6 +2,7 @@ package com.keyflow.keyflow_app
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.text.InputType
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
@@ -39,7 +40,7 @@ class KeyflowAccessibilityService : AccessibilityService() {
             val text = event.text.joinToString("")
             if (text.isBlank()) return
 
-            if (event.isPassword) return
+            if (isSensitiveNodeOrEvent(event)) return
 
             val payload = mapOf(
                 "appName" to packageName,
@@ -49,6 +50,43 @@ class KeyflowAccessibilityService : AccessibilityService() {
             )
             eventListener?.invoke(payload)
         }
+    }
+
+    private fun isSensitiveNodeOrEvent(event: AccessibilityEvent): Boolean {
+        if (event.isPassword) return true
+
+        val source = event.source ?: return false
+        try {
+            if (source.isPassword) return true
+
+            val inputType = source.inputType
+            if (inputType != 0) {
+                val variation = inputType and InputType.TYPE_MASK_VARIATION
+                val isPasswordVariation = variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
+                        variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
+                        variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
+                        variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
+
+                val isClassTextPassword = (inputType and InputType.TYPE_CLASS_TEXT != 0) &&
+                        ((inputType and InputType.TYPE_TEXT_VARIATION_PASSWORD != 0) ||
+                         (inputType and InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD != 0) ||
+                         (inputType and InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD != 0))
+
+                val isClassNumberPassword = (inputType and InputType.TYPE_CLASS_NUMBER != 0) &&
+                        (inputType and InputType.TYPE_NUMBER_VARIATION_PASSWORD != 0)
+
+                if (isPasswordVariation || isClassTextPassword || isClassNumberPassword) {
+                    return true
+                }
+            }
+        } finally {
+            try {
+                source.recycle()
+            } catch (_: Exception) {
+                // Safe ignore if already recycled by framework
+            }
+        }
+        return false
     }
 
     override fun onInterrupt() {

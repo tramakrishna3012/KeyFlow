@@ -66,10 +66,6 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>KeyFlow requires camera access for optical text scanning and OCR shortcut capture features.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>KeyFlow requires photo library access to import images containing text for conversion to snippets.</string>
 </dict>
 </plist>
 

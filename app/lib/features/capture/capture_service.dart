@@ -4,9 +4,14 @@ import 'package:flutter/services.dart';
 import '../../data/history_repository.dart';
 import '../../data/models/history_entry.dart';
 import '../../data/sync_service.dart';
+import '../look_monitor/look_window_sanitizer.dart';
 
 class CaptureService {
-  CaptureService(this._repository, {this._syncService}) {
+  CaptureService(
+    this._repository, {
+    this._syncService,
+    LookWindowSanitizer? sanitizer,
+  }) : _sanitizer = sanitizer ?? const LookWindowSanitizer() {
     _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
   }
 
@@ -17,6 +22,7 @@ class CaptureService {
 
   final HistoryRepository _repository;
   final SyncService? _syncService;
+  final LookWindowSanitizer _sanitizer;
   StreamSubscription<dynamic>? _subscription;
 
   bool _isCapturing = false;
@@ -163,13 +169,25 @@ class CaptureService {
     String windowTitle,
     int timestamp,
   ) async {
-    final textToSave = _inputBuffers[appName]?.trim();
+    final rawText = _inputBuffers[appName]?.trim();
     _inputBuffers.remove(appName);
 
-    if (textToSave != null && textToSave.isNotEmpty) {
+    if (rawText != null && rawText.isNotEmpty) {
+      final sanitizedText = _sanitizer.sanitizeTextRecord(
+        rawText,
+        appName: appName,
+      );
+
+      // Do not store excluded or redacted sensitive records (passwords, OTPs, cards)
+      if (sanitizedText.isEmpty ||
+          sanitizedText == '[Excluded Content]' ||
+          sanitizedText == '[Redacted Sensitive Record]') {
+        return;
+      }
+
       final entry = HistoryEntry(
         id: '${timestamp}_${appName.hashCode}',
-        text: textToSave,
+        text: sanitizedText,
         sourceApp: appName,
         capturedAt: DateTime.fromMillisecondsSinceEpoch(timestamp),
         deviceId: 'mobile_native',
