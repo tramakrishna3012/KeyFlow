@@ -30,15 +30,15 @@ class UpdateInfo {
 /// Service that checks the Express backend & GitHub Releases API for updates,
 /// downloads APK files to internal storage, and triggers the Android system package installer.
 class AutoUpdateService {
-  AutoUpdateService({
-    String? apiBase,
-    http.Client? client,
-  })  : _apiBase = apiBase ?? 'https://keyflow-dnsd.onrender.com/api/v1',
-        _client = client ?? http.Client();
+  AutoUpdateService({String? apiBase, http.Client? client})
+    : _apiBase = apiBase ?? 'https://keyflow-dnsd.onrender.com/api/v1',
+      _client = client ?? http.Client();
 
   final String _apiBase;
   final http.Client _client;
-  static const MethodChannel _platformChannel = MethodChannel('keyflow/capture');
+  static const MethodChannel _platformChannel = MethodChannel(
+    'keyflow/capture',
+  );
 
   static const String _repoOwner = 'tramakrishna3012';
   static const String _repoName = 'KeyFlow';
@@ -52,13 +52,21 @@ class AutoUpdateService {
       // 1. Try KeyFlow Express backend version endpoint
       try {
         final url = Uri.parse('$_apiBase/app/version');
-        final response = await _client.get(url).timeout(const Duration(seconds: 4));
+        final response = await _client
+            .get(url)
+            .timeout(const Duration(seconds: 4));
 
         if (response.statusCode == 200) {
           final Map<String, dynamic> data = jsonDecode(response.body);
-          final latestVersion = (data['latestVersion'] ?? '').toString().replaceAll('v', '').trim();
+          final latestVersion = (data['latestVersion'] ?? '')
+              .toString()
+              .replaceAll('v', '')
+              .trim();
           final downloadUrl = (data['downloadUrl'] ?? '').toString();
-          final releaseNotes = (data['releaseNotes'] ?? 'Bug fixes and performance improvements.').toString();
+          final releaseNotes =
+              (data['releaseNotes'] ??
+                      'Bug fixes and performance improvements.')
+                  .toString();
 
           final hasUpdate = _isVersionNewer(latestVersion, currentVersion);
 
@@ -86,7 +94,9 @@ class AutoUpdateService {
       if (ghResponse.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(ghResponse.body);
         final tagName = data['tag_name']?.toString() ?? '';
-        final body = data['body']?.toString() ?? 'Bug fixes and performance improvements.';
+        final body =
+            data['body']?.toString() ??
+            'Bug fixes and performance improvements.';
         final latestVersion = tagName.replaceAll('v', '').trim();
 
         var downloadUrl =
@@ -187,9 +197,7 @@ class AutoUpdateService {
       if (isManualCheck && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'KeyFlow is up to date (v${update.currentVersion}).',
-            ),
+            content: Text('KeyFlow is up to date (v${update.currentVersion}).'),
           ),
         );
       }
@@ -206,14 +214,22 @@ class AutoUpdateService {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (dialogCtx, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Row(
             children: [
-              const Icon(Icons.system_update_alt_rounded, color: AppColors.primary),
+              const Icon(
+                Icons.system_update_alt_rounded,
+                color: AppColors.primary,
+              ),
               const SizedBox(width: 10),
               Text(
                 'Update Available (v${update.latestVersion})',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -223,7 +239,10 @@ class AutoUpdateService {
             children: [
               Text(
                 'Current version: v${update.currentVersion}',
-                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                ),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -250,7 +269,9 @@ class AutoUpdateService {
                 LinearProgressIndicator(
                   value: progress > 0 ? progress : null,
                   backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                  valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppColors.primary,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Center(
@@ -258,7 +279,10 @@ class AutoUpdateService {
                     progress > 0
                         ? 'Downloading: ${(progress * 100).toInt()}%'
                         : 'Preparing download...',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
                   ),
                 ),
               ],
@@ -300,7 +324,9 @@ class AutoUpdateService {
                       if (!success && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Could not complete in-app install. Opening download link.'),
+                            content: Text(
+                              'Could not complete in-app install. Opening download link.',
+                            ),
                           ),
                         );
                       }

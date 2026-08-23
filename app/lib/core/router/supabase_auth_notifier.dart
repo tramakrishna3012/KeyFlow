@@ -8,7 +8,7 @@ import '../../data/auth_service.dart';
 /// signs in, signs out, or switches offline.
 class AppAuthNotifier extends ChangeNotifier {
   AppAuthNotifier({AuthService? authService})
-      : _authService = authService ?? AuthService.instance {
+    : _authService = authService ?? AuthService.instance {
     _authService?.addListener(_onAuthChanged);
   }
 

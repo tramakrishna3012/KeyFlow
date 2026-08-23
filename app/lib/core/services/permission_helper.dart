@@ -19,9 +19,7 @@ Future<Map<Permission, PermissionStatus>> requestStartupPermissions() async {
     return {};
   }
 
-  final statuses = await [
-    Permission.notification,
-  ].request();
+  final statuses = await [Permission.notification].request();
 
   return statuses;
 }

@@ -12,16 +12,16 @@ class AuthService extends ChangeNotifier {
     String? apiBase,
     http.Client? httpClient,
     FlutterSecureStorage? secureStorage,
-  })  : _apiBase = apiBase ?? _defaultApiBase,
-        _client = httpClient ?? http.Client(),
-        _storage =
-            secureStorage ??
-            const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-              iOptions: IOSOptions(
-                accessibility: KeychainAccessibility.first_unlock,
-              ),
-            );
+  }) : _apiBase = apiBase ?? _defaultApiBase,
+       _client = httpClient ?? http.Client(),
+       _storage =
+           secureStorage ??
+           const FlutterSecureStorage(
+             aOptions: AndroidOptions(encryptedSharedPreferences: true),
+             iOptions: IOSOptions(
+               accessibility: KeychainAccessibility.first_unlock,
+             ),
+           );
 
   static final AuthService instance = AuthService();
 
@@ -80,10 +80,7 @@ class AuthService extends ChangeNotifier {
       final response = await _client.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email.trim(),
-          'password': password,
-        }),
+        body: jsonEncode({'email': email.trim(), 'password': password}),
       );
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -99,13 +96,17 @@ class AuthService extends ChangeNotifier {
 
         await _storage.write(key: _tokenKey, value: tokenStr);
         if (userObj != null) {
-          await _storage.write(key: _userKey, value: jsonEncode(userObj.toJson()));
+          await _storage.write(
+            key: _userKey,
+            value: jsonEncode(userObj.toJson()),
+          );
         }
 
         notifyListeners();
         return AuthResponse(success: true, token: tokenStr, user: userObj);
       } else {
-        final errorMsg = (data['error'] ?? data['message'] ?? 'Login failed').toString();
+        final errorMsg = (data['error'] ?? data['message'] ?? 'Login failed')
+            .toString();
         return AuthResponse(success: false, errorMessage: errorMsg);
       }
     } on SocketException catch (_) {
@@ -114,10 +115,7 @@ class AuthService extends ChangeNotifier {
         errorMessage: 'Network error. Please check your internet connection.',
       );
     } on Object catch (e) {
-      return AuthResponse(
-        success: false,
-        errorMessage: 'Unexpected error: $e',
-      );
+      return AuthResponse(success: false, errorMessage: 'Unexpected error: $e');
     }
   }
 
@@ -144,7 +142,8 @@ class AuthService extends ChangeNotifier {
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
 
-      if (response.statusCode == 201 || (response.statusCode >= 200 && response.statusCode < 300)) {
+      if (response.statusCode == 201 ||
+          (response.statusCode >= 200 && response.statusCode < 300)) {
         final tokenStr = data['token'] as String? ?? '';
         final userObj = data['user'] != null
             ? UserModel.fromJson(data['user'] as Map<String, dynamic>)
@@ -155,13 +154,18 @@ class AuthService extends ChangeNotifier {
 
         await _storage.write(key: _tokenKey, value: tokenStr);
         if (userObj != null) {
-          await _storage.write(key: _userKey, value: jsonEncode(userObj.toJson()));
+          await _storage.write(
+            key: _userKey,
+            value: jsonEncode(userObj.toJson()),
+          );
         }
 
         notifyListeners();
         return AuthResponse(success: true, token: tokenStr, user: userObj);
       } else {
-        final errorMsg = (data['error'] ?? data['message'] ?? 'Registration failed').toString();
+        final errorMsg =
+            (data['error'] ?? data['message'] ?? 'Registration failed')
+                .toString();
         return AuthResponse(success: false, errorMessage: errorMsg);
       }
     } on SocketException catch (_) {
@@ -170,10 +174,7 @@ class AuthService extends ChangeNotifier {
         errorMessage: 'Network error. Please check your internet connection.',
       );
     } on Object catch (e) {
-      return AuthResponse(
-        success: false,
-        errorMessage: 'Unexpected error: $e',
-      );
+      return AuthResponse(success: false, errorMessage: 'Unexpected error: $e');
     }
   }
 
@@ -194,8 +195,13 @@ class AuthService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (data['user'] != null) {
-          _currentUser = UserModel.fromJson(data['user'] as Map<String, dynamic>);
-          await _storage.write(key: _userKey, value: jsonEncode(_currentUser!.toJson()));
+          _currentUser = UserModel.fromJson(
+            data['user'] as Map<String, dynamic>,
+          );
+          await _storage.write(
+            key: _userKey,
+            value: jsonEncode(_currentUser!.toJson()),
+          );
           notifyListeners();
           return _currentUser;
         }

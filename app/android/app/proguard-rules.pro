@@ -37,7 +37,10 @@
     @androidx.annotation.Keep <methods>;
 }
 
-# General Networking & OkHttp
+# General Networking & OkHttp & Play Core
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -dontwarn javax.annotation.**
+-dontwarn com.google.android.play.core.**
+-dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
+-dontwarn **

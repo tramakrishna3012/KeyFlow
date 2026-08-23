@@ -55,7 +55,9 @@ class _AuthScreenState extends State<AuthScreen> {
         if (res.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Account created! Welcome, ${res.user?.fullName ?? email}.'),
+              content: Text(
+                'Account created! Welcome, ${res.user?.fullName ?? email}.',
+              ),
               backgroundColor: AppColors.primary,
             ),
           );
@@ -68,10 +70,7 @@ class _AuthScreenState extends State<AuthScreen> {
           );
         }
       } else {
-        final res = await _authService.login(
-          email: email,
-          password: password,
-        );
+        final res = await _authService.login(email: email, password: password);
 
         if (!mounted) return;
 
@@ -172,7 +171,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
-                    labelText: 'Email Address',
+                    labelText: 'Email',
                     prefixIcon: Icon(Icons.email_outlined, size: 20),
                   ),
                   validator: (val) {

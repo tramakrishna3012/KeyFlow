@@ -615,10 +615,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               final update = await updater.checkForUpdate();
               if (mounted) {
                 if (update != null) {
-                  await updater.showUpdatePrompt(context, update, isManualCheck: true);
+                  await updater.showUpdatePrompt(
+                    context,
+                    update,
+                    isManualCheck: true,
+                  );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Unable to reach update server.')),
+                    const SnackBar(
+                      content: Text('Unable to reach update server.'),
+                    ),
                   );
                 }
               }
