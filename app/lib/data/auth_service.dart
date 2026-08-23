@@ -8,21 +8,22 @@ import 'models/user_model.dart';
 
 /// Unified Authentication Service connecting to the KeyFlow Express backend.
 class AuthService extends ChangeNotifier {
-  static final AuthService instance = AuthService();
-
   AuthService({
     String? apiBase,
     http.Client? httpClient,
     FlutterSecureStorage? secureStorage,
   })  : _apiBase = apiBase ?? _defaultApiBase,
         _client = httpClient ?? http.Client(),
-        _storage = secureStorage ??
+        _storage =
+            secureStorage ??
             const FlutterSecureStorage(
               aOptions: AndroidOptions(encryptedSharedPreferences: true),
               iOptions: IOSOptions(
                 accessibility: KeychainAccessibility.first_unlock,
               ),
             );
+
+  static final AuthService instance = AuthService();
 
   static const String _defaultApiBase =
       'https://keyflow-dnsd.onrender.com/api/v1';
@@ -58,7 +59,7 @@ class AuthService extends ChangeNotifier {
         // Validate token with backend in background
         await fetchProfile();
       }
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('AuthService initialize error: $e');
       _token = null;
       _currentUser = null;
@@ -85,7 +86,7 @@ class AuthService extends ChangeNotifier {
         }),
       );
 
-      final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final tokenStr = data['token'] as String? ?? '';
@@ -112,7 +113,7 @@ class AuthService extends ChangeNotifier {
         success: false,
         errorMessage: 'Network error. Please check your internet connection.',
       );
-    } catch (e) {
+    } on Object catch (e) {
       return AuthResponse(
         success: false,
         errorMessage: 'Unexpected error: $e',
@@ -141,7 +142,7 @@ class AuthService extends ChangeNotifier {
         }),
       );
 
-      final Map<String, dynamic> data = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (response.statusCode == 201 || (response.statusCode >= 200 && response.statusCode < 300)) {
         final tokenStr = data['token'] as String? ?? '';
@@ -168,7 +169,7 @@ class AuthService extends ChangeNotifier {
         success: false,
         errorMessage: 'Network error. Please check your internet connection.',
       );
-    } catch (e) {
+    } on Object catch (e) {
       return AuthResponse(
         success: false,
         errorMessage: 'Unexpected error: $e',
@@ -202,7 +203,7 @@ class AuthService extends ChangeNotifier {
         // Token expired or invalid
         await logout();
       }
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('AuthService fetchProfile error: $e');
     }
     return null;
@@ -215,7 +216,7 @@ class AuthService extends ChangeNotifier {
     try {
       await _storage.delete(key: _tokenKey);
       await _storage.delete(key: _userKey);
-    } catch (_) {}
+    } on Object catch (_) {}
     notifyListeners();
   }
 }

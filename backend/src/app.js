@@ -8,6 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const activityRoutes = require('./routes/activityRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const complianceRoutes = require('./routes/complianceRoutes');
+const appRoutes = require('./routes/appRoutes');
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/activity', activityRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/compliance', complianceRoutes);
+app.use('/api/v1/app', appRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

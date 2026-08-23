@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/services/auto_update_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
 import '../../data/models/history_entry.dart';
@@ -10,11 +11,33 @@ import '../history/history_providers.dart';
 import '../history/snippet_detail_screen.dart';
 
 /// Dynamic, responsive Home dashboard screen showing real live typing data from SQLite repository.
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  static bool _hasCheckedForUpdatesThisSession = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_hasCheckedForUpdatesThisSession) {
+      _hasCheckedForUpdatesThisSession = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        final updater = AutoUpdateService();
+        final update = await updater.checkForUpdate();
+        if (mounted && update != null && update.hasUpdate) {
+          await updater.showUpdatePrompt(context, update);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final historyAsync = ref.watch(allHistoryEntriesProvider);
 
     return Scaffold(

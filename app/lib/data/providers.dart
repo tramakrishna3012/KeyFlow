@@ -14,8 +14,7 @@ import 'supabase_history_repository.dart';
 import 'sync_service.dart';
 
 final authServiceProvider = ChangeNotifierProvider<AuthService>((ref) {
-  final service = AuthService();
-  service.initialize();
+  final service = AuthService()..initialize();
   return service;
 });
 
@@ -47,7 +46,7 @@ final encryptionServiceProvider = Provider<EncryptionService?>((ref) {
     final supaUser = Supabase.instance.client.auth.currentUser;
     if (supaUser == null) return null;
     return EncryptionService(userId: supaUser.id);
-  } catch (_) {
+  } on Object catch (_) {
     return null;
   }
 });
@@ -63,7 +62,7 @@ final supabaseHistoryRepositoryProvider = Provider<SupabaseHistoryRepository?>((
       client: Supabase.instance.client,
       encryptionService: encryption,
     );
-  } catch (_) {
+  } on Object catch (_) {
     return null;
   }
 });

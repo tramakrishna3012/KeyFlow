@@ -9,6 +9,21 @@ class UserModel {
     this.createdAt,
   });
 
+  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
+    id: json['id'] as String? ?? '',
+    email: json['email'] as String? ?? '',
+    fullName:
+        (json['fullName'] ?? json['full_name'] ?? json['fullname'])
+            as String? ??
+        '',
+    role: json['role'] as String? ?? 'member',
+    organizationId:
+        (json['organizationId'] ?? json['organization_id']) as String?,
+    organizationName:
+        (json['organizationName'] ?? json['organization_name']) as String?,
+    createdAt: (json['createdAt'] ?? json['created_at']) as String?,
+  );
+
   final String id;
   final String email;
   final String fullName;
@@ -16,18 +31,6 @@ class UserModel {
   final String? organizationId;
   final String? organizationName;
   final String? createdAt;
-
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'] as String? ?? '',
-      email: json['email'] as String? ?? '',
-      fullName: (json['fullName'] ?? json['full_name'] ?? json['fullname']) as String? ?? '',
-      role: json['role'] as String? ?? 'member',
-      organizationId: (json['organizationId'] ?? json['organization_id']) as String?,
-      organizationName: (json['organizationName'] ?? json['organization_name']) as String?,
-      createdAt: (json['createdAt'] ?? json['created_at']) as String?,
-    );
-  }
 
   Map<String, dynamic> toJson() => {
     'id': id,

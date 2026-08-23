@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/router/supabase_auth_notifier.dart';
+import '../../core/services/auto_update_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
 import '../../data/providers.dart';
@@ -120,7 +121,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: AppColors.primary.withOpacity(0.15),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : 'K',
                   style: const TextStyle(
@@ -156,7 +157,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -188,7 +189,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.destructive,
                 side: BorderSide(
-                  color: AppColors.destructive.withOpacity(0.3),
+                  color: AppColors.destructive.withValues(alpha: 0.3),
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -601,6 +602,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const Text(
           'Status: Active & Transparently Running',
           style: TextStyle(fontSize: 12, color: AppColors.secondary),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Checking for updates...')),
+              );
+              final updater = AutoUpdateService();
+              final update = await updater.checkForUpdate();
+              if (mounted) {
+                if (update != null) {
+                  await updater.showUpdatePrompt(context, update, isManualCheck: true);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Unable to reach update server.')),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Check for Updates'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         ExpansionTile(
