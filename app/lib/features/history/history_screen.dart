@@ -30,6 +30,15 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(historyEntriesProvider);
+      ref.invalidate(allHistoryEntriesProvider);
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();

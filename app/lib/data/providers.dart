@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../features/capture/capture_service.dart';
+import '../features/history/history_providers.dart';
 import 'auth_service.dart';
 import 'database_helper.dart';
 import 'encryption_service.dart';
@@ -82,5 +83,12 @@ final retentionServiceProvider = Provider<RetentionService>((ref) {
 final captureServiceProvider = Provider<CaptureService>((ref) {
   final repo = ref.watch(historyRepositoryProvider);
   final syncService = ref.watch(syncServiceProvider);
-  return CaptureService(repo, syncService: syncService);
+  return CaptureService(
+    repo,
+    syncService: syncService,
+    onEntryCaptured: (_) {
+      ref.invalidate(historyEntriesProvider);
+      ref.invalidate(allHistoryEntriesProvider);
+    },
+  );
 });

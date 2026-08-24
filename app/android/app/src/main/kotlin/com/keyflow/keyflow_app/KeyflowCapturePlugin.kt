@@ -158,8 +158,11 @@ class KeyflowCapturePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
 
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         this.eventSink = events
+        val handler = android.os.Handler(android.os.Looper.getMainLooper())
         KeyflowAccessibilityService.eventListener = { eventMap ->
-            this.eventSink?.success(eventMap)
+            handler.post {
+                this.eventSink?.success(eventMap)
+            }
         }
     }
 

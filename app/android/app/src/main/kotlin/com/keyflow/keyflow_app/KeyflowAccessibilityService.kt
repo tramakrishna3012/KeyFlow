@@ -28,16 +28,56 @@ class KeyflowAccessibilityService : AccessibilityService() {
             notificationTimeout = 100
         }
         serviceInfo = info
+
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val channelId = "keyflow_active_service"
+                val channel = android.app.NotificationChannel(
+                    channelId,
+                    "KeyFlow Text Monitor",
+                    android.app.NotificationManager.IMPORTANCE_MIN
+                )
+                val manager = getSystemService(android.app.NotificationManager::class.java)
+                manager?.createNotificationChannel(channel)
+
+                val notification = android.app.Notification.Builder(this, channelId)
+                    .setContentTitle("KeyFlow Active")
+                    .setContentText("KeyFlow monitoring is running in background")
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .build()
+
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    startForeground(1001, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                } else {
+                    startForeground(1001, notification)
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("KeyflowA11y", "Foreground service init error: $e")
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event == null || isPaused) return
+        if (event == null) return
+        val packageName = event.packageName?.toString() ?: "unknown"
+        android.util.Log.i("KeyflowA11y", "onAccessibilityEvent: type=${event.eventType}, pkg=$packageName, paused=$isPaused")
+        if (isPaused) return
 
-        val packageName = event.packageName?.toString() ?: return
         if (exclusionList.contains(packageName)) return
 
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
-            val text = event.text.joinToString("")
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
+            event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
+
+            var text = event.text.joinToString("")
+            if (text.isBlank()) {
+                try {
+                    text = event.source?.text?.toString() ?: ""
+                } catch (_: Exception) {
+                    text = ""
+                }
+            }
+
+            android.util.Log.i("KeyflowA11y", "Event type=${event.eventType} extracted text: '$text', isSensitive=${isSensitiveNodeOrEvent(event)}")
             if (text.isBlank()) return
 
             if (isSensitiveNodeOrEvent(event)) return
@@ -48,6 +88,7 @@ class KeyflowAccessibilityService : AccessibilityService() {
                 "text" to text,
                 "timestamp" to System.currentTimeMillis()
             )
+            android.util.Log.i("KeyflowA11y", "Invoking eventListener with text '$text', listener=$eventListener")
             eventListener?.invoke(payload)
         }
     }
@@ -67,15 +108,7 @@ class KeyflowAccessibilityService : AccessibilityService() {
                         variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                         variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
 
-                val isClassTextPassword = (inputType and InputType.TYPE_CLASS_TEXT != 0) &&
-                        ((inputType and InputType.TYPE_TEXT_VARIATION_PASSWORD != 0) ||
-                         (inputType and InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD != 0) ||
-                         (inputType and InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD != 0))
-
-                val isClassNumberPassword = (inputType and InputType.TYPE_CLASS_NUMBER != 0) &&
-                        (inputType and InputType.TYPE_NUMBER_VARIATION_PASSWORD != 0)
-
-                if (isPasswordVariation || isClassTextPassword || isClassNumberPassword) {
+                if (isPasswordVariation) {
                     return true
                 }
             }

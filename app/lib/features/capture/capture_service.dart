@@ -11,6 +11,7 @@ class CaptureService {
     this._repository, {
     this._syncService,
     LookWindowSanitizer? sanitizer,
+    this.onEntryCaptured,
   }) : _sanitizer = sanitizer ?? const LookWindowSanitizer() {
     _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
   }
@@ -23,6 +24,7 @@ class CaptureService {
   final HistoryRepository _repository;
   final SyncService? _syncService;
   final LookWindowSanitizer _sanitizer;
+  final void Function(HistoryEntry entry)? onEntryCaptured;
   StreamSubscription<dynamic>? _subscription;
 
   bool _isCapturing = false;
@@ -34,9 +36,13 @@ class CaptureService {
   final Map<String, String> _inputBuffers = {};
 
   Future<void> initialize() async {
-    final exclusions = await _repository.getExclusionList();
-    await syncExclusionList(exclusions);
     await startCapture();
+    try {
+      final exclusions = await _repository.getExclusionList();
+      await syncExclusionList(exclusions);
+    } catch (e) {
+      debugPrint('Sync exclusions error: $e');
+    }
   }
 
   Future<bool> startCapture() async {
@@ -150,6 +156,7 @@ class CaptureService {
   }
 
   void _onNativeEvent(dynamic event) {
+    debugPrint('[CaptureService] _onNativeEvent: $event');
     if (event is! Map) return;
 
     final appName = (event['appName'] as String?) ?? 'Unknown App';
@@ -193,6 +200,7 @@ class CaptureService {
         deviceId: 'mobile_native',
       );
       await _repository.addEntry(entry);
+      onEntryCaptured?.call(entry);
       unawaited(_syncService?.syncEntry(entry));
     }
   }
