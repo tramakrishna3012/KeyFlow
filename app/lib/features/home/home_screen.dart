@@ -7,6 +7,7 @@ import '../../core/services/auto_update_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
 import '../../data/models/history_entry.dart';
+import '../../data/providers.dart';
 import '../history/history_providers.dart';
 import '../history/snippet_detail_screen.dart';
 
@@ -24,16 +25,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    if (!_hasCheckedForUpdatesThisSession) {
-      _hasCheckedForUpdatesThisSession = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await ref.read(captureServiceProvider).initialize();
+      } catch (e) {
+        debugPrint('CaptureService init error: $e');
+      }
+
+      if (!_hasCheckedForUpdatesThisSession) {
+        _hasCheckedForUpdatesThisSession = true;
         final updater = AutoUpdateService();
         final update = await updater.checkForUpdate();
         if (mounted && update != null && update.hasUpdate) {
           await updater.showUpdatePrompt(context, update);
         }
-      });
-    }
+      }
+    });
   }
 
   @override
