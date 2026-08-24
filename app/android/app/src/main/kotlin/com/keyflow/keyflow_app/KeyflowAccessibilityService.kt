@@ -94,11 +94,17 @@ class KeyflowAccessibilityService : AccessibilityService() {
     }
 
     private fun isSensitiveNodeOrEvent(event: AccessibilityEvent): Boolean {
-        if (event.isPassword) return true
+        if (event.isPassword) {
+            android.util.Log.i("KeyflowA11y", "Sensitive: event.isPassword is true")
+            return true
+        }
 
         val source = event.source ?: return false
         try {
-            if (source.isPassword) return true
+            if (source.isPassword) {
+                android.util.Log.i("KeyflowA11y", "Sensitive: source.isPassword is true")
+                return true
+            }
 
             val inputType = source.inputType
             if (inputType != 0) {
@@ -107,6 +113,8 @@ class KeyflowAccessibilityService : AccessibilityService() {
                         variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
                         variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                         variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
+
+                android.util.Log.i("KeyflowA11y", "Sensitive check: inputType=0x${Integer.toHexString(inputType)}, variation=0x${Integer.toHexString(variation)}, isPasswordVariation=$isPasswordVariation")
 
                 if (isPasswordVariation) {
                     return true
