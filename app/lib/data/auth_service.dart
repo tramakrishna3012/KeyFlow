@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthResponse;
 
 import 'models/user_model.dart';
 
-/// Unified Authentication Service connecting to the KeyFlow Express backend.
+
+/// Unified Authentication Service connecting to the online Supabase PostgreSQL backend.
 class AuthService extends ChangeNotifier {
   AuthService({
     String? apiBase,
@@ -43,7 +45,7 @@ class AuthService extends ChangeNotifier {
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
   bool get isInitialized => _isInitialized;
 
-  /// Restores persisted session from secure storage on app launch.
+  /// Restores persisted session from secure storage or Supabase on app launch.
   Future<bool> initialize() async {
     try {
       _token = await _storage.read(key: _tokenKey);
@@ -55,8 +57,29 @@ class AuthService extends ChangeNotifier {
         );
       }
 
+      // Check if active Supabase session exists
+      try {
+        final supaUser = Supabase.instance.client.auth.currentUser;
+        final supaSession = Supabase.instance.client.auth.currentSession;
+        if (supaUser != null) {
+          final fullName =
+              (supaUser.userMetadata?['full_name'] as String?) ??
+              _currentUser?.fullName ??
+              supaUser.email?.split('@').first ??
+              'KeyFlow User';
+          _currentUser = UserModel(
+            id: supaUser.id,
+            email: supaUser.email ?? '',
+            fullName: fullName,
+            role: 'member',
+            createdAt: DateTime.now().toIso8601String(),
+          );
+          _token = supaSession?.accessToken ?? _token;
+        }
+      } catch (_) {}
+
       if (_token != null && _token!.isNotEmpty) {
-        // Validate token with backend in background
+        // Validate token with backend in background if available
         await fetchProfile();
       }
     } on Object catch (e) {
@@ -70,11 +93,53 @@ class AuthService extends ChangeNotifier {
     return isAuthenticated;
   }
 
-  /// Sign in with email and password against the unified backend.
+  /// Sign in with email and password against the online Supabase PostgreSQL database.
   Future<AuthResponse> login({
     required String email,
     required String password,
   }) async {
+    // 1. Authenticate with Supabase Auth
+    try {
+      final supa = Supabase.instance.client;
+      final authRes = await supa.auth.signInWithPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      final user = authRes.user;
+      final session = authRes.session;
+
+      if (user != null) {
+        final nameMeta = user.userMetadata?['full_name'] as String?;
+        final userObj = UserModel(
+          id: user.id,
+          email: user.email ?? email.trim(),
+          fullName: nameMeta ?? email.trim().split('@').first,
+          role: 'member',
+          createdAt: DateTime.now().toIso8601String(),
+        );
+
+        final tokenStr = session?.accessToken ?? 'supa_jwt_${user.id}';
+        _token = tokenStr;
+        _currentUser = userObj;
+
+        await _storage.write(key: _tokenKey, value: tokenStr);
+        await _storage.write(
+          key: _userKey,
+          value: jsonEncode(userObj.toJson()),
+        );
+
+        notifyListeners();
+        return AuthResponse(success: true, token: tokenStr, user: userObj);
+      }
+    } on AuthException catch (e) {
+      debugPrint('Supabase login AuthException: ${e.message}');
+      // Fallback to Express backend if needed or return message
+    } catch (e) {
+      debugPrint('Supabase login error: $e');
+    }
+
+    // 2. Fallback to Express backend if available
     try {
       final url = Uri.parse('$_apiBase/auth/login');
       final response = await _client.post(
@@ -119,13 +184,69 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  /// Register a new account against the unified backend.
+  /// Register a new account against the online Supabase PostgreSQL database.
   Future<AuthResponse> register({
     required String email,
     required String password,
     required String fullName,
     String? organizationName,
   }) async {
+    // 1. Register with Supabase Auth
+    try {
+      final supa = Supabase.instance.client;
+      final authRes = await supa.auth.signUp(
+        email: email.trim(),
+        password: password,
+        data: {
+          'full_name': fullName.trim(),
+          'organization': organizationName ?? 'Look Enterprise Org',
+        },
+      );
+
+      var user = authRes.user;
+      var session = authRes.session;
+
+      // If auto-confirm is enabled or session is null, attempt immediate sign in
+      if (session == null) {
+        try {
+          final loginRes = await supa.auth.signInWithPassword(
+            email: email.trim(),
+            password: password,
+          );
+          user = loginRes.user ?? user;
+          session = loginRes.session;
+        } catch (_) {}
+      }
+
+      if (user != null) {
+        final userObj = UserModel(
+          id: user.id,
+          email: user.email ?? email.trim(),
+          fullName: fullName.trim(),
+          role: 'member',
+          createdAt: DateTime.now().toIso8601String(),
+        );
+
+        final tokenStr = session?.accessToken ?? 'supa_jwt_${user.id}';
+        _token = tokenStr;
+        _currentUser = userObj;
+
+        await _storage.write(key: _tokenKey, value: tokenStr);
+        await _storage.write(
+          key: _userKey,
+          value: jsonEncode(userObj.toJson()),
+        );
+
+        notifyListeners();
+        return AuthResponse(success: true, token: tokenStr, user: userObj);
+      }
+    } on AuthException catch (e) {
+      debugPrint('Supabase register AuthException: ${e.message}');
+    } catch (e) {
+      debugPrint('Supabase register error: $e');
+    }
+
+    // 2. Fallback to Express backend
     try {
       final url = Uri.parse('$_apiBase/auth/register');
       final response = await _client.post(
@@ -179,6 +300,8 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Fetch latest user profile from GET /auth/me
+
+
   Future<UserModel?> fetchProfile() async {
     if (_token == null || _token!.isEmpty) return null;
 
@@ -406,9 +529,13 @@ class AuthService extends ChangeNotifier {
     _token = null;
     _currentUser = null;
     try {
+      await Supabase.instance.client.auth.signOut();
+    } on Object catch (_) {}
+    try {
       await _storage.delete(key: _tokenKey);
       await _storage.delete(key: _userKey);
     } on Object catch (_) {}
     notifyListeners();
   }
 }
+
