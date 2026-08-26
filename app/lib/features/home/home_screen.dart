@@ -21,8 +21,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  static bool _hasCheckedForUpdatesThisSession = false;
-
   @override
   void initState() {
     super.initState();
@@ -33,10 +31,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         debugPrint('CaptureService init error: $e');
       }
 
-      if (!_hasCheckedForUpdatesThisSession) {
-        _hasCheckedForUpdatesThisSession = true;
+      if (!AutoUpdateService.hasCheckedThisProcess) {
+        AutoUpdateService.hasCheckedThisProcess = true;
         final updater = AutoUpdateService();
-        final update = await updater.checkForUpdate();
+        final update = await updater.checkForUpdate(isManualCheck: false);
         if (mounted && update != null && update.hasUpdate) {
           await updater.showUpdatePrompt(context, update);
         }

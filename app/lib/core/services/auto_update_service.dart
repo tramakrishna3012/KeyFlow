@@ -3,12 +3,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../theme/app_colors.dart';
+
+/// Storage key for persisting the user-dismissed update version.
+const String kDismissedUpdateVersionKey = 'dismissed_update_version';
 
 /// Information model representing the auto-update check result.
 class UpdateInfo {
@@ -18,6 +22,7 @@ class UpdateInfo {
     required this.currentVersion,
     required this.downloadUrl,
     required this.releaseNotes,
+    this.isDismissed = false,
   });
 
   final bool hasUpdate;
@@ -25,17 +30,31 @@ class UpdateInfo {
   final String currentVersion;
   final String downloadUrl;
   final String releaseNotes;
+  final bool isDismissed;
 }
 
 /// Service that checks the Express backend & GitHub Releases API for updates,
 /// downloads APK files to internal storage, and triggers the Android system package installer.
 class AutoUpdateService {
-  AutoUpdateService({String? apiBase, http.Client? client})
-    : _apiBase = apiBase ?? 'https://keyflow-dnsd.onrender.com/api/v1',
-      _client = client ?? http.Client();
+  AutoUpdateService({
+    String? apiBase,
+    http.Client? client,
+    FlutterSecureStorage? storage,
+  })  : _apiBase = apiBase ?? 'https://keyflow-dnsd.onrender.com/api/v1',
+        _client = client ?? http.Client(),
+        _storage = storage ??
+            const FlutterSecureStorage(
+              aOptions: AndroidOptions(encryptedSharedPreferences: true),
+              iOptions: IOSOptions(
+                accessibility: KeychainAccessibility.first_unlock,
+              ),
+            );
+
 
   final String _apiBase;
   final http.Client _client;
+  final FlutterSecureStorage _storage;
+
   static const MethodChannel _platformChannel = MethodChannel(
     'keyflow/capture',
   );
@@ -43,11 +62,41 @@ class AutoUpdateService {
   static const String _repoOwner = 'tramakrishna3012';
   static const String _repoName = 'KeyFlow';
 
+  /// Process-level flag ensuring the automatic update prompt is only triggered once per process run.
+  static bool hasCheckedThisProcess = false;
+
+  /// In-memory cache of dismissed version for the current active session.
+  static String? _dismissedVersionThisSession;
+
+  /// Persists a version dismissal so it won't pop up again on subsequent launches.
+  Future<void> dismissUpdate(String version) async {
+    _dismissedVersionThisSession = version;
+    try {
+      await _storage.write(key: kDismissedUpdateVersionKey, value: version);
+    } on Object catch (e) {
+      debugPrint('AutoUpdateService: Failed to persist update dismissal: $e');
+    }
+  }
+
+  /// Checks if a version has been dismissed by the user either in-memory or in persistent storage.
+  Future<bool> isUpdateDismissed(String version) async {
+    if (_dismissedVersionThisSession == version) return true;
+    try {
+      final saved = await _storage.read(key: kDismissedUpdateVersionKey);
+      return saved == version;
+    } on Object catch (_) {
+      return false;
+    }
+  }
+
   /// Checks the KeyFlow Express backend (with GitHub fallback) for a newer version.
-  Future<UpdateInfo?> checkForUpdate() async {
+  Future<UpdateInfo?> checkForUpdate({bool isManualCheck = false}) async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
+      final currentBuild = packageInfo.buildNumber;
+      final fullLocalVersion =
+          currentBuild.isNotEmpty ? '$currentVersion+$currentBuild' : currentVersion;
 
       // 1. Try KeyFlow Express backend version endpoint
       try {
@@ -62,13 +111,20 @@ class AutoUpdateService {
               .toString()
               .replaceAll('v', '')
               .trim();
+          final versionCode = data['versionCode'];
+          final fullRemoteVersion = versionCode != null
+              ? '$latestVersion+$versionCode'
+              : latestVersion;
+
           final downloadUrl = (data['downloadUrl'] ?? '').toString();
           final releaseNotes =
               (data['releaseNotes'] ??
                       'Bug fixes and performance improvements.')
                   .toString();
 
-          final hasUpdate = _isVersionNewer(latestVersion, currentVersion);
+          final isNewer = isVersionNewer(fullRemoteVersion, fullLocalVersion);
+          final isDismissed = await isUpdateDismissed(latestVersion);
+          final hasUpdate = isNewer && (isManualCheck || !isDismissed);
 
           return UpdateInfo(
             hasUpdate: hasUpdate,
@@ -76,6 +132,7 @@ class AutoUpdateService {
             currentVersion: currentVersion,
             downloadUrl: downloadUrl,
             releaseNotes: releaseNotes,
+            isDismissed: isDismissed,
           );
         }
       } on Object catch (e) {
@@ -112,7 +169,9 @@ class AutoUpdateService {
           }
         }
 
-        final hasUpdate = _isVersionNewer(latestVersion, currentVersion);
+        final isNewer = isVersionNewer(latestVersion, fullLocalVersion);
+        final isDismissed = await isUpdateDismissed(latestVersion);
+        final hasUpdate = isNewer && (isManualCheck || !isDismissed);
 
         return UpdateInfo(
           hasUpdate: hasUpdate,
@@ -120,6 +179,7 @@ class AutoUpdateService {
           currentVersion: currentVersion,
           downloadUrl: downloadUrl,
           releaseNotes: body,
+          isDismissed: isDismissed,
         );
       }
     } on Object catch (e) {
@@ -292,7 +352,12 @@ class AutoUpdateService {
               ? []
               : [
                   TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
+                    onPressed: () async {
+                      await dismissUpdate(update.latestVersion);
+                      if (dialogCtx.mounted) {
+                        Navigator.of(dialogCtx).pop();
+                      }
+                    },
                     child: const Text('Later'),
                   ),
                   ElevatedButton(
@@ -339,22 +404,73 @@ class AutoUpdateService {
     );
   }
 
-  bool _isVersionNewer(String remote, String local) {
+  /// Robust semantic version comparison.
+  /// Returns `true` if [remote] is strictly newer than [local].
+  ///
+  /// Correctly compares numeric SemVer segments:
+  /// - `1.10.0` is newer than `1.2.0` (numeric comparison, not string comparison)
+  /// - `1.0.0` vs `1.0` (pads missing components with 0)
+  /// - `1.0.0+7` vs `1.0.0+6` (compares build numbers if semantic versions match)
+  /// - Returns `false` on identical versions or parsing errors (no false positives).
+  static bool isVersionNewer(String remote, String local) {
     try {
-      final remoteParts = remote
-          .split('+')[0]
-          .split('.')
-          .map(int.parse)
-          .toList();
-      final localParts = local.split('+')[0].split('.').map(int.parse).toList();
+      final cleanRemote = remote.trim().replaceFirst(RegExp(r'^[vV]'), '');
+      final cleanLocal = local.trim().replaceFirst(RegExp(r'^[vV]'), '');
 
-      for (var i = 0; i < remoteParts.length && i < localParts.length; i++) {
-        if (remoteParts[i] > localParts[i]) return true;
-        if (remoteParts[i] < localParts[i]) return false;
+      if (cleanRemote.isEmpty || cleanLocal.isEmpty) return false;
+
+      // Extract core version without build or pre-release tags
+      final remoteCore = cleanRemote.split('+')[0].split('-')[0].trim();
+      final localCore = cleanLocal.split('+')[0].split('-')[0].trim();
+
+      final remoteParts = remoteCore
+          .split('.')
+          .map((s) => int.tryParse(s.trim()) ?? 0)
+          .toList();
+      final localParts = localCore
+          .split('.')
+          .map((s) => int.tryParse(s.trim()) ?? 0)
+          .toList();
+
+      // Pad to at least 3 parts (major, minor, patch)
+      while (remoteParts.length < 3) {
+        remoteParts.add(0);
       }
-      return remoteParts.length > localParts.length;
+      while (localParts.length < 3) {
+        localParts.add(0);
+      }
+
+      final maxLen = remoteParts.length > localParts.length
+          ? remoteParts.length
+          : localParts.length;
+
+      for (var i = 0; i < maxLen; i++) {
+        final r = i < remoteParts.length ? remoteParts[i] : 0;
+        final l = i < localParts.length ? localParts[i] : 0;
+        if (r > l) return true;
+        if (r < l) return false;
+      }
+
+      // If core versions match, check build metadata if present (e.g. 1.0.0+7 vs 1.0.0+6)
+      final remoteBuild = _extractBuildNumber(cleanRemote);
+      final localBuild = _extractBuildNumber(cleanLocal);
+      if (remoteBuild != null && localBuild != null) {
+        return remoteBuild > localBuild;
+      }
+
+      return false;
     } on Object catch (_) {
-      return remote != local;
+      return false;
     }
+  }
+
+  static int? _extractBuildNumber(String versionStr) {
+    if (versionStr.contains('+')) {
+      final parts = versionStr.split('+');
+      if (parts.length > 1) {
+        return int.tryParse(parts[1].trim());
+      }
+    }
+    return null;
   }
 }
