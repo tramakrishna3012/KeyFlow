@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -17,6 +18,15 @@ void main() async {
 
   // Initialize unified authentication service
   await AuthService.instance.initialize();
+
+  // Clear FLAG_SECURE only if built with --dart-define=DEMO_MODE=true for demo recordings
+  const isDemoMode = bool.fromEnvironment('DEMO_MODE', defaultValue: false);
+  if (isDemoMode) {
+    try {
+      const MethodChannel('com.keyflow.app/security')
+          .invokeMethod('setSecureFlag', {'enabled': false});
+    } on Object catch (_) {}
+  }
 
   // Load configuration from environment defines (--dart-define) with fallback
   const supabaseUrl = String.fromEnvironment(
