@@ -260,7 +260,6 @@ class AuthService extends ChangeNotifier {
         deviceName: 'MacBook Pro 16"',
         osInfo: 'macOS 14.5 (KeyFlow Desktop)',
         lastActive: '2 hours ago',
-        isCurrent: false,
         ipAddress: '192.168.1.12',
       ),
       const UserSession(
@@ -268,7 +267,6 @@ class AuthService extends ChangeNotifier {
         deviceName: 'Windows Workstation',
         osInfo: 'Windows 11 (KeyFlow Desktop)',
         lastActive: 'Yesterday',
-        isCurrent: false,
         ipAddress: '10.0.4.88',
       ),
     ];
@@ -349,11 +347,11 @@ class AuthService extends ChangeNotifier {
             'Authorization': 'Bearer $_token',
           },
           body: jsonEncode({
-            if (fullName != null) 'fullName': fullName,
-            if (email != null) 'email': email,
-            if (avatarUrl != null) 'avatarUrl': avatarUrl,
-            if (mfaEnabled != null) 'mfaEnabled': mfaEnabled,
-            if (cloudSyncEnabled != null) 'cloudSyncEnabled': cloudSyncEnabled,
+            'fullName': ?fullName,
+            'email': ?email,
+            'avatarUrl': ?avatarUrl,
+            'mfaEnabled': ?mfaEnabled,
+            'cloudSyncEnabled': ?cloudSyncEnabled,
           }),
         );
       }

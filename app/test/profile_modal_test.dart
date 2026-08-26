@@ -14,13 +14,12 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    final testUser = UserModel(
+    const testUser = UserModel(
       id: 'test_user_1',
       email: 'alex.morgan@keyflow.dev',
       fullName: 'Alex Morgan',
       role: 'admin',
       mfaEnabled: true,
-      cloudSyncEnabled: true,
     );
 
     await tester.pumpWidget(

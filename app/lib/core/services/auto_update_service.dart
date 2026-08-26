@@ -414,8 +414,8 @@ class AutoUpdateService {
   /// - Returns `false` on identical versions or parsing errors (no false positives).
   static bool isVersionNewer(String remote, String local) {
     try {
-      final cleanRemote = remote.trim().replaceFirst(RegExp(r'^[vV]'), '');
-      final cleanLocal = local.trim().replaceFirst(RegExp(r'^[vV]'), '');
+      final cleanRemote = remote.trim().replaceFirst(RegExp('^[vV]'), '');
+      final cleanLocal = local.trim().replaceFirst(RegExp('^[vV]'), '');
 
       if (cleanRemote.isEmpty || cleanLocal.isEmpty) return false;
 

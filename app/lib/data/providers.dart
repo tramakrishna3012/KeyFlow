@@ -87,8 +87,10 @@ final captureServiceProvider = Provider<CaptureService>((ref) {
     repo,
     syncService: syncService,
     onEntryCaptured: (_) {
-      ref.invalidate(historyEntriesProvider);
-      ref.invalidate(allHistoryEntriesProvider);
+      ref
+        ..invalidate(historyEntriesProvider)
+        ..invalidate(allHistoryEntriesProvider);
     },
+
   );
 });

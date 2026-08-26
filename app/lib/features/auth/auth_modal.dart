@@ -20,13 +20,12 @@ class AuthModal extends ConsumerStatefulWidget {
     if (isDesktop) {
       return showDialog<bool>(
         context: context,
-        barrierDismissible: true,
         builder: (ctx) => Dialog(
           backgroundColor: AppColors.scaffoldBackground,
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: AppColors.cardBorder, width: 1),
+            side: const BorderSide(color: AppColors.cardBorder),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460, maxHeight: 720),
@@ -41,7 +40,7 @@ class AuthModal extends ConsumerStatefulWidget {
         backgroundColor: AppColors.scaffoldBackground,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          side: BorderSide(color: AppColors.cardBorder, width: 1),
+          side: BorderSide(color: AppColors.cardBorder),
         ),
         builder: (ctx) => Padding(
           padding: EdgeInsets.only(
@@ -116,12 +115,12 @@ class _AuthModalState extends ConsumerState<AuthModal>
   // Password strength calculation: 0 = none, 1 = weak, 2 = fair, 3 = strong
   int _calculatePasswordStrength(String password) {
     if (password.isEmpty) return 0;
-    int score = 0;
+    var score = 0;
     if (password.length >= 8) score++;
-    if (RegExp(r'[A-Z]').hasMatch(password) && RegExp(r'[a-z]').hasMatch(password)) {
+    if (RegExp('[A-Z]').hasMatch(password) && RegExp('[a-z]').hasMatch(password)) {
       score++;
     }
-    if (RegExp(r'[0-9]').hasMatch(password) ||
+    if (RegExp('[0-9]').hasMatch(password) ||
         RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password)) {
       score++;
     }
@@ -178,7 +177,7 @@ class _AuthModalState extends ConsumerState<AuthModal>
           _errorMessage = res.errorMessage ?? 'Invalid email or password.';
         });
       }
-    } catch (e) {
+    } on Exception {
       setState(() {
         _errorMessage = 'Connection error. Please try again.';
       });
@@ -218,6 +217,7 @@ class _AuthModalState extends ConsumerState<AuthModal>
         if (_enableBiometrics) {
           await authService.updateProfile(biometricsEnabled: true);
         }
+        if (!mounted) return;
         AppAuthNotifier.debugAuthenticatedOverride = true;
         Navigator.of(context).pop(true);
       } else {
@@ -225,7 +225,7 @@ class _AuthModalState extends ConsumerState<AuthModal>
           _errorMessage = res.errorMessage ?? 'Registration failed.';
         });
       }
-    } catch (e) {
+    } on Exception {
       setState(() {
         _errorMessage = 'Connection error. Please try again.';
       });
@@ -233,6 +233,8 @@ class _AuthModalState extends ConsumerState<AuthModal>
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+
 
   Future<void> _handleBiometricSignIn() async {
     setState(() {
@@ -323,8 +325,7 @@ class _AuthModalState extends ConsumerState<AuthModal>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Material(
+  Widget build(BuildContext context) => Material(
       color: AppColors.scaffoldBackground,
       borderRadius: BorderRadius.circular(20),
       child: Column(
@@ -469,11 +470,9 @@ class _AuthModalState extends ConsumerState<AuthModal>
         ],
       ),
     );
-  }
 
   // 1. SIGN IN TAB
-  Widget _buildSignInTab() {
-    return Form(
+  Widget _buildSignInTab() => Form(
       key: _signInFormKey,
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -586,7 +585,6 @@ class _AuthModalState extends ConsumerState<AuthModal>
         ],
       ),
     );
-  }
 
   // 2. CREATE ACCOUNT TAB
   Widget _buildCreateAccountTab() {
@@ -777,8 +775,7 @@ class _AuthModalState extends ConsumerState<AuthModal>
     );
   }
 
-  Widget _buildDivider(String text) {
-    return Row(
+  Widget _buildDivider(String text) => Row(
       children: [
         const Expanded(child: Divider(color: AppColors.cardBorder)),
         Padding(
@@ -791,10 +788,8 @@ class _AuthModalState extends ConsumerState<AuthModal>
         const Expanded(child: Divider(color: AppColors.cardBorder)),
       ],
     );
-  }
 
-  Widget _buildSsoButtons() {
-    return Row(
+  Widget _buildSsoButtons() => Row(
       children: [
         Expanded(
           child: OutlinedButton.icon(
@@ -833,15 +828,13 @@ class _AuthModalState extends ConsumerState<AuthModal>
         ),
       ],
     );
-  }
 
 
   InputDecoration _inputDecoration({
     required String hint,
     required IconData prefixIcon,
     Widget? suffixIcon,
-  }) {
-    return InputDecoration(
+  }) => InputDecoration(
       hintText: hint,
       hintStyle: const TextStyle(color: AppColors.textDisabled, fontSize: 13),
       filled: true,
@@ -866,5 +859,4 @@ class _AuthModalState extends ConsumerState<AuthModal>
         borderSide: const BorderSide(color: AppColors.destructive, width: 1.5),
       ),
     );
-  }
 }

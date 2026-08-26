@@ -27,14 +27,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await ref.read(captureServiceProvider).initialize();
-      } catch (e) {
+      } on Exception catch (e) {
         debugPrint('CaptureService init error: $e');
       }
+
 
       if (!AutoUpdateService.hasCheckedThisProcess) {
         AutoUpdateService.hasCheckedThisProcess = true;
         final updater = AutoUpdateService();
-        final update = await updater.checkForUpdate(isManualCheck: false);
+        final update = await updater.checkForUpdate();
         if (mounted && update != null && update.hasUpdate) {
           await updater.showUpdatePrompt(context, update);
         }

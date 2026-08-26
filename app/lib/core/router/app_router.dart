@@ -270,9 +270,9 @@ class _DesktopHeader extends ConsumerWidget {
             ),
             onSelected: (value) async {
               if (value == 'profile') {
-                ProfileModal.show(context);
+                await ProfileModal.show(context);
               } else if (value == 'switch') {
-                AuthModal.show(context);
+                await AuthModal.show(context);
               } else if (value == 'logout') {
                 AppAuthNotifier.debugAuthenticatedOverride = null;
                 await ref.read(authServiceProvider).logout();

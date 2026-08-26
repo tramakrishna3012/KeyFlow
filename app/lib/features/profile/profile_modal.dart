@@ -21,13 +21,12 @@ class ProfileModal extends ConsumerStatefulWidget {
     if (isDesktop) {
       return showDialog<void>(
         context: context,
-        barrierDismissible: true,
         builder: (ctx) => Dialog(
           backgroundColor: AppColors.scaffoldBackground,
           insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: AppColors.cardBorder, width: 1),
+            side: const BorderSide(color: AppColors.cardBorder),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520, maxHeight: 760),
@@ -42,7 +41,7 @@ class ProfileModal extends ConsumerStatefulWidget {
         backgroundColor: AppColors.scaffoldBackground,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          side: BorderSide(color: AppColors.cardBorder, width: 1),
+          side: BorderSide(color: AppColors.cardBorder),
         ),
         builder: (ctx) => Padding(
           padding: EdgeInsets.only(
@@ -249,7 +248,7 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
         backgroundColor: AppColors.scaffoldBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.destructive, width: 1),
+          side: const BorderSide(color: AppColors.destructive),
         ),
         title: const Row(
           children: [
@@ -645,12 +644,12 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Expanded(
+                          const Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Encrypted Cloud Sync', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                                const Text(
+                                Text('Encrypted Cloud Sync', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                Text(
                                   'Sync typing history encrypted at rest via AES-256-GCM',
                                   style: TextStyle(fontSize: 11, color: AppColors.textMuted),
                                 ),
@@ -662,7 +661,7 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                             onChanged: (val) async {
                               await authService.updateProfile(cloudSyncEnabled: val);
                             },
-                            activeColor: AppColors.primary,
+                            activeThumbColor: AppColors.primary,
                           ),
                         ],
                       ),
@@ -692,8 +691,7 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                   child: _isLoadingSessions
                       ? const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)))
                       : Column(
-                          children: _sessions.map((sess) {
-                            return Padding(
+                          children: _sessions.map((sess) => Padding(
                               padding: const EdgeInsets.symmetric(vertical: 6),
                               child: Row(
                                 children: [
@@ -754,8 +752,7 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                                     ),
                                 ],
                               ),
-                            );
-                          }).toList(),
+                            )).toList(),
                         ),
                 ),
 

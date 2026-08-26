@@ -23,13 +23,10 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.scaffoldBackground,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
-        onPrimary: Colors.white,
         secondary: AppColors.secondary,
         onSecondary: Colors.white,
-        surface: AppColors.cardSurface,
         onSurface: AppColors.textPrimary,
         error: AppColors.destructive,
-        onError: Colors.white,
       ),
 
       // ── Typography ────────────────────────────────────────────────

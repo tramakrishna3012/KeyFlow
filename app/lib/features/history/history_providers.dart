@@ -4,10 +4,6 @@ import '../../data/models/history_entry.dart';
 import '../../data/providers.dart';
 
 class AppVisualMeta {
-  final String displayName;
-  final IconData icon;
-  final Color iconColor;
-  final Color iconBg;
 
   const AppVisualMeta({
     required this.displayName,
@@ -15,6 +11,10 @@ class AppVisualMeta {
     required this.iconColor,
     required this.iconBg,
   });
+  final String displayName;
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
 }
 
 AppVisualMeta getAppVisualMeta(String rawPackageOrName) {
@@ -83,7 +83,7 @@ AppVisualMeta getAppVisualMeta(String rawPackageOrName) {
       iconBg: Color(0xFF0284C7), // Sky 600
     );
   } else {
-    String cleanName = rawPackageOrName;
+    var cleanName = rawPackageOrName;
     if (cleanName.contains('.')) {
       final parts = cleanName.split('.');
       cleanName = parts.last;
@@ -113,7 +113,7 @@ final activeTagProvider = StateProvider<String>((ref) => 'All Apps');
 final availableAppChipsProvider = FutureProvider.autoDispose<List<String>>((ref) async {
   final repository = ref.watch(historyRepositoryProvider);
   final entries = await repository.getAllEntries();
-  final Set<String> appNames = {'All Apps'};
+  final appNames = <String>{'All Apps'};
   for (final e in entries) {
     final meta = getAppVisualMeta(e.sourceApp);
     appNames.add(meta.displayName);

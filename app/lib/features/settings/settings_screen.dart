@@ -277,7 +277,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 onChanged: (val) {
                   ref.read(capturePausedProvider.notifier).setPaused(val);
                 },
-                activeColor: AppColors.accentOrange,
+                activeThumbColor: AppColors.accentOrange,
                 activeTrackColor: AppColors.accentOrange.withValues(alpha: 0.3),
               ),
             ],
@@ -443,15 +443,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     final captureService = ref.read(captureServiceProvider);
                     final allowed = await captureService.canDrawOverlays();
                     if (!allowed) {
-                      if (context.mounted) {
-                        _showOverlayPermissionDialog(context);
-                      }
+                      if (!mounted) return;
+                      _showOverlayPermissionDialog(context);
                       return;
                     }
+
                   }
                   await ref.read(floatingBubbleProvider.notifier).toggleBubble();
                 },
-                activeColor: AppColors.primary,
+                activeThumbColor: AppColors.primary,
                 activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
               ),
             ],
@@ -582,7 +582,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 ),
               ),
               loading: () => const SizedBox.shrink(),
-              error: (_, __) => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
           ],
         ),

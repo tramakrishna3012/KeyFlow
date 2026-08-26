@@ -24,9 +24,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.invalidate(historyEntriesProvider);
-      ref.invalidate(allHistoryEntriesProvider);
-      ref.invalidate(availableAppChipsProvider);
+      ref
+        ..invalidate(historyEntriesProvider)
+        ..invalidate(allHistoryEntriesProvider)
+        ..invalidate(availableAppChipsProvider);
     });
   }
 
@@ -59,15 +60,17 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   IconButton(
                     icon: const Icon(Icons.refresh_rounded, size: 20, color: AppColors.textMuted),
                     onPressed: () {
-                      ref.invalidate(historyEntriesProvider);
-                      ref.invalidate(allHistoryEntriesProvider);
-                      ref.invalidate(availableAppChipsProvider);
+                      ref
+                        ..invalidate(historyEntriesProvider)
+                        ..invalidate(allHistoryEntriesProvider)
+                        ..invalidate(availableAppChipsProvider);
                     },
                     tooltip: 'Refresh History',
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -98,7 +101,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       final dateHeader = grouped.keys.elementAt(dateIndex);
                       final appMap = grouped[dateHeader]!;
 
-                      int totalEntriesForDate = 0;
+                      var totalEntriesForDate = 0;
                       for (final list in appMap.values) {
                         totalEntriesForDate += list.length;
                       }
@@ -187,12 +190,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ),
       ),
       loading: () => const SizedBox(height: 34),
-      error: (_, __) => const SizedBox(height: 34),
+      error: (_, _) => const SizedBox(height: 34),
     );
   }
 
-  Widget _buildDateHeader(String dateHeader, int totalCount) {
-    return Padding(
+  Widget _buildDateHeader(String dateHeader, int totalCount) => Padding(
       padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -226,7 +228,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ],
       ),
     );
-  }
 
   Widget _buildAppCard(BuildContext context, String sourceApp, List<HistoryEntry> items) {
     final meta = getAppVisualMeta(sourceApp);
@@ -437,7 +438,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   );
 
   Map<String, Map<String, List<HistoryEntry>>> _groupEntries(List<HistoryEntry> entries) {
-    final Map<String, Map<String, List<HistoryEntry>>> grouped = {};
+    final grouped = <String, Map<String, List<HistoryEntry>>>{};
     for (final entry in entries) {
       final dateHeader = _formatDateHeader(entry.capturedAt);
       grouped.putIfAbsent(dateHeader, () => {});

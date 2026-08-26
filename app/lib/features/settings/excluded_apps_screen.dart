@@ -9,11 +9,9 @@ import 'settings_providers.dart';
 class ExcludedAppsScreen extends ConsumerStatefulWidget {
   const ExcludedAppsScreen({super.key});
 
-  static Future<void> show(BuildContext context) {
-    return Navigator.of(context).push(
+  static Future<void> show(BuildContext context) => Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ExcludedAppsScreen()),
     );
-  }
 
   @override
   ConsumerState<ExcludedAppsScreen> createState() => _ExcludedAppsScreenState();
@@ -134,16 +132,16 @@ class _ExcludedAppsScreenState extends ConsumerState<ExcludedAppsScreen> {
               const Divider(height: 1, color: AppColors.cardBorder),
 
               // Helper message
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 10, 16, 6),
                 child: Row(
                   children: [
-                    const Icon(Icons.shield_outlined, size: 14, color: AppColors.textMuted),
-                    const SizedBox(width: 6),
+                    Icon(Icons.shield_outlined, size: 14, color: AppColors.textMuted),
+                    SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         'Turn switch ON to block keystroke capture in that application.',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                        style: TextStyle(fontSize: 11, color: AppColors.textMuted),
                       ),
                     ),
                   ],
@@ -171,7 +169,7 @@ class _ExcludedAppsScreenState extends ConsumerState<ExcludedAppsScreen> {
                     : ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         itemCount: filteredApps.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 6),
+                        separatorBuilder: (_, _) => const SizedBox(height: 6),
                         itemBuilder: (context, index) {
                           final app = filteredApps[index];
                           final isExcluded = exclusionSet.contains(app.packageName);
@@ -243,7 +241,7 @@ class _ExcludedAppsScreenState extends ConsumerState<ExcludedAppsScreen> {
                                         .read(settingsControllerProvider)
                                         .toggleAppExclusion(app.packageName);
                                   },
-                                  activeColor: AppColors.accentOrange,
+                                  activeThumbColor: AppColors.accentOrange,
                                   activeTrackColor: AppColors.accentOrange.withValues(alpha: 0.3),
                                 ),
                               ],
@@ -305,15 +303,14 @@ class _ExcludedAppsScreenState extends ConsumerState<ExcludedAppsScreen> {
           width: 38,
           height: 38,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildFallbackIcon(),
+          errorBuilder: (_, _, _) => _buildFallbackIcon(),
         ),
       );
     }
     return _buildFallbackIcon();
   }
 
-  Widget _buildFallbackIcon() {
-    return Container(
+  Widget _buildFallbackIcon() => Container(
       width: 38,
       height: 38,
       decoration: BoxDecoration(
@@ -322,5 +319,4 @@ class _ExcludedAppsScreenState extends ConsumerState<ExcludedAppsScreen> {
       ),
       child: const Icon(Icons.android, size: 22, color: AppColors.textMuted),
     );
-  }
 }

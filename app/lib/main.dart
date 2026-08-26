@@ -63,9 +63,10 @@ class _KeyFlowAppState extends ConsumerState<KeyFlowApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await ref.read(captureServiceProvider).initialize();
-      } catch (e) {
+      } on Exception catch (e) {
         debugPrint('CaptureService init error: $e');
       }
+
       final statuses = await requestStartupPermissions();
       if (mounted) {
         handlePermissionDegradation(context, statuses);

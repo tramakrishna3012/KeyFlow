@@ -45,9 +45,10 @@ class CaptureService {
     try {
       final exclusions = await _repository.getExclusionList();
       await syncExclusionList(exclusions);
-    } catch (e) {
+    } on Exception catch (e) {
       debugPrint('Sync exclusions error: $e');
     }
+
   }
 
   Future<bool> startCapture() async {
@@ -86,7 +87,7 @@ class CaptureService {
 
   Future<bool> isCapturePaused() async {
     try {
-      final bool? paused = await _methodChannel.invokeMethod<bool>('isCapturePaused');
+      final paused = await _methodChannel.invokeMethod<bool>('isCapturePaused');
       if (paused != null) {
         _isPaused = paused;
       }
@@ -143,7 +144,7 @@ class CaptureService {
 
   Future<bool> canDrawOverlays() async {
     try {
-      final bool? allowed = await _methodChannel.invokeMethod<bool>('canDrawOverlays');
+      final allowed = await _methodChannel.invokeMethod<bool>('canDrawOverlays');
       return allowed ?? false;
     } on PlatformException catch (e) {
       debugPrint('CaptureService canDrawOverlays error: ${e.message}');
@@ -161,7 +162,7 @@ class CaptureService {
 
   Future<bool> showOverlayBubble() async {
     try {
-      final bool? result = await _methodChannel.invokeMethod<bool>('showOverlayBubble');
+      final result = await _methodChannel.invokeMethod<bool>('showOverlayBubble');
       return result ?? false;
     } on PlatformException catch (e) {
       debugPrint('CaptureService showOverlayBubble error: ${e.message}');
@@ -171,7 +172,7 @@ class CaptureService {
 
   Future<bool> hideOverlayBubble() async {
     try {
-      final bool? result = await _methodChannel.invokeMethod<bool>('hideOverlayBubble');
+      final result = await _methodChannel.invokeMethod<bool>('hideOverlayBubble');
       return result ?? true;
     } on PlatformException catch (e) {
       debugPrint('CaptureService hideOverlayBubble error: ${e.message}');
@@ -181,7 +182,7 @@ class CaptureService {
 
   Future<bool> isOverlayShowing() async {
     try {
-      final bool? result = await _methodChannel.invokeMethod<bool>('isOverlayShowing');
+      final result = await _methodChannel.invokeMethod<bool>('isOverlayShowing');
       return result ?? false;
     } on PlatformException catch (_) {
       return false;
@@ -190,7 +191,7 @@ class CaptureService {
 
   Future<List<InstalledAppInfo>> getInstalledApps({bool includeSystem = false}) async {
     try {
-      final List<dynamic>? result = await _methodChannel.invokeMethod<List<dynamic>>(
+      final result = await _methodChannel.invokeMethod<List<dynamic>>(
         'getInstalledApps',
         {'includeSystem': includeSystem},
       );
