@@ -234,10 +234,11 @@ class CaptureService {
         'isOverlayShowing',
       );
       return result ?? false;
-    } on PlatformException catch (_) {
+    } on Object catch (_) {
       return false;
     }
   }
+
 
   Future<List<InstalledAppInfo>> getInstalledApps({
     bool includeSystem = false,
