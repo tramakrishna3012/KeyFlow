@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/app_colors.dart';
 import 'look_activity_models.dart';
 import 'look_monitor_service.dart';
 
@@ -22,7 +23,6 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
   Widget build(BuildContext context) {
     final monitor = ref.watch(lookMonitorServiceProvider);
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     final session = monitor.currentSession;
     final apps = session?.applications ?? [];
@@ -36,13 +36,11 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0F172A)
-          : const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
         title: const Row(
           children: [
-            Icon(Icons.remove_red_eye_outlined, color: Colors.blueAccent),
+            Icon(Icons.remove_red_eye_outlined, color: AppColors.primary),
             SizedBox(width: 8),
             Text(
               'Look System Monitor',
@@ -403,7 +401,12 @@ class _LookMonitorScreenState extends ConsumerState<LookMonitorScreen> {
                     .take(3)
                     .map(
                       (rec) => Card(
-                        color: Colors.black26,
+                        color: AppColors.cardSurface,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(color: AppColors.cardBorder),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Row(

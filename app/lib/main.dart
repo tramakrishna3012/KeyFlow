@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/router/app_router.dart';
 import 'core/services/cache_cleanup_service.dart';
 import 'core/services/permission_helper.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'data/auth_service.dart';
 import 'data/providers.dart';
@@ -76,7 +77,7 @@ class _KeyFlowAppState extends ConsumerState<KeyFlowApp> {
   Widget build(BuildContext context) => MaterialApp.router(
     title: 'KeyFlow',
     debugShowCheckedModeBanner: false,
-    theme: AppTheme.dark,
+    theme: AppTheme.light,
     routerConfig: appRouter,
   );
 }
@@ -104,7 +105,7 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('KeyFlow Snippet History'),
-        backgroundColor: const Color(0xFF1E1B2E),
+        backgroundColor: AppColors.scaffoldBackground,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -146,11 +147,11 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.keyboard, size: 64, color: Colors.grey),
+                  const Icon(Icons.keyboard, size: 64, color: AppColors.textMuted),
                   const SizedBox(height: 16),
                   const Text(
                     'No captured snippets yet.',
-                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                    style: TextStyle(fontSize: 18, color: AppColors.textMuted),
                   ),
                   const SizedBox(height: 8),
                   ElevatedButton.icon(
@@ -160,7 +161,8 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
                     icon: const Icon(Icons.settings_accessibility),
                     label: const Text('Enable Accessibility Service'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C4DFF),
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
                     ),
                   ),
                 ],
@@ -172,22 +174,26 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
             itemBuilder: (context, index) {
               final entry = entries[index];
               return Card(
-                color: const Color(0xFF1E1B2E),
+                color: AppColors.cardSurface,
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AppColors.cardBorder, width: 0.8),
+                ),
                 child: ListTile(
                   title: Text(
                     entry.text,
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.textPrimary),
                   ),
                   subtitle: Text(
                     '${entry.sourceApp} • ${_formatTimestamp(entry.capturedAt)}',
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                   ),
                   trailing: IconButton(
                     icon: const Icon(
                       Icons.delete,
                       size: 20,
-                      color: Colors.redAccent,
+                      color: AppColors.destructive,
                     ),
                     onPressed: () => ref
                         .read(historyNotifierProvider.notifier)
@@ -198,13 +204,13 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (err, stack) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Text(
               'Error loading history: $err',
-              style: const TextStyle(color: Colors.redAccent),
+              style: const TextStyle(color: AppColors.destructive),
               textAlign: TextAlign.center,
             ),
           ),
@@ -212,6 +218,7 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
       ),
     );
   }
+
 
   String _formatTimestamp(DateTime dt) =>
       '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} ${dt.day}/${dt.month}/${dt.year}';

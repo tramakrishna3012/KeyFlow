@@ -3,68 +3,75 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// The KeyFlow dark theme, extracted from the Figma prototype.
+/// The KeyFlow Light Theme, matching the light studio prototype.
 ///
-/// Uses Plus Jakarta Sans as the primary display font and
+/// Uses Plus Jakarta Sans / Inter as the primary display font and
 /// JetBrains Mono for code/label elements.
 class AppTheme {
   const AppTheme._();
 
-  static ThemeData get dark {
-    final plusJakarta = GoogleFonts.plusJakartaSansTextTheme(
-      ThemeData.dark().textTheme,
+  static ThemeData get light {
+    final textThemeBase = GoogleFonts.plusJakartaSansTextTheme(
+      ThemeData.light().textTheme,
     );
 
     return ThemeData(
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       useMaterial3: true,
 
       // ── Colors ────────────────────────────────────────────────────
       scaffoldBackgroundColor: AppColors.scaffoldBackground,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
-        onPrimary: AppColors.textPrimary,
+        onPrimary: Colors.white,
         secondary: AppColors.secondary,
-        onSecondary: AppColors.textPrimary,
-        surface: AppColors.scaffoldBackground,
+        onSecondary: Colors.white,
+        surface: AppColors.cardSurface,
+        onSurface: AppColors.textPrimary,
         error: AppColors.destructive,
-        onError: AppColors.textPrimary,
+        onError: Colors.white,
       ),
 
       // ── Typography ────────────────────────────────────────────────
-      textTheme: plusJakarta.copyWith(
-        // Screen titles / greeting: 20px Bold
-        headlineMedium: plusJakarta.headlineMedium?.copyWith(
+      textTheme: textThemeBase.copyWith(
+        // Screen titles / greeting: 20px Bold #0F172A
+        headlineMedium: textThemeBase.headlineMedium?.copyWith(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
         ),
         // Section titles: 16px Semibold
-        titleLarge: plusJakarta.titleLarge?.copyWith(
+        titleLarge: textThemeBase.titleLarge?.copyWith(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
         // Card titles / sub-headings: 14px Semibold
-        titleMedium: plusJakarta.titleMedium?.copyWith(
+        titleMedium: textThemeBase.titleMedium?.copyWith(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        // Body text: 12px Regular
-        bodyMedium: plusJakarta.bodyMedium?.copyWith(
+        // Body text: 12px Regular #334155
+        bodyMedium: textThemeBase.bodyMedium?.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.w400,
           color: AppColors.textSecondary,
         ),
-        // Small labels: 10px Semibold
-        labelSmall: plusJakarta.labelSmall?.copyWith(
+        // Body large: 14px Regular
+        bodyLarge: textThemeBase.bodyLarge?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: AppColors.textSecondary,
+        ),
+        // Small labels: 10px Semibold #64748B
+        labelSmall: textThemeBase.labelSmall?.copyWith(
           fontSize: 10,
           fontWeight: FontWeight.w600,
           color: AppColors.textMuted,
         ),
-        // Button text: 12px Semibold
-        labelMedium: plusJakarta.labelMedium?.copyWith(
+        // Button text / links: 12px Semibold #2563EB
+        labelMedium: textThemeBase.labelMedium?.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: AppColors.primary,
@@ -91,33 +98,37 @@ class AppTheme {
           vertical: 12,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(
             color: AppColors.inputBorder,
             width: 0.8,
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(
             color: AppColors.inputBorder,
             width: 0.8,
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.primary),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: AppColors.primary,
+            width: 1.5,
+          ),
         ),
         hintStyle: const TextStyle(color: AppColors.textDisabled, fontSize: 12),
+        labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
       ),
 
       // ── Bottom Nav ────────────────────────────────────────────────
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.scaffoldBackground,
+        backgroundColor: AppColors.cardSurface,
         selectedItemColor: AppColors.navActive,
         unselectedItemColor: AppColors.navInactive,
         type: BottomNavigationBarType.fixed,
-        elevation: 0,
+        elevation: 2,
         selectedLabelStyle: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w600,
@@ -133,10 +144,30 @@ class AppTheme {
         backgroundColor: AppColors.scaffoldBackground,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: plusJakarta.headlineMedium?.copyWith(
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        titleTextStyle: textThemeBase.headlineMedium?.copyWith(
           fontSize: 20,
           fontWeight: FontWeight.w700,
           color: AppColors.textPrimary,
+        ),
+      ),
+
+      // ── Dialog Theme ──────────────────────────────────────────────
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.cardSurface,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.cardBorder, width: 0.8),
+        ),
+        titleTextStyle: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
+        contentTextStyle: const TextStyle(
+          fontSize: 13,
+          color: AppColors.textSecondary,
         ),
       ),
 
@@ -155,8 +186,12 @@ class AppTheme {
           }
           return AppColors.toggleOff;
         }),
-        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+        trackOutlineColor: WidgetStateProperty.all(AppColors.cardBorder),
       ),
     );
   }
+
+  /// Dark theme alias pointing to dark theme properties if needed
+  static ThemeData get dark => light;
 }
+

@@ -160,7 +160,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: isActive ? AppColors.textPrimary : AppColors.textMuted,
+                color: isActive ? Colors.white : AppColors.textSecondary,
               ),
             ),
           ),

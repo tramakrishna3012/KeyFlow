@@ -1,105 +1,119 @@
 import 'dart:ui';
 
-/// Design tokens extracted from the KeyFlow Figma design.
+/// Design tokens extracted from the KeyFlow Light Theme prototype.
 ///
-/// All colors match the dark theme prototype at:
-/// https://www.figma.com/make/QXF1EzInU2PZ2BRUdCIQp3/Dynamic-UI-for-KeyFlow
+/// Matches the light theme design system:
+/// - Slate-50 background base (#F8FAFC)
+/// - Pure white card surfaces (#FFFFFF) with subtle Slate-200 borders (#E2E8F0)
+/// - KeyFlow Brand Blue (#2563EB) primary actions
+/// - High contrast dark typography (#0F172A / #334155 / #64748B)
 class AppColors {
   const AppColors._();
 
-  // ── Background ──────────────────────────────────────────────────────
-  /// Deep navy canvas background: #050810
-  static const Color canvasBackground = Color(0xFF050810);
+  // ── Background & Canvas ─────────────────────────────────────────────
+  /// Ambient light canvas / outer frame: #F1F5F9 (Slate-100)
+  static const Color canvasBackground = Color(0xFFF1F5F9);
 
-  /// Phone shell / scaffold background: #0F1117
-  static const Color scaffoldBackground = Color(0xFF0F1117);
+  /// Phone shell / scaffold background: #F8FAFC (Slate-50)
+  static const Color scaffoldBackground = Color(0xFFF8FAFC);
 
   // ── Brand ───────────────────────────────────────────────────────────
-  /// Electric violet – primary brand color: #7C6EF8
-  static const Color primary = Color(0xFF7C6EF8);
+  /// KeyFlow Brand Blue – primary action color: #2563EB (Blue-600)
+  static const Color primary = Color(0xFF2563EB);
 
-  /// Teal – secondary brand color: #00D4AA
-  static const Color secondary = Color(0xFF00D4AA);
+  /// Emerald – secondary brand color: #059669 (Emerald-600)
+  static const Color secondary = Color(0xFF059669);
 
   // ── Accents ─────────────────────────────────────────────────────────
-  /// Warm orange – used for stats (Time Saved): #FF9A3C
-  static const Color accentOrange = Color(0xFFFF9A3C);
+  /// Warm orange / amber – used for stats (Time Saved): #D97706 (Amber-600)
+  static const Color accentOrange = Color(0xFFD97706);
 
-  /// Accent pink – used for stats (Languages): #FF6B8A
-  static const Color accentPink = Color(0xFFFF6B8A);
+  /// Accent pink / rose – used for stats (Languages): #E11D48 (Rose-600)
+  static const Color accentPink = Color(0xFFE11D48);
 
-  /// Destructive / clear action red
-  static const Color destructive = Color(0xFFFF4D6A);
+  /// Destructive / clear action red: #DC2626 (Red-600)
+  static const Color destructive = Color(0xFFDC2626);
 
   /// Error color alias for destructive
-  static const Color error = Color(0xFFFF4D6A);
+  static const Color error = Color(0xFFDC2626);
 
-  /// Lighter shade of primary violet
-  static const Color primaryLight = Color(0xFF9E92FA);
+  /// Lighter shade of primary blue: #60A5FA (Blue-400)
+  static const Color primaryLight = Color(0xFF60A5FA);
 
-  /// Light surface color
-  static const Color surfaceLight = Color(0x1AFFFFFF);
+  /// Light surface color for containers: #F1F5F9 (Slate-100)
+  static const Color surfaceLight = Color(0xFFF1F5F9);
 
   // ── Surfaces ────────────────────────────────────────────────────────
-  /// Card surface: 5 % white opacity
-  static const Color cardSurface = Color(0x0DFFFFFF);
+  /// Card surface: pure white #FFFFFF
+  static const Color cardSurface = Color(0xFFFFFFFF);
 
-  /// Card border: 7-8 % white opacity
-  static const Color cardBorder = Color(0x12FFFFFF);
+  /// Card border: subtle light border #E2E8F0 (Slate-200)
+  static const Color cardBorder = Color(0xFFE2E8F0);
 
-  /// Input field background: ~7 % white opacity
-  static const Color inputBackground = Color(0x12FFFFFF);
+  /// Input field background: pure white #FFFFFF / Slate-50 #F8FAFC
+  static const Color inputBackground = Color(0xFFFFFFFF);
 
-  /// Input field border: ~8 % white opacity
-  static const Color inputBorder = Color(0x14FFFFFF);
+  /// Input field border: #CBD5E1 (Slate-300)
+  static const Color inputBorder = Color(0xFFCBD5E1);
 
-  /// Elevated surface (profile card, active states): ~10 % white
-  static const Color elevatedSurface = Color(0x1AFFFFFF);
+  /// Elevated surface (profile card, active states): #FFFFFF
+  static const Color elevatedSurface = Color(0xFFFFFFFF);
 
   // ── Text ────────────────────────────────────────────────────────────
-  /// Primary text: pure white
-  static const Color textPrimary = Color(0xFFFFFFFF);
+  /// Primary text: high-contrast dark #0F172A (Slate-900)
+  static const Color textPrimary = Color(0xFF0F172A);
 
-  /// Secondary text: off-white #E8EAF0
-  static const Color textSecondary = Color(0xFFE8EAF0);
+  /// Secondary text: dark slate #334155 (Slate-700)
+  static const Color textSecondary = Color(0xFF334155);
 
-  /// Muted / tertiary text: ~45 % white opacity
-  static const Color textMuted = Color(0x73FFFFFF);
+  /// Muted / tertiary text: neutral slate #64748B (Slate-500)
+  static const Color textMuted = Color(0xFF64748B);
 
-  /// Disabled / placeholder text: ~30 % white opacity
-  static const Color textDisabled = Color(0x4DFFFFFF);
+  /// Disabled / placeholder text: soft slate #94A3B8 (Slate-400)
+  static const Color textDisabled = Color(0xFF94A3B8);
 
   // ── Interactive States ──────────────────────────────────────────────
-  /// Primary at 18 % opacity – copy button background
-  static const Color primaryGhost = Color(0x2E7C6EF8);
+  /// Primary at 10% opacity – copy button background / ghost badge
+  static const Color primaryGhost = Color(0x1A2563EB);
 
-  /// Primary at 20 % opacity – active language button
-  static const Color primarySubtle = Color(0x337C6EF8);
+  /// Primary at 12% opacity – active language button
+  static const Color primarySubtle = Color(0x1F2563EB);
 
-  /// Primary at 40 % opacity – active language button border
-  static const Color primaryBorderActive = Color(0x667C6EF8);
+  /// Primary border active: #93C5FD (Blue-300)
+  static const Color primaryBorderActive = Color(0xFF93C5FD);
 
   // ── Toggle ──────────────────────────────────────────────────────────
-  /// Toggle track ON: primary violet
+  /// Toggle track ON: primary brand blue
   static const Color toggleOn = primary;
 
-  /// Toggle track OFF: ~12 % white
-  static const Color toggleOff = Color(0x1FFFFFFF);
+  /// Toggle track OFF: subtle slate border #CBD5E1
+  static const Color toggleOff = Color(0xFFE2E8F0);
 
   /// Toggle knob: pure white
   static const Color toggleKnob = Color(0xFFFFFFFF);
 
   // ── Category Tag Colors ─────────────────────────────────────────────
   static const Color tagGreeting = primary;
-  static const Color tagEmail = Color(0xFF4CAF50);
+  static const Color tagEmail = Color(0xFF16A34A);
   static const Color tagClosing = accentPink;
   static const Color tagMeeting = accentOrange;
-  static const Color tagApology = Color(0xFFCE93D8);
+  static const Color tagApology = Color(0xFF9333EA);
 
   // ── Navigation ──────────────────────────────────────────────────────
-  /// Active nav icon/label: primary
+  /// Active nav icon/label: primary brand blue
   static const Color navActive = primary;
 
-  /// Inactive nav icon/label: muted white
+  /// Inactive nav icon/label: muted slate #64748B
   static const Color navInactive = textMuted;
+
+  // ── Floating Bot Spotlight Overlay Tokens ───────────────────────────
+  /// High-contrast dark frosted backdrop for floating bot bubble/panel
+  static const Color botPanelBackground = Color(0xF20F172A);
+
+  /// Bot cyan glow highlight: #38BDF8 (Sky-400)
+  static const Color botGlow = Color(0xFF38BDF8);
+
+  /// Bot border accent: 15% white opacity
+  static const Color botBorder = Color(0x26FFFFFF);
 }
+

@@ -27,6 +27,13 @@ class KeyFlowCard extends StatelessWidget {
       color: AppColors.cardSurface,
       borderRadius: BorderRadius.circular(16),
       border: Border.all(color: AppColors.cardBorder, width: 0.8),
+      boxShadow: const [
+        BoxShadow(
+          color: Color(0x0A0F172A),
+          blurRadius: 10,
+          offset: Offset(0, 2),
+        ),
+      ],
     ),
     child: Material(
       color: Colors.transparent,
@@ -39,3 +46,4 @@ class KeyFlowCard extends StatelessWidget {
     ),
   );
 }
+

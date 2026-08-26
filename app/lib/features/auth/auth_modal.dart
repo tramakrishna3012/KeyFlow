@@ -803,7 +803,7 @@ class _AuthModalState extends ConsumerState<AuthModal>
                 const SnackBar(content: Text('Google SSO authentication initiated...')),
               );
             },
-            icon: const Icon(Icons.g_mobiledata_rounded, color: Colors.white, size: 24),
+            icon: const Icon(Icons.g_mobiledata_rounded, color: Colors.redAccent, size: 24),
             label: const Text('Google', style: TextStyle(fontSize: 13, color: AppColors.textPrimary)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.cardBorder),
@@ -821,7 +821,7 @@ class _AuthModalState extends ConsumerState<AuthModal>
                 const SnackBar(content: Text('GitHub SSO authentication initiated...')),
               );
             },
-            icon: const Icon(Icons.code_rounded, color: Colors.white, size: 20),
+            icon: const Icon(Icons.code_rounded, color: AppColors.textPrimary, size: 20),
             label: const Text('GitHub', style: TextStyle(fontSize: 13, color: AppColors.textPrimary)),
             style: OutlinedButton.styleFrom(
               side: const BorderSide(color: AppColors.cardBorder),
@@ -834,6 +834,7 @@ class _AuthModalState extends ConsumerState<AuthModal>
       ],
     );
   }
+
 
   InputDecoration _inputDecoration({
     required String hint,

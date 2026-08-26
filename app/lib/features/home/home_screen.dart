@@ -194,7 +194,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 return Text(
                   initial,
                   style: const TextStyle(
-                    color: AppColors.textPrimary,
+                    color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
                 );
@@ -205,6 +205,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ],
     );
   }
+
 
   String get _formattedDate {
     final now = DateTime.now();

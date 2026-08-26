@@ -21,7 +21,7 @@ class KeyFlowSearchBar extends StatelessWidget {
   Widget build(BuildContext context) => TextField(
     controller: controller,
     onChanged: onChanged,
-    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+    style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
     decoration: InputDecoration(
       hintText: hintText,
       prefixIcon: const Icon(
@@ -32,3 +32,4 @@ class KeyFlowSearchBar extends StatelessWidget {
     ),
   );
 }
+

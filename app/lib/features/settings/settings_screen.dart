@@ -487,7 +487,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           data: (days) => DropdownButton<int>(
             value: days,
             isExpanded: true,
-            dropdownColor: AppColors.scaffoldBackground,
+            dropdownColor: AppColors.cardSurface,
             items: const [
               DropdownMenuItem(value: 7, child: Text('7 Days')),
               DropdownMenuItem(value: 30, child: Text('30 Days (Default)')),
@@ -570,7 +570,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           data: (lang) => DropdownButton<String>(
             value: lang,
             isExpanded: true,
-            dropdownColor: AppColors.scaffoldBackground,
+            dropdownColor: AppColors.cardSurface,
             items: const [
               DropdownMenuItem(value: 'es', child: Text('Spanish (Español)')),
               DropdownMenuItem(value: 'fr', child: Text('French (Français)')),
