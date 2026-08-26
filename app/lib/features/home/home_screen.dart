@@ -10,6 +10,7 @@ import '../../data/models/history_entry.dart';
 import '../../data/providers.dart';
 import '../history/history_providers.dart';
 import '../history/snippet_detail_screen.dart';
+import '../profile/profile_modal.dart';
 
 /// Dynamic, responsive Home dashboard screen showing real live typing data from SQLite repository.
 class HomeScreen extends ConsumerStatefulWidget {
@@ -177,14 +178,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
-        const CircleAvatar(
-          radius: 20,
-          backgroundColor: AppColors.primary,
-          child: Text(
-            'K',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+        InkWell(
+          onTap: () => ProfileModal.show(context),
+          borderRadius: BorderRadius.circular(20),
+          child: CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.primary,
+            child: Consumer(
+              builder: (context, ref, _) {
+                final user = ref.watch(currentUserProvider);
+                final initial = (user?.fullName.isNotEmpty == true
+                        ? user!.fullName[0]
+                        : (user?.email.isNotEmpty == true ? user!.email[0] : 'K'))
+                    .toUpperCase();
+                return Text(
+                  initial,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                );
+              },
             ),
           ),
         ),

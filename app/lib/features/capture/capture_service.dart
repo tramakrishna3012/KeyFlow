@@ -75,6 +75,18 @@ class CaptureService {
     }
   }
 
+  Future<bool> isCapturePaused() async {
+    try {
+      final bool? paused = await _methodChannel.invokeMethod<bool>('isCapturePaused');
+      if (paused != null) {
+        _isPaused = paused;
+      }
+      return _isPaused;
+    } on PlatformException catch (_) {
+      return _isPaused;
+    }
+  }
+
   Future<bool> pauseCapture() async {
     try {
       final result = await _methodChannel.invokeMethod('pauseCapture');
@@ -82,6 +94,7 @@ class CaptureService {
       return result == true || true;
     } on PlatformException catch (e) {
       debugPrint('CaptureService pauseCapture error: ${e.message}');
+      _isPaused = true;
       return false;
     }
   }
@@ -93,6 +106,7 @@ class CaptureService {
       return result == true || true;
     } on PlatformException catch (e) {
       debugPrint('CaptureService resumeCapture error: ${e.message}');
+      _isPaused = false;
       return false;
     }
   }

@@ -2,11 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/router/supabase_auth_notifier.dart';
 import '../../core/services/auto_update_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
 import '../../data/providers.dart';
+import '../auth/auth_modal.dart';
+import '../profile/profile_modal.dart';
 import 'settings_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -40,49 +41,56 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Text('Settings', style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 20),
 
-            // 0. USER ACCOUNT & SYNC SECTION
-            _buildSectionHeader('ACCOUNT & CLOUD SYNC'),
+            // 0. USER ACCOUNT & PROFILE SECTION
+            _buildSectionHeader('ACCOUNT & PROFILE'),
             const SizedBox(height: 8),
             _buildAccountCard(),
 
             const SizedBox(height: 24),
 
-            // 1. EXCLUSION LIST SECTION
+            // 1. TYPING CAPTURE CONTROL SECTION
+            _buildSectionHeader('TYPING CAPTURE CONTROL'),
+            const SizedBox(height: 8),
+            _buildPauseCaptureCard(),
+
+            const SizedBox(height: 24),
+
+            // 2. EXCLUSION LIST SECTION
             _buildSectionHeader('EXCLUSION LIST'),
             const SizedBox(height: 8),
             _buildExclusionCard(exclusionAsync),
 
             const SizedBox(height: 24),
 
-            // 2. RETENTION POLICY SECTION
+            // 3. RETENTION POLICY SECTION
             _buildSectionHeader('DATA RETENTION'),
             const SizedBox(height: 8),
             _buildRetentionCard(retentionAsync),
 
             const SizedBox(height: 24),
 
-            // 3. AUTOCORRECT & TYPING SECTION
+            // 4. AUTOCORRECT & TYPING SECTION
             _buildSectionHeader('AUTOCORRECT & TYPING'),
             const SizedBox(height: 8),
             _buildAutocorrectCard(autocorrectAsync),
 
             const SizedBox(height: 24),
 
-            // 4. TRANSLATION SECTION
+            // 5. TRANSLATION SECTION
             _buildSectionHeader('TRANSLATION'),
             const SizedBox(height: 8),
             _buildTranslationCard(targetLangAsync),
 
             const SizedBox(height: 24),
 
-            // 5. DATA MANAGEMENT SECTION
+            // 6. DATA MANAGEMENT SECTION
             _buildSectionHeader('DATA MANAGEMENT'),
             const SizedBox(height: 8),
             _buildDataManagementCard(),
 
             const SizedBox(height: 24),
 
-            // 6. ABOUT & UNINSTALL SECTION
+            // 7. ABOUT & UNINSTALL SECTION
             _buildSectionHeader('ABOUT & UNINSTALL'),
             const SizedBox(height: 8),
             _buildAboutCard(),
@@ -107,9 +115,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // 0. User Account Card
   Widget _buildAccountCard() {
     final user = ref.watch(currentUserProvider);
-    final authService = ref.watch(authServiceProvider);
 
-    final name = user?.fullName ?? user?.email.split('@')[0] ?? 'Offline User';
+    final name = user?.fullName.isNotEmpty == true
+        ? user!.fullName
+        : (user?.email.split('@')[0] ?? 'Local User');
     final email = user?.email ?? 'Operating in Local-Only Mode';
     final role = user?.role == 'admin' ? 'Administrator' : 'Verified Member';
 
@@ -117,83 +126,209 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          InkWell(
+            onTap: () => ProfileModal.show(context),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : 'K',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          email,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      role,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : 'K',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => ProfileModal.show(context),
+                  icon: const Icon(Icons.manage_accounts_outlined, size: 16),
+                  label: const Text('Manage Profile'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryLight,
+                    side: const BorderSide(color: AppColors.cardBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      email,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  role,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                onPressed: () {
+                  AuthModal.show(context);
+                },
+                icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                label: const Text('Switch Account'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  side: const BorderSide(color: AppColors.cardBorder),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                AppAuthNotifier.debugAuthenticatedOverride = null;
-                await authService.logout();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('You have been signed out.')),
-                  );
-                }
-              },
-              icon: const Icon(Icons.logout, size: 16),
-              label: const Text('Sign Out of KeyFlow Workstation'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.destructive,
-                side: BorderSide(
-                  color: AppColors.destructive.withValues(alpha: 0.3),
+        ],
+      ),
+    );
+  }
+
+  // Quick Typing Capture Control Card
+  Widget _buildPauseCaptureCard() {
+    final isPaused = ref.watch(capturePausedProvider);
+
+    return KeyFlowCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isPaused ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                size: 20,
+                color: isPaused ? AppColors.accentOrange : AppColors.secondary,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Pause Typing Capture',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              ),
+              Switch(
+                value: isPaused,
+                onChanged: (val) {
+                  ref.read(capturePausedProvider.notifier).setPaused(val);
+                },
+                activeColor: AppColors.accentOrange,
+                activeTrackColor: AppColors.accentOrange.withValues(alpha: 0.3),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Turn this off before using banking or payment apps that block accessibility services, then back on when done.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textMuted,
+              height: 1.4,
+            ),
+          ),
+          if (isPaused) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.accentOrange.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.accentOrange.withValues(alpha: 0.3),
                 ),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: AppColors.accentOrange,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Capture is paused. Keystrokes are not being recorded.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.accentOrange,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 14),
+          const Divider(color: AppColors.cardBorder, height: 1),
+          const SizedBox(height: 10),
+          InkWell(
+            onTap: () {
+              ref.read(capturePausedProvider.notifier).openAccessibilitySettings();
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(Icons.open_in_new, size: 14, color: AppColors.primary),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Open Android Accessibility Settings',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -43,16 +43,22 @@ class KeyflowCapturePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
                 openAccessibilitySettings()
                 result.success(true)
             }
+            "isCapturePaused" -> {
+                result.success(KeyflowAccessibilityService.isPaused)
+            }
             "startCapture" -> {
                 KeyflowAccessibilityService.isPaused = false
+                KeyflowAccessibilityService.instance?.updateForegroundNotification(false)
                 result.success(true)
             }
             "stopCapture", "pauseCapture" -> {
                 KeyflowAccessibilityService.isPaused = true
+                KeyflowAccessibilityService.instance?.updateForegroundNotification(true)
                 result.success(true)
             }
             "resumeCapture" -> {
                 KeyflowAccessibilityService.isPaused = false
+                KeyflowAccessibilityService.instance?.updateForegroundNotification(false)
                 result.success(true)
             }
             "setExclusionList" -> {

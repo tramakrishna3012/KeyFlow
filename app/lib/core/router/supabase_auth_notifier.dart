@@ -9,11 +9,18 @@ import '../../data/auth_service.dart';
 class AppAuthNotifier extends ChangeNotifier {
   AppAuthNotifier({AuthService? authService})
     : _authService = authService ?? AuthService.instance {
+    _globalInstance = this;
     _authService?.addListener(_onAuthChanged);
   }
 
+  static AppAuthNotifier? _globalInstance;
   final AuthService? _authService;
   static bool? debugAuthenticatedOverride;
+
+  static void setAuthenticatedOverride(bool? val) {
+    debugAuthenticatedOverride = val;
+    _globalInstance?.notifyListeners();
+  }
 
   void _onAuthChanged() {
     notifyListeners();

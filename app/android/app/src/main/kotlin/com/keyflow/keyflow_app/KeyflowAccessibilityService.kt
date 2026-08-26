@@ -29,21 +29,29 @@ class KeyflowAccessibilityService : AccessibilityService() {
         }
         serviceInfo = info
 
+        updateForegroundNotification(isPaused)
+    }
+
+    fun updateForegroundNotification(paused: Boolean) {
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 val channelId = "keyflow_active_service"
+                val manager = getSystemService(android.app.NotificationManager::class.java)
                 val channel = android.app.NotificationChannel(
                     channelId,
                     "KeyFlow Text Monitor",
                     android.app.NotificationManager.IMPORTANCE_MIN
                 )
-                val manager = getSystemService(android.app.NotificationManager::class.java)
                 manager?.createNotificationChannel(channel)
 
+                val title = if (paused) "KeyFlow Paused" else "KeyFlow Active"
+                val text = if (paused) "Text capture is temporarily paused" else "KeyFlow monitoring is running in background"
+
                 val notification = android.app.Notification.Builder(this, channelId)
-                    .setContentTitle("KeyFlow Active")
-                    .setContentText("KeyFlow monitoring is running in background")
+                    .setContentTitle(title)
+                    .setContentText(text)
                     .setSmallIcon(R.mipmap.ic_launcher)
+                    .setOngoing(true)
                     .build()
 
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -53,7 +61,7 @@ class KeyflowAccessibilityService : AccessibilityService() {
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("KeyflowA11y", "Foreground service init error: $e")
+            android.util.Log.e("KeyflowA11y", "Foreground notification update error: $e")
         }
     }
 

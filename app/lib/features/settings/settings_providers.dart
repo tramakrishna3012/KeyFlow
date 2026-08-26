@@ -120,3 +120,47 @@ class SettingsController {
 final settingsControllerProvider = Provider<SettingsController>(
   SettingsController.new,
 );
+
+class CapturePausedNotifier extends StateNotifier<bool> {
+  CapturePausedNotifier(this._captureService) : super(_captureService.isPaused) {
+    _init();
+  }
+
+  final CaptureService _captureService;
+
+  Future<void> _init() async {
+    final paused = await _captureService.isCapturePaused();
+    state = paused;
+  }
+
+  Future<void> togglePause() async {
+    if (state) {
+      await _captureService.resumeCapture();
+      state = false;
+    } else {
+      await _captureService.pauseCapture();
+      state = true;
+    }
+  }
+
+  Future<void> setPaused(bool paused) async {
+    if (paused) {
+      await _captureService.pauseCapture();
+      state = true;
+    } else {
+      await _captureService.resumeCapture();
+      state = false;
+    }
+  }
+
+  Future<void> openAccessibilitySettings() async {
+    await _captureService.openAccessibilitySettings();
+  }
+}
+
+final capturePausedProvider =
+    StateNotifierProvider<CapturePausedNotifier, bool>((ref) {
+  final captureService = ref.watch(captureServiceProvider);
+  return CapturePausedNotifier(captureService);
+});
+

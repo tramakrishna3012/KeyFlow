@@ -105,7 +105,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _continueOffline() {
-    AppAuthNotifier.debugAuthenticatedOverride = true;
+    AppAuthNotifier.setAuthenticatedOverride(true);
     if (mounted) {
       GoRouter.of(context).go('/home');
     }
