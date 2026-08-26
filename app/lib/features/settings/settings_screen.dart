@@ -438,7 +438,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.5),
+                color: AppColors.cardSurface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: AppColors.cardBorder.withValues(alpha: 0.6),

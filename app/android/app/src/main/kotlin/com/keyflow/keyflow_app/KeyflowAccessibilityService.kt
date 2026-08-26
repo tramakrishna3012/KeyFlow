@@ -103,16 +103,11 @@ class KeyflowAccessibilityService : AccessibilityService() {
 
 
         if (event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
-            event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
+            event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED ||
+            event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED ||
+            event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
 
-            var text = event.text.joinToString("")
-            if (text.isBlank()) {
-                try {
-                    text = event.source?.text?.toString() ?: ""
-                } catch (_: Exception) {
-                    text = ""
-                }
-            }
+            val text = extractText(event)
 
             android.util.Log.i("KeyflowA11y", "Event type=${event.eventType} extracted text: '$text', isSensitive=${isSensitiveNodeOrEvent(event)}")
             if (text.isBlank()) return
@@ -120,11 +115,11 @@ class KeyflowAccessibilityService : AccessibilityService() {
             if (isSensitiveNodeOrEvent(event)) return
 
             val now = System.currentTimeMillis()
-            if (event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED &&
+            if ((event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) &&
                 text == lastDispatchedText &&
                 packageName == lastDispatchedPackage &&
                 (now - lastDispatchedTime) < 5000L) {
-                android.util.Log.i("KeyflowA11y", "Skipping duplicate focus event for $packageName: '$text'")
+                android.util.Log.i("KeyflowA11y", "Skipping duplicate event for $packageName: '$text'")
                 return
             }
 
@@ -147,6 +142,31 @@ class KeyflowAccessibilityService : AccessibilityService() {
         }
     }
 
+    private fun extractText(event: AccessibilityEvent): String {
+        var text = event.text.joinToString("").trim()
+        if (text.isNotBlank()) return text
+
+        try {
+            val source = event.source
+            if (source != null) {
+                text = source.text?.toString()?.trim() ?: ""
+                if (text.isNotBlank()) return text
+
+                text = source.contentDescription?.toString()?.trim() ?: ""
+                if (text.isNotBlank()) return text
+
+                for (i in 0 until Math.min(source.childCount, 5)) {
+                    val child = source.getChild(i) ?: continue
+                    val childText = child.text?.toString()?.trim() ?: ""
+                    if (childText.isNotBlank()) {
+                        return childText
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+        return ""
+    }
+
     private fun saveEventToNativeBuffer(payload: Map<String, Any?>) {
         try {
             val file = java.io.File(filesDir, "pending_events.jsonl")
@@ -157,6 +177,7 @@ class KeyflowAccessibilityService : AccessibilityService() {
             android.util.Log.e("KeyflowA11y", "Error saving native buffer: $e")
         }
     }
+
 
     private fun isSensitiveNodeOrEvent(event: AccessibilityEvent): Boolean {
         if (event.isPassword) {
