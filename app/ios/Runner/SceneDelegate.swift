@@ -25,4 +25,3 @@ class SceneDelegate: FlutterSceneDelegate {
         privacyBlurView = nil
     }
 }
-
