@@ -19,6 +19,9 @@ class KeyflowAccessibilityService : AccessibilityService() {
             }
         var eventListener: ((Map<String, Any?>) -> Unit)? = null
         val exclusionSet = mutableSetOf<String>()
+        private var lastDispatchedText: String = ""
+        private var lastDispatchedPackage: String = ""
+        private var lastDispatchedTime: Long = 0L
 
         fun updateExclusions(exclusions: List<String>) {
             exclusionSet.clear()
@@ -26,6 +29,7 @@ class KeyflowAccessibilityService : AccessibilityService() {
             android.util.Log.i("KeyflowA11y", "Updated exclusion set: $exclusionSet")
         }
     }
+
 
 
     override fun onServiceConnected() {
@@ -103,16 +107,30 @@ class KeyflowAccessibilityService : AccessibilityService() {
 
             if (isSensitiveNodeOrEvent(event)) return
 
+            val now = System.currentTimeMillis()
+            if (event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED &&
+                text == lastDispatchedText &&
+                packageName == lastDispatchedPackage &&
+                (now - lastDispatchedTime) < 5000L) {
+                android.util.Log.i("KeyflowA11y", "Skipping duplicate focus event for $packageName: '$text'")
+                return
+            }
+
+            lastDispatchedText = text
+            lastDispatchedPackage = packageName
+            lastDispatchedTime = now
+
             val payload = mapOf(
                 "appName" to packageName,
                 "windowTitle" to packageName,
                 "text" to text,
-                "timestamp" to System.currentTimeMillis()
+                "timestamp" to now
             )
             android.util.Log.i("KeyflowA11y", "Invoking eventListener with text '$text', listener=$eventListener")
             eventListener?.invoke(payload)
         }
     }
+
 
     private fun isSensitiveNodeOrEvent(event: AccessibilityEvent): Boolean {
         if (event.isPassword) {

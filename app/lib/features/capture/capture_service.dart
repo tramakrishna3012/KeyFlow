@@ -36,6 +36,9 @@ class CaptureService {
   bool get isPaused => _isPaused;
 
   final Map<String, String> _inputBuffers = {};
+  final Map<String, Timer> _debounceTimers = {};
+  final Map<String, String> _lastSavedTextPerApp = {};
+  final Map<String, int> _lastSavedTimePerApp = {};
 
   Future<void> initialize() async {
     await startCapture();
@@ -66,6 +69,10 @@ class CaptureService {
   Future<bool> stopCapture() async {
     if (!_isCapturing) return true;
     try {
+      for (final timer in _debounceTimers.values) {
+        timer.cancel();
+      }
+      _debounceTimers.clear();
       final result = await _methodChannel.invokeMethod('stopCapture');
       await _subscription?.cancel();
       _subscription = null;
@@ -181,7 +188,6 @@ class CaptureService {
     }
   }
 
-
   Future<List<InstalledAppInfo>> getInstalledApps({bool includeSystem = false}) async {
     try {
       final List<dynamic>? result = await _methodChannel.invokeMethod<List<dynamic>>(
@@ -210,7 +216,6 @@ class CaptureService {
     await setExclusionList(exclusions);
   }
 
-
   Future<bool> setAutostart(bool enabled) async {
     try {
       final result = await _methodChannel.invokeMethod('setAutostart', enabled);
@@ -232,6 +237,10 @@ class CaptureService {
 
   void dispose() {
     stopCapture();
+    for (final timer in _debounceTimers.values) {
+      timer.cancel();
+    }
+    _debounceTimers.clear();
     _subscription?.cancel();
     _subscription = null;
   }
@@ -246,10 +255,16 @@ class CaptureService {
     final timestamp =
         (event['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch;
 
-    if (text.isNotEmpty) {
-      _inputBuffers[appName] = text;
+    if (text.trim().isEmpty) return;
+
+    // Buffer incoming text for this application
+    _inputBuffers[appName] = text;
+
+    // Debounce timer: wait 800ms for user typing burst before writing to database
+    _debounceTimers[appName]?.cancel();
+    _debounceTimers[appName] = Timer(const Duration(milliseconds: 800), () {
       _flushBufferForApp(appName, windowTitle, timestamp);
-    }
+    });
   }
 
   Future<void> _flushBufferForApp(
@@ -257,6 +272,9 @@ class CaptureService {
     String windowTitle,
     int timestamp,
   ) async {
+    _debounceTimers[appName]?.cancel();
+    _debounceTimers.remove(appName);
+
     final rawText = _inputBuffers[appName]?.trim();
     _inputBuffers.remove(appName);
 
@@ -272,6 +290,18 @@ class CaptureService {
           sanitizedText == '[Redacted Sensitive Record]') {
         return;
       }
+
+      // Deduplication check: Do not save if identical text was saved for this app in last 10s
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final lastSaved = _lastSavedTextPerApp[appName];
+      final lastSavedTime = _lastSavedTimePerApp[appName] ?? 0;
+      if (lastSaved == sanitizedText && (now - lastSavedTime) < 10000) {
+        debugPrint('[CaptureService] Skipping duplicate entry for $appName: $sanitizedText');
+        return;
+      }
+
+      _lastSavedTextPerApp[appName] = sanitizedText;
+      _lastSavedTimePerApp[appName] = now;
 
       final entry = HistoryEntry(
         id: '${timestamp}_${appName.hashCode}',
@@ -296,3 +326,4 @@ class CaptureService {
     }
   }
 }
+
