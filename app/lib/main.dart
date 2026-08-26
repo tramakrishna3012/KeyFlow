@@ -16,14 +16,11 @@ import 'features/history/history_providers.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize unified authentication service
-  await AuthService.instance.initialize();
-
   // Clear FLAG_SECURE only if built with --dart-define=DEMO_MODE=true for demo recordings
-  const isDemoMode = bool.fromEnvironment('DEMO_MODE', defaultValue: false);
+  const isDemoMode = bool.fromEnvironment('DEMO_MODE');
   if (isDemoMode) {
     try {
-      const MethodChannel('com.keyflow.app/security')
+      await const MethodChannel('com.keyflow.app/security')
           .invokeMethod('setSecureFlag', {'enabled': false});
     } on Object catch (_) {}
   }
@@ -39,7 +36,6 @@ void main() async {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdndqZHRzZ3p0dGZyZXBxcHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxOTg4MTAsImV4cCI6MjEwMDc3NDgxMH0.93-OsJYSdfB32_Q0uNE1BVY-rtTJnN_8A06Go_yHsIQ',
   );
 
-
   if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
     try {
       await Supabase.initialize(
@@ -54,6 +50,9 @@ void main() async {
     }
   }
 
+  // Initialize unified authentication service AFTER Supabase is initialized
+  await AuthService.instance.initialize();
+
   // Setup app lifecycle listener to purge temp cache on exit
   AppLifecycleListener(
     onDetach: () {
@@ -63,6 +62,7 @@ void main() async {
 
   runApp(const ProviderScope(child: KeyFlowApp()));
 }
+
 
 class KeyFlowApp extends ConsumerStatefulWidget {
   const KeyFlowApp({super.key});

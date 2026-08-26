@@ -10,13 +10,11 @@ import '../settings/models/installed_app_info.dart';
 class CaptureService {
   CaptureService(
     this._repository, {
-    SyncService? syncService,
-    SyncService? Function()? syncServiceGetter,
+    this.syncService,
+    this.syncServiceGetter,
     LookWindowSanitizer? sanitizer,
     this.onEntryCaptured,
-  }) : _syncService = syncService,
-       _syncServiceGetter = syncServiceGetter,
-       _sanitizer = sanitizer ?? const LookWindowSanitizer() {
+  }) : _sanitizer = sanitizer ?? const LookWindowSanitizer() {
     _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
   }
 
@@ -26,13 +24,13 @@ class CaptureService {
   );
 
   final HistoryRepository _repository;
-  final SyncService? _syncService;
-  final SyncService? Function()? _syncServiceGetter;
+  final SyncService? syncService;
+  final SyncService? Function()? syncServiceGetter;
   final LookWindowSanitizer _sanitizer;
   final void Function(HistoryEntry entry)? onEntryCaptured;
   StreamSubscription<dynamic>? _subscription;
 
-  SyncService? get activeSyncService => _syncServiceGetter?.call() ?? _syncService;
+  SyncService? get activeSyncService => syncServiceGetter?.call() ?? syncService;
 
 
   bool _isCapturing = false;

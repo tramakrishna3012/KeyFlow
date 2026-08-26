@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/router/supabase_auth_notifier.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_card.dart';
 import '../../data/models/user_model.dart';
@@ -1066,10 +1068,14 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                           size: 20,
                         ),
                         onTap: () async {
-                          AppAuthNotifier.debugAuthenticatedOverride = null;
+                          AppAuthNotifier.setAuthenticatedOverride(null);
                           await authService.logout();
-                          if (context.mounted) Navigator.of(context).pop();
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            context.go('/login');
+                          }
                         },
+
                       ),
                       const Divider(color: AppColors.cardBorder, height: 1),
 

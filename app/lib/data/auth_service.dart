@@ -71,12 +71,11 @@ class AuthService extends ChangeNotifier {
             id: supaUser.id,
             email: supaUser.email ?? '',
             fullName: fullName,
-            role: 'member',
             createdAt: DateTime.now().toIso8601String(),
           );
           _token = supaSession?.accessToken ?? _token;
         }
-      } catch (_) {}
+      } on Object catch (_) {}
 
       if (_token != null && _token!.isNotEmpty) {
         // Validate token with backend in background if available
@@ -120,7 +119,6 @@ class AuthService extends ChangeNotifier {
             id: row['id'] as String,
             email: row['email'] as String,
             fullName: (row['full_name'] as String?) ?? cleanEmail.split('@').first,
-            role: (row['role'] as String?) ?? 'member',
             createdAt: DateTime.now().toIso8601String(),
           );
 
@@ -138,7 +136,7 @@ class AuthService extends ChangeNotifier {
           return AuthResponse(success: true, token: tokenStr, user: userObj);
         }
       }
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Supabase users table login error: $e');
     }
 
@@ -159,7 +157,6 @@ class AuthService extends ChangeNotifier {
           id: user.id,
           email: user.email ?? cleanEmail,
           fullName: nameMeta ?? cleanEmail.split('@').first,
-          role: 'member',
           createdAt: DateTime.now().toIso8601String(),
         );
 
@@ -178,9 +175,10 @@ class AuthService extends ChangeNotifier {
       }
     } on AuthException catch (e) {
       debugPrint('Supabase login AuthException: ${e.message}');
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Supabase login error: $e');
     }
+
 
     // 3. Fallback to Express backend if available
     try {
@@ -256,7 +254,6 @@ class AuthService extends ChangeNotifier {
         id: userId,
         email: cleanEmail,
         fullName: cleanName,
-        role: 'member',
         createdAt: DateTime.now().toIso8601String(),
       );
 
@@ -270,7 +267,7 @@ class AuthService extends ChangeNotifier {
           key: _userKey,
           value: jsonEncode(userObj.toJson()),
         );
-      } catch (_) {}
+      } on Object catch (_) {}
 
       // Attempt background Supabase Auth sign up for JWT session
       try {
@@ -279,12 +276,11 @@ class AuthService extends ChangeNotifier {
           password: password,
           data: {'full_name': cleanName},
         );
-      } catch (_) {}
-
+      } on Object catch (_) {}
 
       notifyListeners();
       return AuthResponse(success: true, token: tokenStr, user: userObj);
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('Supabase users table register error: $e');
     }
 
@@ -341,28 +337,25 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-
-  /// Fetch latest user profile from GET /auth/me
-
-
+  /// Fetch latest user profile from Supabase PostgreSQL or Express backend
   Future<UserModel?> fetchProfile() async {
     if (_token == null || _token!.isEmpty) return null;
 
+    // 1. If using Supabase / PostgreSQL token or user exists, refresh from Supabase
     try {
-      final url = Uri.parse('$_apiBase/auth/me');
-      final response = await _client.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        if (data['user'] != null) {
-          _currentUser = UserModel.fromJson(
-            data['user'] as Map<String, dynamic>,
+      final supa = Supabase.instance.client;
+      final userId = _currentUser?.id;
+      if (userId != null && userId.isNotEmpty) {
+        final rows = await supa.from('users').select().eq('id', userId);
+        if (rows.isNotEmpty) {
+          final row = rows.first;
+          _currentUser = UserModel(
+            id: row['id'] as String,
+            email: row['email'] as String,
+            fullName: (row['full_name'] as String?) ??
+                row['email'].toString().split('@').first,
+            createdAt: row['created_at']?.toString() ??
+                DateTime.now().toIso8601String(),
           );
           await _storage.write(
             key: _userKey,
@@ -371,15 +364,48 @@ class AuthService extends ChangeNotifier {
           notifyListeners();
           return _currentUser;
         }
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
-        // Token expired or invalid
-        await logout();
       }
     } on Object catch (e) {
-      debugPrint('AuthService fetchProfile error: $e');
+      debugPrint('Supabase fetchProfile sync note: $e');
     }
-    return null;
+
+    // 2. If it's an Express backend token, attempt GET /auth/me
+    if (_token != null &&
+        !_token!.startsWith('kf_') &&
+        !_token!.startsWith('supa_')) {
+      try {
+        final url = Uri.parse('$_apiBase/auth/me');
+        final response = await _client.get(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_token',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          if (data['user'] != null) {
+            _currentUser = UserModel.fromJson(
+              data['user'] as Map<String, dynamic>,
+            );
+            await _storage.write(
+              key: _userKey,
+              value: jsonEncode(_currentUser!.toJson()),
+            );
+            notifyListeners();
+            return _currentUser;
+          }
+        } else if (response.statusCode == 401 || response.statusCode == 403) {
+          await logout();
+        }
+      } on Object catch (e) {
+        debugPrint('AuthService fetchProfile error: $e');
+      }
+    }
+    return _currentUser;
   }
+
 
   /// Fetch active sessions for the current user
   Future<List<UserSession>> fetchActiveSessions() async {
