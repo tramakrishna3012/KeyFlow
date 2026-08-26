@@ -51,11 +51,11 @@
     "platform": "ios",
     "displayName": "iOS",
     "icon": "apple",
-    "version": "v1.0.0 (Beta)",
+    "version": "v1.0.0",
     "releaseDate": "2026-08-22",
-    "testflightUrl": "https://testflight.apple.com/join/KeyFlowBeta",
+    "fileUrl": "https://github.com/tramakrishna3012/KeyFlow/releases/download/v1.0.0/KeyFlow.ipa",
     "sizeMB": "24.1 MB",
-    "systemRequirements": "iOS 15.0 or later",
+    "systemRequirements": "iOS 15.0 or later (.ipa Sideload / AltStore)",
     "changelog": [
       "KeyFlow Custom Assist Keyboard extension",
       "Biometric FaceID / TouchID vault unlock",
@@ -64,3 +64,4 @@
     ]
   }
 ]
+

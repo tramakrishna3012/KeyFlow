@@ -234,7 +234,8 @@ async function setupDownloadsGrid() {
     container.innerHTML = releases.map((rel) => {
       const isRecommended = rel.platform === detectedPlatform;
       const downloadUrl = rel.fileUrl || rel.testflightUrl || '#';
-      const buttonLabel = rel.platform === 'ios' ? 'Join TestFlight' : `Download for ${rel.displayName}`;
+      const buttonLabel = `Download for ${rel.displayName}`;
+
 
       const platformIcons = {
         windows: '🪟',
