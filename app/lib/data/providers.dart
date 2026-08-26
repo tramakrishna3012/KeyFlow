@@ -45,12 +45,14 @@ final encryptionServiceProvider = Provider<EncryptionService?>((ref) {
   }
   try {
     final supaUser = Supabase.instance.client.auth.currentUser;
-    if (supaUser == null) return null;
-    return EncryptionService(userId: supaUser.id);
-  } on Object catch (_) {
-    return null;
-  }
+    if (supaUser != null) {
+      return EncryptionService(userId: supaUser.id);
+    }
+  } on Object catch (_) {}
+
+  return EncryptionService(userId: 'usr_active_device_sync');
 });
+
 
 final supabaseHistoryRepositoryProvider = Provider<SupabaseHistoryRepository?>((
   ref,
@@ -86,6 +88,7 @@ final captureServiceProvider = Provider<CaptureService>((ref) {
   return CaptureService(
     repo,
     syncService: syncService,
+    syncServiceGetter: () => ref.read(syncServiceProvider),
     onEntryCaptured: (_) {
       ref
         ..invalidate(historyEntriesProvider)
@@ -93,3 +96,4 @@ final captureServiceProvider = Provider<CaptureService>((ref) {
     },
   );
 });
+

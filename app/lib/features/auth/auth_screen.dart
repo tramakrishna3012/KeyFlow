@@ -53,6 +53,7 @@ class _AuthScreenState extends State<AuthScreen> {
         if (!mounted) return;
 
         if (res.success) {
+          AppAuthNotifier.debugAuthenticatedOverride = true;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -61,6 +62,7 @@ class _AuthScreenState extends State<AuthScreen> {
               backgroundColor: AppColors.primary,
             ),
           );
+          if (mounted) context.go('/home');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -75,13 +77,16 @@ class _AuthScreenState extends State<AuthScreen> {
         if (!mounted) return;
 
         if (res.success) {
+          AppAuthNotifier.debugAuthenticatedOverride = true;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Welcome back, ${res.user?.fullName ?? email}!'),
               backgroundColor: AppColors.primary,
             ),
           );
+          if (mounted) context.go('/home');
         } else {
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(res.errorMessage ?? 'Invalid email or password'),

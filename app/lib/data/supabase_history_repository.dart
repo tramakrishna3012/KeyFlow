@@ -15,10 +15,13 @@ class SupabaseHistoryRepository {
 
   static const String _tableName = 'history_entries';
 
+  String get effectiveUserId => _client.auth.currentUser?.id ?? _encryption.userId;
+
   Future<void> upsertEntry(HistoryEntry entry) async {
     try {
-      final userId = _client.auth.currentUser?.id;
-      if (userId == null) {
+      final userId = effectiveUserId;
+      debugPrint('[SupabaseHistoryRepo] upsertEntry starting: id=${entry.id}, user=$userId, app=${entry.sourceApp}');
+      if (userId.isEmpty) {
         debugPrint(
           'SupabaseHistoryRepo: No authenticated user, skipping upsert',
         );
@@ -37,20 +40,23 @@ class SupabaseHistoryRepository {
         'captured_at': entry.capturedAt.millisecondsSinceEpoch,
         'device_id': entry.deviceId,
       });
+      debugPrint('[SupabaseHistoryRepo] upsertEntry SUCCESS for id=${entry.id}');
     } on Exception catch (e) {
       debugPrint('SupabaseHistoryRepo: upsertEntry failed — $e');
       rethrow;
     }
   }
 
+
   Future<List<HistoryEntry>> getAllEntries() async {
     try {
-      final userId = _client.auth.currentUser?.id;
-      if (userId == null) return [];
+      final userId = effectiveUserId;
+      if (userId.isEmpty) return [];
 
       final response = await _client
           .from(_tableName)
           .select()
+          .eq('user_id', userId)
           .order('captured_at', ascending: false);
 
       final entries = <HistoryEntry>[];
@@ -101,10 +107,10 @@ class SupabaseHistoryRepository {
 
   Future<void> deleteEntry(String id) async {
     try {
-      final userId = _client.auth.currentUser?.id;
-      if (userId == null) return;
+      final userId = effectiveUserId;
+      if (userId.isEmpty) return;
 
-      await _client.from(_tableName).delete().eq('id', id);
+      await _client.from(_tableName).delete().eq('id', id).eq('user_id', userId);
     } on Exception catch (e) {
       debugPrint('SupabaseHistoryRepo: deleteEntry failed — $e');
       rethrow;
@@ -113,8 +119,8 @@ class SupabaseHistoryRepository {
 
   Future<void> deleteAllEntries() async {
     try {
-      final userId = _client.auth.currentUser?.id;
-      if (userId == null) return;
+      final userId = effectiveUserId;
+      if (userId.isEmpty) return;
 
       await _client.from(_tableName).delete().eq('user_id', userId);
     } on Exception catch (e) {
@@ -125,8 +131,8 @@ class SupabaseHistoryRepository {
 
   Future<int> purgeOlderThan(int retentionDays) async {
     try {
-      final userId = _client.auth.currentUser?.id;
-      if (userId == null) return 0;
+      final userId = effectiveUserId;
+      if (userId.isEmpty) return 0;
 
       final cutoff = DateTime.now()
           .subtract(Duration(days: retentionDays))
@@ -135,6 +141,7 @@ class SupabaseHistoryRepository {
       final response = await _client
           .from(_tableName)
           .delete()
+          .eq('user_id', userId)
           .lt('captured_at', cutoff)
           .select();
 
@@ -147,10 +154,13 @@ class SupabaseHistoryRepository {
 
   Future<int> count() async {
     try {
-      final userId = _client.auth.currentUser?.id;
-      if (userId == null) return 0;
+      final userId = effectiveUserId;
+      if (userId.isEmpty) return 0;
 
-      final response = await _client.from(_tableName).select('id');
+      final response = await _client
+          .from(_tableName)
+          .select('id')
+          .eq('user_id', userId);
 
       return (response as List<dynamic>).length;
     } on Exception catch (e) {
@@ -159,3 +169,4 @@ class SupabaseHistoryRepository {
     }
   }
 }
+

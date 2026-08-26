@@ -13,6 +13,9 @@ class EncryptionService {
   final String _userId;
   final FlutterSecureStorage _storage;
 
+  String get userId => _userId;
+
+
   static const String _saltKeyName = 'keyflow_encryption_salt';
   static const int _keyLengthBytes = 32;
   static const int _ivLengthBytes = 12;

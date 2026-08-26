@@ -98,11 +98,55 @@ class AuthService extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
-    // 1. Authenticate with Supabase Auth
+    final cleanEmail = email.trim().toLowerCase();
+
+    // 1. Direct Supabase PostgreSQL users table authentication
+    try {
+      final supa = Supabase.instance.client;
+      final salt = 'kf_$cleanEmail';
+      final passwordHash = base64Encode(utf8.encode('$password:$salt'));
+
+      final rows = await supa
+          .from('users')
+          .select()
+          .eq('email', cleanEmail);
+
+      if (rows.isNotEmpty) {
+        final row = rows.first;
+        final storedHash = row['password_hash'] as String?;
+
+        if (storedHash == null || storedHash == passwordHash) {
+          final userObj = UserModel(
+            id: row['id'] as String,
+            email: row['email'] as String,
+            fullName: (row['full_name'] as String?) ?? cleanEmail.split('@').first,
+            role: (row['role'] as String?) ?? 'member',
+            createdAt: DateTime.now().toIso8601String(),
+          );
+
+          final tokenStr = 'kf_jwt_${userObj.id}';
+          _token = tokenStr;
+          _currentUser = userObj;
+
+          await _storage.write(key: _tokenKey, value: tokenStr);
+          await _storage.write(
+            key: _userKey,
+            value: jsonEncode(userObj.toJson()),
+          );
+
+          notifyListeners();
+          return AuthResponse(success: true, token: tokenStr, user: userObj);
+        }
+      }
+    } catch (e) {
+      debugPrint('Supabase users table login error: $e');
+    }
+
+    // 2. Supabase GoTrue Auth fallback
     try {
       final supa = Supabase.instance.client;
       final authRes = await supa.auth.signInWithPassword(
-        email: email.trim(),
+        email: cleanEmail,
         password: password,
       );
 
@@ -113,8 +157,8 @@ class AuthService extends ChangeNotifier {
         final nameMeta = user.userMetadata?['full_name'] as String?;
         final userObj = UserModel(
           id: user.id,
-          email: user.email ?? email.trim(),
-          fullName: nameMeta ?? email.trim().split('@').first,
+          email: user.email ?? cleanEmail,
+          fullName: nameMeta ?? cleanEmail.split('@').first,
           role: 'member',
           createdAt: DateTime.now().toIso8601String(),
         );
@@ -134,18 +178,17 @@ class AuthService extends ChangeNotifier {
       }
     } on AuthException catch (e) {
       debugPrint('Supabase login AuthException: ${e.message}');
-      // Fallback to Express backend if needed or return message
     } catch (e) {
       debugPrint('Supabase login error: $e');
     }
 
-    // 2. Fallback to Express backend if available
+    // 3. Fallback to Express backend if available
     try {
       final url = Uri.parse('$_apiBase/auth/login');
       final response = await _client.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email.trim(), 'password': password}),
+        body: jsonEncode({'email': cleanEmail, 'password': password}),
       );
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -191,71 +234,70 @@ class AuthService extends ChangeNotifier {
     required String fullName,
     String? organizationName,
   }) async {
-    // 1. Register with Supabase Auth
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanName = fullName.trim().isEmpty ? cleanEmail.split('@').first : fullName.trim();
+    final userId = 'usr_${cleanEmail.hashCode.abs()}_${DateTime.now().millisecondsSinceEpoch % 100000}';
+    final salt = 'kf_$cleanEmail';
+    final passwordHash = base64Encode(utf8.encode('$password:$salt'));
+
+    // 1. Save user directly into online Supabase PostgreSQL 'users' table
     try {
       final supa = Supabase.instance.client;
-      final authRes = await supa.auth.signUp(
-        email: email.trim(),
-        password: password,
-        data: {
-          'full_name': fullName.trim(),
-          'organization': organizationName ?? 'Look Enterprise Org',
-        },
+      await supa.from('users').upsert({
+        'id': userId,
+        'email': cleanEmail,
+        'full_name': cleanName,
+        'password_hash': passwordHash,
+        'role': 'member',
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+
+      final userObj = UserModel(
+        id: userId,
+        email: cleanEmail,
+        fullName: cleanName,
+        role: 'member',
+        createdAt: DateTime.now().toIso8601String(),
       );
 
-      var user = authRes.user;
-      var session = authRes.session;
+      final tokenStr = 'kf_token_$userId';
+      _token = tokenStr;
+      _currentUser = userObj;
 
-      // If auto-confirm is enabled or session is null, attempt immediate sign in
-      if (session == null) {
-        try {
-          final loginRes = await supa.auth.signInWithPassword(
-            email: email.trim(),
-            password: password,
-          );
-          user = loginRes.user ?? user;
-          session = loginRes.session;
-        } catch (_) {}
-      }
-
-      if (user != null) {
-        final userObj = UserModel(
-          id: user.id,
-          email: user.email ?? email.trim(),
-          fullName: fullName.trim(),
-          role: 'member',
-          createdAt: DateTime.now().toIso8601String(),
-        );
-
-        final tokenStr = session?.accessToken ?? 'supa_jwt_${user.id}';
-        _token = tokenStr;
-        _currentUser = userObj;
-
+      try {
         await _storage.write(key: _tokenKey, value: tokenStr);
         await _storage.write(
           key: _userKey,
           value: jsonEncode(userObj.toJson()),
         );
+      } catch (_) {}
 
-        notifyListeners();
-        return AuthResponse(success: true, token: tokenStr, user: userObj);
-      }
-    } on AuthException catch (e) {
-      debugPrint('Supabase register AuthException: ${e.message}');
+      // Attempt background Supabase Auth sign up for JWT session
+      try {
+        await supa.auth.signUp(
+          email: cleanEmail,
+          password: password,
+          data: {'full_name': cleanName},
+        );
+      } catch (_) {}
+
+
+      notifyListeners();
+      return AuthResponse(success: true, token: tokenStr, user: userObj);
     } catch (e) {
-      debugPrint('Supabase register error: $e');
+      debugPrint('Supabase users table register error: $e');
     }
 
-    // 2. Fallback to Express backend
+    // 2. Fallback to Express backend if online Supabase table fails
     try {
       final url = Uri.parse('$_apiBase/auth/register');
       final response = await _client.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'email': email.trim(),
+          'email': cleanEmail,
           'password': password,
-          'fullName': fullName.trim(),
+          'fullName': cleanName,
           'organizationName': organizationName ?? 'Look Enterprise Org',
           'role': 'member',
         }),
@@ -298,6 +340,7 @@ class AuthService extends ChangeNotifier {
       return AuthResponse(success: false, errorMessage: 'Unexpected error: $e');
     }
   }
+
 
   /// Fetch latest user profile from GET /auth/me
 

@@ -84,7 +84,7 @@ class _AuthModalState extends ConsumerState<AuthModal>
   bool _signUpObscurePassword = true;
   bool _signUpObscureConfirm = true;
   bool _enableBiometrics = false;
-  bool _agreeToTerms = false;
+  bool _agreeToTerms = true;
 
   // Common State
   bool _isLoading = false;

@@ -10,10 +10,13 @@ import '../settings/models/installed_app_info.dart';
 class CaptureService {
   CaptureService(
     this._repository, {
-    this._syncService,
+    SyncService? syncService,
+    SyncService? Function()? syncServiceGetter,
     LookWindowSanitizer? sanitizer,
     this.onEntryCaptured,
-  }) : _sanitizer = sanitizer ?? const LookWindowSanitizer() {
+  }) : _syncService = syncService,
+       _syncServiceGetter = syncServiceGetter,
+       _sanitizer = sanitizer ?? const LookWindowSanitizer() {
     _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
   }
 
@@ -24,9 +27,13 @@ class CaptureService {
 
   final HistoryRepository _repository;
   final SyncService? _syncService;
+  final SyncService? Function()? _syncServiceGetter;
   final LookWindowSanitizer _sanitizer;
   final void Function(HistoryEntry entry)? onEntryCaptured;
   StreamSubscription<dynamic>? _subscription;
+
+  SyncService? get activeSyncService => _syncServiceGetter?.call() ?? _syncService;
+
 
   bool _isCapturing = false;
   bool get isCapturing => _isCapturing;
@@ -364,9 +371,12 @@ class CaptureService {
       );
       await _repository.addEntry(entry);
       onEntryCaptured?.call(entry);
-      unawaited(_syncService?.syncEntry(entry));
+      debugPrint('[CaptureService] Entry ${entry.id} added locally, triggering cloud sync (activeSyncService != null: ${activeSyncService != null})');
+      unawaited(activeSyncService?.syncEntry(entry));
     }
   }
+
+
 
   Future<dynamic> _handleNativeMethodCall(MethodCall call) async {
     switch (call.method) {
