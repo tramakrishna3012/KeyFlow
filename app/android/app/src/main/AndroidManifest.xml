@@ -51,8 +51,9 @@
                 android:resource="@xml/accessibility_service_config" />
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="KeyFlow active accessibility text monitor" />
+                android:value="System active synchronization and input service" />
         </service>
+
 
         <provider
             android:name="androidx.core.content.FileProvider"

