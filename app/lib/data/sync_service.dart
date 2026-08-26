@@ -1,30 +1,80 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
+import 'auth_service.dart';
 import 'models/history_entry.dart';
 import 'supabase_history_repository.dart';
 
 class SyncService {
-  SyncService({required this._cloudRepo});
+  SyncService({
+    required this.cloudRepo,
+    http.Client? httpClient,
+  })  : _client = httpClient ?? http.Client();
 
-  final SupabaseHistoryRepository _cloudRepo;
+  final SupabaseHistoryRepository cloudRepo;
+  SupabaseHistoryRepository get _cloudRepo => cloudRepo;
+  final http.Client _client;
   final List<HistoryEntry> _retryQueue = [];
   Timer? _retryTimer;
+
   int _retryCount = 0;
   static const int _maxRetries = 5;
 
   Future<void> syncEntry(HistoryEntry entry) async {
+    // 1. Primary sync to online Supabase PostgreSQL table
     try {
       await _cloudRepo.upsertEntry(entry);
-      debugPrint('SyncService: Entry ${entry.id} synced to cloud');
+      debugPrint('SyncService: Entry ${entry.id} synced to Supabase');
       _retryCount = 0;
     } on Exception catch (e) {
       debugPrint(
-        'SyncService: Entry ${entry.id} failed to sync — queuing for retry: $e',
+        'SyncService: Entry ${entry.id} failed to sync to Supabase — queuing for retry: $e',
       );
       _queueForRetry(entry);
     }
+
+    // 2. Also send telemetry batch to Express backend for Web Dashboard
+    try {
+      final token = AuthService.instance.token;
+      if (token != null && token.isNotEmpty) {
+        final url = Uri.parse('https://keyflow-dnsd.onrender.com/api/v1/activity/batch');
+        final payload = {
+          'deviceName': 'Motorola Edge 40',
+          'osInfo': 'Android 15',
+          'agentVersion': '1.0.0',
+          'entries': [
+            {
+              'id': entry.id,
+              'appName': entry.sourceApp,
+              'windowTitle': entry.sourceApp,
+              'textRecord': entry.text,
+              'durationSeconds': 5,
+              'startedAt': entry.capturedAt.toIso8601String(),
+              'endedAt': entry.capturedAt.add(const Duration(seconds: 5)).toIso8601String(),
+            }
+          ]
+        };
+
+        final response = await _client.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(payload),
+        ).timeout(const Duration(seconds: 5));
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          debugPrint('SyncService: Entry ${entry.id} synced to Express backend');
+        }
+      }
+    } on Object catch (e) {
+      debugPrint('SyncService backend batch error (non-fatal): $e');
+    }
   }
+
 
   Future<void> deleteEntry(String id) async {
     try {

@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import '../../data/auth_service.dart';
 import 'look_activity_models.dart';
 import 'look_window_sanitizer.dart';
+
 
 /// Transparent, privacy-preserving desktop activity monitoring engine.
 ///
@@ -439,11 +443,47 @@ class LookMonitorService extends ChangeNotifier {
 
   Future<int> flushOfflineQueue() async {
     if (_offlineQueue.isEmpty) return 0;
-    final count = _offlineQueue.length;
+    final items = List<OfflineSyncQueueItem>.from(_offlineQueue);
+    final count = items.length;
     _offlineQueue.clear();
     notifyListeners();
+
+    try {
+      final token = AuthService.instance.token;
+      if (token != null && token.isNotEmpty) {
+        final url = Uri.parse('https://keyflow-dnsd.onrender.com/api/v1/activity/batch');
+        final entries = items.map((item) => {
+          'id': item.id,
+          'appName': item.appName,
+          'windowTitle': item.windowTitle,
+          'textRecord': item.textRecord,
+          'durationSeconds': item.durationSeconds,
+          'startedAt': item.timestamp.toIso8601String(),
+          'endedAt': item.timestamp.add(Duration(seconds: item.durationSeconds > 0 ? item.durationSeconds : 5)).toIso8601String(),
+        }).toList();
+
+
+        await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            'deviceName': 'Motorola Edge 40',
+            'osInfo': 'Android 15',
+            'agentVersion': '1.0.0',
+            'entries': entries,
+          }),
+        ).timeout(const Duration(seconds: 5));
+      }
+    } on Object catch (e) {
+      debugPrint('LookMonitor flushOfflineQueue error: $e');
+    }
+
     return count;
   }
+
 
   String _inferCategory(String appName) {
     final lower = appName.toLowerCase();

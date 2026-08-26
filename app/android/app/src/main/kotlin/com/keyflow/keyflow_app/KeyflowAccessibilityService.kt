@@ -37,8 +37,8 @@ class KeyflowAccessibilityService : AccessibilityService() {
         instance = this
         val info = AccessibilityServiceInfo().apply {
             eventTypes = AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED or
-                    AccessibilityEvent.TYPE_VIEW_FOCUSED or
                     AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED or
+                    AccessibilityEvent.TYPE_VIEW_FOCUSED or
                     AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             flags = AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS or
@@ -47,7 +47,6 @@ class KeyflowAccessibilityService : AccessibilityService() {
             notificationTimeout = 50
         }
         serviceInfo = info
-
 
         updateForegroundNotification(isPaused)
     }
@@ -95,81 +94,97 @@ class KeyflowAccessibilityService : AccessibilityService() {
         }
     }
 
-
-
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         val packageName = event.packageName?.toString() ?: "unknown"
-        android.util.Log.i("KeyflowA11y", "onAccessibilityEvent: type=${event.eventType}, pkg=$packageName, paused=$isPaused, isExcluded=${exclusionSet.contains(packageName)}")
         if (isPaused) return
+
+        // 1. Ignore system UI, launchers, and KeyFlow itself
+        if (packageName == "com.android.systemui" ||
+            packageName == "android" ||
+            packageName == "com.motorola.launcher3" ||
+            packageName == "com.android.launcher3" ||
+            packageName == "com.google.android.apps.nexuslauncher" ||
+            packageName == "com.keyflow.keyflow_app") {
+            return
+        }
 
         if (exclusionSet.contains(packageName)) return
 
+        // 2. Ignore pure focus events when no text has been typed
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
+            return
+        }
 
-        if (event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
-            event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED ||
-            event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED ||
-            event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
+        val source = try { event.source } catch (_: Exception) { null }
 
-            val text = extractText(event)
+        if (isSensitiveNodeOrEvent(event, source)) return
 
-            android.util.Log.i("KeyflowA11y", "Event type=${event.eventType} extracted text: '$text', isSensitive=${isSensitiveNodeOrEvent(event)}")
-            if (text.isBlank()) return
+        // 3. Extract actual typed text only (NEVER contentDescription or hintText)
+        val text = extractText(event, source)
+        if (text.isBlank()) return
 
-            if (isSensitiveNodeOrEvent(event)) return
+        val now = System.currentTimeMillis()
+        // Deduplicate rapid duplicate events for the exact same text within 800ms
+        if (text == lastDispatchedText &&
+            packageName == lastDispatchedPackage &&
+            (now - lastDispatchedTime) < 800L) {
+            return
+        }
 
-            val now = System.currentTimeMillis()
-            if ((event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED || event.eventType == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) &&
-                text == lastDispatchedText &&
-                packageName == lastDispatchedPackage &&
-                (now - lastDispatchedTime) < 5000L) {
-                android.util.Log.i("KeyflowA11y", "Skipping duplicate event for $packageName: '$text'")
-                return
-            }
+        lastDispatchedText = text
+        lastDispatchedPackage = packageName
+        lastDispatchedTime = now
 
-            lastDispatchedText = text
-            lastDispatchedPackage = packageName
-            lastDispatchedTime = now
-
-            val payload = mapOf(
-                "appName" to packageName,
-                "windowTitle" to packageName,
-                "text" to text,
-                "timestamp" to now
-            )
-            android.util.Log.i("KeyflowA11y", "Invoking eventListener with text '$text', listener=$eventListener")
-            if (eventListener != null) {
-                eventListener?.invoke(payload)
-            } else {
-                saveEventToNativeBuffer(payload)
-            }
+        val payload = mapOf(
+            "appName" to packageName,
+            "windowTitle" to packageName,
+            "text" to text,
+            "timestamp" to now
+        )
+        android.util.Log.i("KeyflowA11y", "Captured user typing: pkg=$packageName, text='$text'")
+        if (eventListener != null) {
+            eventListener?.invoke(payload)
+        } else {
+            saveEventToNativeBuffer(payload)
         }
     }
 
-    private fun extractText(event: AccessibilityEvent): String {
-        var text = event.text.joinToString("").trim()
-        if (text.isNotBlank()) return text
-
-        try {
-            val source = event.source
-            if (source != null) {
-                text = source.text?.toString()?.trim() ?: ""
-                if (text.isNotBlank()) return text
-
-                text = source.contentDescription?.toString()?.trim() ?: ""
-                if (text.isNotBlank()) return text
-
-                for (i in 0 until Math.min(source.childCount, 5)) {
-                    val child = source.getChild(i) ?: continue
-                    val childText = child.text?.toString()?.trim() ?: ""
-                    if (childText.isNotBlank()) {
-                        return childText
+    private fun extractText(event: AccessibilityEvent, source: AccessibilityNodeInfo?): String {
+        // 1. Primary: actual text changed in event.text
+        val textList = event.text
+        if (textList.isNotEmpty()) {
+            val combined = textList.joinToString("").trim()
+            if (combined.isNotBlank()) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O && source != null) {
+                    val hint = source.hintText?.toString()?.trim()
+                    if (!hint.isNullOrBlank() && combined.equals(hint, ignoreCase = true)) {
+                        return ""
                     }
                 }
+                return combined
             }
-        } catch (_: Exception) {}
+        }
+
+        // 2. Secondary: actual text of editable source node (never hintText or contentDescription)
+        if (source != null && (source.isEditable || source.className?.toString()?.contains("EditText", ignoreCase = true) == true)) {
+            try {
+                val text = source.text?.toString()?.trim() ?: ""
+                if (text.isNotBlank()) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        val hint = source.hintText?.toString()?.trim()
+                        if (!hint.isNullOrBlank() && text.equals(hint, ignoreCase = true)) {
+                            return ""
+                        }
+                    }
+                    return text
+                }
+            } catch (_: Exception) {}
+        }
         return ""
     }
+
+
 
     private fun saveEventToNativeBuffer(payload: Map<String, Any?>) {
         try {
@@ -182,14 +197,13 @@ class KeyflowAccessibilityService : AccessibilityService() {
         }
     }
 
-
-    private fun isSensitiveNodeOrEvent(event: AccessibilityEvent): Boolean {
+    private fun isSensitiveNodeOrEvent(event: AccessibilityEvent, source: AccessibilityNodeInfo?): Boolean {
         if (event.isPassword) {
             android.util.Log.i("KeyflowA11y", "Sensitive: event.isPassword is true")
             return true
         }
 
-        val source = event.source ?: return false
+        if (source == null) return false
         try {
             if (source.isPassword) {
                 android.util.Log.i("KeyflowA11y", "Sensitive: source.isPassword is true")
@@ -204,21 +218,14 @@ class KeyflowAccessibilityService : AccessibilityService() {
                         variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
                         variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
 
-                android.util.Log.i("KeyflowA11y", "Sensitive check: inputType=0x${Integer.toHexString(inputType)}, variation=0x${Integer.toHexString(variation)}, isPasswordVariation=$isPasswordVariation")
-
                 if (isPasswordVariation) {
                     return true
                 }
             }
-        } finally {
-            try {
-                source.recycle()
-            } catch (_: Exception) {
-                // Safe ignore if already recycled by framework
-            }
-        }
+        } catch (_: Exception) {}
         return false
     }
+
 
     override fun onTaskRemoved(rootIntent: android.content.Intent?) {
         super.onTaskRemoved(rootIntent)
