@@ -1,11 +1,11 @@
 {
-    "name": "KeyFlow",
-    "short_name": "KeyFlow",
+    "name": "keyflow_app",
+    "short_name": "keyflow_app",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#2D1B69",
-    "theme_color": "#2D1B69",
-    "description": "KeyFlow — Local-first typing history & assist app",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "A new Flutter project.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
