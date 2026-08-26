@@ -1,19 +1,20 @@
-name: Build Windows
+name: Build macOS
 
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
     paths:
-      - 'app/windows/**'
+      - 'app/macos/**'
       - 'app/pubspec.yaml'
+      - '.github/workflows/build-macos.yml'
 
 env:
   FLUTTER_VERSION: '3.44.7'
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
+  build-macos:
+    runs-on: macos-latest
     
     steps:
     - name: Checkout repository
@@ -32,25 +33,25 @@ jobs:
         cd app
         flutter pub get --enforce-lockfile
         
-    - name: Build Windows executable
+    - name: Build macOS Application
       run: |
         cd app
-        flutter build windows --release
+        flutter build macos --release
         
-    - name: Create Windows zip package
+    - name: Package macOS Universal Zip
       run: |
-        cd app/build/windows/x64/runner/Release
-        Compress-Archive -Path * -DestinationPath KeyFlow-Windows-x64.zip -Force
+        cd app/build/macos/Build/Products/Release
+        zip -r KeyFlow-macOS-Universal.zip *.app
         
-    - name: Upload Windows build artifact
+    - name: Upload macOS build artifact
       uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
-        name: KeyFlow-Windows-x64
-        path: app/build/windows/x64/runner/Release/KeyFlow-Windows-x64.zip
+        name: KeyFlow-macOS-Universal
+        path: app/build/macos/Build/Products/Release/KeyFlow-macOS-Universal.zip
         retention-days: 30
         
     - name: Upload to GitHub Release
       if: github.event_name == 'release'
       uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
       with:
-        files: app/build/windows/x64/runner/Release/KeyFlow-Windows-x64.zip
+        files: app/build/macos/Build/Products/Release/KeyFlow-macOS-Universal.zip
