@@ -32,4 +32,3 @@ class KeyFlowSearchBar extends StatelessWidget {
     ),
   );
 }
-

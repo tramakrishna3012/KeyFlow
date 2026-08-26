@@ -148,7 +148,11 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.keyboard, size: 64, color: AppColors.textMuted),
+                  const Icon(
+                    Icons.keyboard,
+                    size: 64,
+                    color: AppColors.textMuted,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'No captured snippets yet.',
@@ -179,16 +183,25 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppColors.cardBorder, width: 0.8),
+                  side: const BorderSide(
+                    color: AppColors.cardBorder,
+                    width: 0.8,
+                  ),
                 ),
                 child: ListTile(
                   title: Text(
                     entry.text,
-                    style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                   subtitle: Text(
                     '${entry.sourceApp} • ${_formatTimestamp(entry.capturedAt)}',
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
                   ),
                   trailing: IconButton(
                     icon: const Icon(
@@ -205,7 +218,9 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
         error: (err, stack) => Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -219,7 +234,6 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
       ),
     );
   }
-
 
   String _formatTimestamp(DateTime dt) =>
       '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')} ${dt.day}/${dt.month}/${dt.year}';

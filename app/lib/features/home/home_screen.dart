@@ -31,7 +31,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         debugPrint('CaptureService init error: $e');
       }
 
-
       if (!AutoUpdateService.hasCheckedThisProcess) {
         AutoUpdateService.hasCheckedThisProcess = true;
         final updater = AutoUpdateService();
@@ -186,10 +185,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Consumer(
               builder: (context, ref, _) {
                 final user = ref.watch(currentUserProvider);
-                final initial = (user?.fullName.isNotEmpty == true
-                        ? user!.fullName[0]
-                        : (user?.email.isNotEmpty == true ? user!.email[0] : 'K'))
-                    .toUpperCase();
+                final initial =
+                    (user?.fullName.isNotEmpty == true
+                            ? user!.fullName[0]
+                            : (user?.email.isNotEmpty == true
+                                  ? user!.email[0]
+                                  : 'K'))
+                        .toUpperCase();
                 return Text(
                   initial,
                   style: const TextStyle(
@@ -204,7 +206,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ],
     );
   }
-
 
   String get _formattedDate {
     final now = DateTime.now();

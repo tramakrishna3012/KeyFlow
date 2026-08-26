@@ -110,13 +110,13 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(
-            color: AppColors.primary,
-            width: 1.5,
-          ),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         hintStyle: const TextStyle(color: AppColors.textDisabled, fontSize: 12),
-        labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        labelStyle: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 13,
+        ),
       ),
 
       // ── Bottom Nav ────────────────────────────────────────────────
@@ -191,4 +191,3 @@ class AppTheme {
   /// Dark theme alias pointing to dark theme properties if needed
   static ThemeData get dark => light;
 }
-

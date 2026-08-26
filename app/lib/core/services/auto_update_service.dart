@@ -40,16 +40,16 @@ class AutoUpdateService {
     String? apiBase,
     http.Client? client,
     FlutterSecureStorage? storage,
-  })  : _apiBase = apiBase ?? 'https://keyflow-dnsd.onrender.com/api/v1',
-        _client = client ?? http.Client(),
-        _storage = storage ??
-            const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-              iOptions: IOSOptions(
-                accessibility: KeychainAccessibility.first_unlock,
-              ),
-            );
-
+  }) : _apiBase = apiBase ?? 'https://keyflow-dnsd.onrender.com/api/v1',
+       _client = client ?? http.Client(),
+       _storage =
+           storage ??
+           const FlutterSecureStorage(
+             aOptions: AndroidOptions(encryptedSharedPreferences: true),
+             iOptions: IOSOptions(
+               accessibility: KeychainAccessibility.first_unlock,
+             ),
+           );
 
   final String _apiBase;
   final http.Client _client;
@@ -95,8 +95,9 @@ class AutoUpdateService {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
       final currentBuild = packageInfo.buildNumber;
-      final fullLocalVersion =
-          currentBuild.isNotEmpty ? '$currentVersion+$currentBuild' : currentVersion;
+      final fullLocalVersion = currentBuild.isNotEmpty
+          ? '$currentVersion+$currentBuild'
+          : currentVersion;
 
       // 1. Try KeyFlow Express backend version endpoint
       try {

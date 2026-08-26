@@ -23,7 +23,10 @@ class ProfileModal extends ConsumerStatefulWidget {
         context: context,
         builder: (ctx) => Dialog(
           backgroundColor: AppColors.scaffoldBackground,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 32,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: AppColors.cardBorder),
@@ -125,7 +128,10 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppColors.cardBorder),
         ),
-        title: const Text('Choose Avatar', style: TextStyle(fontSize: 16, color: AppColors.textPrimary)),
+        title: const Text(
+          'Choose Avatar',
+          style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,9 +151,9 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                 return InkWell(
                   onTap: () async {
                     Navigator.of(ctx).pop();
-                    await ref.read(authServiceProvider).updateProfile(
-                          avatarUrl: _avatarPresets[index],
-                        );
+                    await ref
+                        .read(authServiceProvider)
+                        .updateProfile(avatarUrl: _avatarPresets[index]);
                   },
                   borderRadius: BorderRadius.circular(24),
                   child: Container(
@@ -155,18 +161,16 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isSelected ? AppColors.primary : Colors.transparent,
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.transparent,
                         width: 2,
                       ),
                     ),
                     child: CircleAvatar(
                       radius: 22,
                       backgroundColor: color.withValues(alpha: 0.2),
-                      child: Icon(
-                        Icons.person_rounded,
-                        color: color,
-                        size: 24,
-                      ),
+                      child: Icon(Icons.person_rounded, color: color, size: 24),
                     ),
                   ),
                 );
@@ -177,7 +181,10 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ),
         ],
       ),
@@ -195,7 +202,9 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
           side: const BorderSide(color: AppColors.cardBorder),
         ),
         title: Text(
-          isEnabled ? 'Manage Two-Factor Authentication' : 'Enable Two-Factor Authentication',
+          isEnabled
+              ? 'Manage Two-Factor Authentication'
+              : 'Enable Two-Factor Authentication',
           style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
         ),
         content: Column(
@@ -206,32 +215,51 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
               isEnabled
                   ? 'Two-Factor Authentication (2FA) is currently protecting your account. You can disable or re-generate recovery codes.'
                   : 'Add an extra layer of security to your KeyFlow account using an authenticator app (Google Authenticator, Authy).',
-              style: const TextStyle(fontSize: 13, color: AppColors.textMuted, height: 1.4),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textMuted,
+                height: 1.4,
+              ),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
-              await ref.read(authServiceProvider).updateProfile(mfaEnabled: !isEnabled);
+              await ref
+                  .read(authServiceProvider)
+                  .updateProfile(mfaEnabled: !isEnabled);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(isEnabled ? '2FA disabled.' : '2FA configured and enabled!'),
-                    backgroundColor: isEnabled ? AppColors.destructive : AppColors.secondary,
+                    content: Text(
+                      isEnabled
+                          ? '2FA disabled.'
+                          : '2FA configured and enabled!',
+                    ),
+                    backgroundColor: isEnabled
+                        ? AppColors.destructive
+                        : AppColors.secondary,
                   ),
                 );
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: isEnabled ? AppColors.destructive : AppColors.primary,
+              backgroundColor: isEnabled
+                  ? AppColors.destructive
+                  : AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: Text(isEnabled ? 'Disable 2FA' : 'Enable 2FA'),
           ),
@@ -252,9 +280,16 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
         ),
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.destructive, size: 22),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.destructive,
+              size: 22,
+            ),
             SizedBox(width: 8),
-            Text('Delete Account', style: TextStyle(fontSize: 16, color: AppColors.destructive)),
+            Text(
+              'Delete Account',
+              style: TextStyle(fontSize: 16, color: AppColors.destructive),
+            ),
           ],
         ),
         content: Column(
@@ -263,15 +298,29 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
           children: [
             const Text(
               'This action is irreversible. All your local typing logs, synced cloud records, and encryption keys will be permanently destroyed.',
-              style: TextStyle(fontSize: 13, color: AppColors.textMuted, height: 1.4),
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textMuted,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 14),
-            const Text('Enter your password to confirm:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+            const Text(
+              'Enter your password to confirm:',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 6),
             TextField(
               controller: passwordController,
               obscureText: true,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+              ),
               decoration: InputDecoration(
                 hintText: 'Current Password',
                 filled: true,
@@ -287,7 +336,10 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -295,14 +347,18 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
               if (password.isNotEmpty) {
                 Navigator.of(ctx).pop(); // Close dialog
                 Navigator.of(context).pop(); // Close profile modal
-                await ref.read(authServiceProvider).deleteAccount(password: password);
+                await ref
+                    .read(authServiceProvider)
+                    .deleteAccount(password: password);
                 AppAuthNotifier.debugAuthenticatedOverride = null;
               }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.destructive,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Permanently Delete'),
           ),
@@ -320,15 +376,25 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppColors.cardBorder),
         ),
-        title: const Text('Sign out of other devices?', style: TextStyle(fontSize: 16, color: AppColors.textPrimary)),
+        title: const Text(
+          'Sign out of other devices?',
+          style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
+        ),
         content: const Text(
           'This will terminate all active sessions on other laptops, phones, and workstations. You will remain signed in on this device.',
-          style: TextStyle(fontSize: 13, color: AppColors.textMuted, height: 1.4),
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.textMuted,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -346,7 +412,9 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Revoke Other Sessions'),
           ),
@@ -400,7 +468,11 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.textMuted, size: 20),
+                  icon: const Icon(
+                    Icons.close,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -425,7 +497,9 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                             children: [
                               CircleAvatar(
                                 radius: 28,
-                                backgroundColor: AppColors.primary.withValues(alpha: 0.2),
+                                backgroundColor: AppColors.primary.withValues(
+                                  alpha: 0.2,
+                                ),
                                 child: Text(
                                   name.isNotEmpty ? name[0].toUpperCase() : 'K',
                                   style: const TextStyle(
@@ -445,9 +519,16 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                                     decoration: BoxDecoration(
                                       color: AppColors.primary,
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: AppColors.scaffoldBackground, width: 1.5),
+                                      border: Border.all(
+                                        color: AppColors.scaffoldBackground,
+                                        width: 1.5,
+                                      ),
                                     ),
-                                    child: const Icon(Icons.edit, size: 12, color: Colors.white),
+                                    child: const Icon(
+                                      Icons.edit,
+                                      size: 12,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -465,15 +546,34 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                                       Expanded(
                                         child: TextField(
                                           controller: _nameController,
-                                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                                          decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 4)),
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                          decoration: const InputDecoration(
+                                            isDense: true,
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
+                                                  vertical: 4,
+                                                ),
+                                          ),
                                         ),
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.check, size: 18, color: AppColors.secondary),
+                                        icon: const Icon(
+                                          Icons.check,
+                                          size: 18,
+                                          color: AppColors.secondary,
+                                        ),
                                         onPressed: () async {
-                                          setState(() => _isEditingName = false);
-                                          await authService.updateProfile(fullName: _nameController.text.trim());
+                                          setState(
+                                            () => _isEditingName = false,
+                                          );
+                                          await authService.updateProfile(
+                                            fullName: _nameController.text
+                                                .trim(),
+                                          );
                                         },
                                       ),
                                     ],
@@ -484,14 +584,24 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                                       Flexible(
                                         child: Text(
                                           name,
-                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.textPrimary,
+                                          ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                       const SizedBox(width: 6),
                                       InkWell(
-                                        onTap: () => setState(() => _isEditingName = true),
-                                        child: const Icon(Icons.edit_outlined, size: 14, color: AppColors.textMuted),
+                                        onTap: () => setState(
+                                          () => _isEditingName = true,
+                                        ),
+                                        child: const Icon(
+                                          Icons.edit_outlined,
+                                          size: 14,
+                                          color: AppColors.textMuted,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -503,15 +613,32 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                                       Expanded(
                                         child: TextField(
                                           controller: _emailController,
-                                          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                                          decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 4)),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textMuted,
+                                          ),
+                                          decoration: const InputDecoration(
+                                            isDense: true,
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
+                                                  vertical: 4,
+                                                ),
+                                          ),
                                         ),
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.check, size: 16, color: AppColors.secondary),
+                                        icon: const Icon(
+                                          Icons.check,
+                                          size: 16,
+                                          color: AppColors.secondary,
+                                        ),
                                         onPressed: () async {
-                                          setState(() => _isEditingEmail = false);
-                                          await authService.updateProfile(email: _emailController.text.trim());
+                                          setState(
+                                            () => _isEditingEmail = false,
+                                          );
+                                          await authService.updateProfile(
+                                            email: _emailController.text.trim(),
+                                          );
                                         },
                                       ),
                                     ],
@@ -522,14 +649,23 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                                       Flexible(
                                         child: Text(
                                           email,
-                                          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textMuted,
+                                          ),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                       const SizedBox(width: 6),
                                       InkWell(
-                                        onTap: () => setState(() => _isEditingEmail = true),
-                                        child: const Icon(Icons.edit_outlined, size: 12, color: AppColors.textMuted),
+                                        onTap: () => setState(
+                                          () => _isEditingEmail = true,
+                                        ),
+                                        child: const Icon(
+                                          Icons.edit_outlined,
+                                          size: 12,
+                                          color: AppColors.textMuted,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -537,33 +673,50 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.primary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               role,
-                              style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.cardBorder.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.info_outline, size: 14, color: AppColors.textMuted),
+                            Icon(
+                              Icons.info_outline,
+                              size: 14,
+                              color: AppColors.textMuted,
+                            ),
                             SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'Re-verification required if email address is updated.',
-                                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textMuted,
+                                ),
                               ),
                             ),
                           ],
@@ -587,13 +740,19 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: (is2FaEnabled ? AppColors.secondary : AppColors.textMuted).withValues(alpha: 0.15),
+                              color:
+                                  (is2FaEnabled
+                                          ? AppColors.secondary
+                                          : AppColors.textMuted)
+                                      .withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               Icons.security_rounded,
                               size: 18,
-                              color: is2FaEnabled ? AppColors.secondary : AppColors.textMuted,
+                              color: is2FaEnabled
+                                  ? AppColors.secondary
+                                  : AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -601,24 +760,46 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Two-Factor Authentication (2FA)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                const Text(
+                                  'Two-Factor Authentication (2FA)',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                                 Text(
-                                  is2FaEnabled ? 'Active and protecting your workstation' : 'Not configured',
-                                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                  is2FaEnabled
+                                      ? 'Active and protecting your workstation'
+                                      : 'Not configured',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           OutlinedButton(
-                            onPressed: () => _showConfigureTwoFactorDialog(user),
+                            onPressed: () =>
+                                _showConfigureTwoFactorDialog(user),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.cardBorder),
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              side: const BorderSide(
+                                color: AppColors.cardBorder,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                             child: Text(
                               is2FaEnabled ? 'Manage' : 'Configure',
-                              style: const TextStyle(fontSize: 12, color: AppColors.primary),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                         ],
@@ -634,13 +815,19 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: (isCloudSyncEnabled ? AppColors.primary : AppColors.textMuted).withValues(alpha: 0.15),
+                              color:
+                                  (isCloudSyncEnabled
+                                          ? AppColors.primary
+                                          : AppColors.textMuted)
+                                      .withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               Icons.cloud_sync_rounded,
                               size: 18,
-                              color: isCloudSyncEnabled ? AppColors.primary : AppColors.textMuted,
+                              color: isCloudSyncEnabled
+                                  ? AppColors.primary
+                                  : AppColors.textMuted,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -648,10 +835,19 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Encrypted Cloud Sync', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                                Text(
+                                  'Encrypted Cloud Sync',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                                 Text(
                                   'Sync typing history encrypted at rest via AES-256-GCM',
-                                  style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted,
+                                  ),
                                 ),
                               ],
                             ),
@@ -659,7 +855,9 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                           Switch(
                             value: isCloudSyncEnabled,
                             onChanged: (val) async {
-                              await authService.updateProfile(cloudSyncEnabled: val);
+                              await authService.updateProfile(
+                                cloudSyncEnabled: val,
+                              );
                             },
                             activeThumbColor: AppColors.primary,
                           ),
@@ -681,7 +879,11 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                         onTap: _showSignOutAllOtherSessionsDialog,
                         child: const Text(
                           'Sign out all others',
-                          style: TextStyle(fontSize: 11, color: AppColors.destructive, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.destructive,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                   ],
@@ -689,70 +891,124 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                 const SizedBox(height: 8),
                 KeyFlowCard(
                   child: _isLoadingSessions
-                      ? const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary)))
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(12),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        )
                       : Column(
-                          children: _sessions.map((sess) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 6),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    sess.osInfo.toLowerCase().contains('android') || sess.osInfo.toLowerCase().contains('mobile')
-                                        ? Icons.smartphone_rounded
-                                        : Icons.laptop_chromebook_rounded,
-                                    color: sess.isCurrent ? AppColors.secondary : AppColors.textMuted,
-                                    size: 20,
+                          children: _sessions
+                              .map(
+                                (sess) => Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 6,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        sess.osInfo.toLowerCase().contains(
+                                                  'android',
+                                                ) ||
+                                                sess.osInfo
+                                                    .toLowerCase()
+                                                    .contains('mobile')
+                                            ? Icons.smartphone_rounded
+                                            : Icons.laptop_chromebook_rounded,
+                                        color: sess.isCurrent
+                                            ? AppColors.secondary
+                                            : AppColors.textMuted,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Flexible(
-                                              child: Text(
-                                                sess.deviceName,
-                                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                                                overflow: TextOverflow.ellipsis,
+                                            Row(
+                                              children: [
+                                                Flexible(
+                                                  child: Text(
+                                                    sess.deviceName,
+                                                    style: const TextStyle(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                if (sess.isCurrent) ...[
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 2,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.secondary
+                                                          .withValues(
+                                                            alpha: 0.15,
+                                                          ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            6,
+                                                          ),
+                                                    ),
+                                                    child: const Text(
+                                                      'This device',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color:
+                                                            AppColors.secondary,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                            Text(
+                                              '${sess.osInfo} • ${sess.lastActive}',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.textMuted,
                                               ),
                                             ),
-                                            if (sess.isCurrent) ...[
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.secondary.withValues(alpha: 0.15),
-                                                  borderRadius: BorderRadius.circular(6),
-                                                ),
-                                                child: const Text(
-                                                  'This device',
-                                                  style: TextStyle(fontSize: 10, color: AppColors.secondary, fontWeight: FontWeight.w600),
-                                                ),
-                                              ),
-                                            ],
                                           ],
                                         ),
-                                        Text(
-                                          '${sess.osInfo} • ${sess.lastActive}',
-                                          style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                                      ),
+                                      if (!sess.isCurrent)
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.remove_circle_outline,
+                                            size: 18,
+                                            color: AppColors.destructive,
+                                          ),
+                                          tooltip: 'Revoke session',
+                                          onPressed: () async {
+                                            await authService.revokeSession(
+                                              sess.id,
+                                            );
+                                            setState(() {
+                                              _sessions.removeWhere(
+                                                (s) => s.id == sess.id,
+                                              );
+                                            });
+                                          },
                                         ),
-                                      ],
-                                    ),
+                                    ],
                                   ),
-                                  if (!sess.isCurrent)
-                                    IconButton(
-                                      icon: const Icon(Icons.remove_circle_outline, size: 18, color: AppColors.destructive),
-                                      tooltip: 'Revoke session',
-                                      onPressed: () async {
-                                        await authService.revokeSession(sess.id);
-                                        setState(() {
-                                          _sessions.removeWhere((s) => s.id == sess.id);
-                                        });
-                                      },
-                                    ),
-                                ],
-                              ),
-                            )).toList(),
+                                ),
+                              )
+                              .toList(),
                         ),
                 ),
 
@@ -767,9 +1023,22 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                       // Switch Account
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.switch_account_outlined, color: AppColors.primary),
-                        title: const Text('Switch Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                        trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+                        leading: const Icon(
+                          Icons.switch_account_outlined,
+                          color: AppColors.primary,
+                        ),
+                        title: const Text(
+                          'Switch Account',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
                         onTap: () {
                           Navigator.of(context).pop();
                           AuthModal.show(context);
@@ -780,9 +1049,22 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                       // Sign Out
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.logout_rounded, color: AppColors.textPrimary),
-                        title: const Text('Sign Out', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                        trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+                        leading: const Icon(
+                          Icons.logout_rounded,
+                          color: AppColors.textPrimary,
+                        ),
+                        title: const Text(
+                          'Sign Out',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                          color: AppColors.textMuted,
+                          size: 20,
+                        ),
                         onTap: () async {
                           AppAuthNotifier.debugAuthenticatedOverride = null;
                           await authService.logout();
@@ -794,9 +1076,23 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                       // Delete Account
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.delete_forever_outlined, color: AppColors.destructive),
-                        title: const Text('Delete Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.destructive)),
-                        trailing: const Icon(Icons.chevron_right, color: AppColors.destructive, size: 20),
+                        leading: const Icon(
+                          Icons.delete_forever_outlined,
+                          color: AppColors.destructive,
+                        ),
+                        title: const Text(
+                          'Delete Account',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.destructive,
+                          ),
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                          color: AppColors.destructive,
+                          size: 20,
+                        ),
                         onTap: _showDeleteAccountDialog,
                       ),
                     ],

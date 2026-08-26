@@ -4,7 +4,6 @@ import '../../data/models/history_entry.dart';
 import '../../data/providers.dart';
 
 class AppVisualMeta {
-
   const AppVisualMeta({
     required this.displayName,
     required this.icon,
@@ -40,7 +39,9 @@ AppVisualMeta getAppVisualMeta(String rawPackageOrName) {
       iconColor: Colors.white,
       iconBg: Color(0xFF2563EB), // Blue 600
     );
-  } else if (lower.contains('gmail') || lower.contains('mail') || lower.contains('email')) {
+  } else if (lower.contains('gmail') ||
+      lower.contains('mail') ||
+      lower.contains('email')) {
     return const AppVisualMeta(
       displayName: 'Gmail',
       icon: Icons.mail_rounded,
@@ -61,21 +62,27 @@ AppVisualMeta getAppVisualMeta(String rawPackageOrName) {
       iconColor: Colors.white,
       iconBg: Color(0xFF7C3AED), // Violet 600
     );
-  } else if (lower.contains('note') || lower.contains('notepad') || lower.contains('memo')) {
+  } else if (lower.contains('note') ||
+      lower.contains('notepad') ||
+      lower.contains('memo')) {
     return const AppVisualMeta(
       displayName: 'Notes',
       icon: Icons.edit_note_rounded,
       iconColor: Colors.white,
       iconBg: Color(0xFF9333EA), // Purple 600
     );
-  } else if (lower.contains('terminal') || lower.contains('term') || lower.contains('shell')) {
+  } else if (lower.contains('terminal') ||
+      lower.contains('term') ||
+      lower.contains('shell')) {
     return const AppVisualMeta(
       displayName: 'Terminal',
       icon: Icons.terminal_rounded,
       iconColor: Colors.white,
       iconBg: Color(0xFF0F172A), // Slate 900
     );
-  } else if (lower.contains('code') || lower.contains('studio') || lower.contains('vscode')) {
+  } else if (lower.contains('code') ||
+      lower.contains('studio') ||
+      lower.contains('vscode')) {
     return const AppVisualMeta(
       displayName: 'VS Code',
       icon: Icons.code_rounded,
@@ -110,7 +117,9 @@ final searchQueryProvider = StateProvider<String>((ref) => '');
 final activeTagProvider = StateProvider<String>((ref) => 'All Apps');
 
 /// Dynamic app filter chips derived from all captured entries in the repository
-final availableAppChipsProvider = FutureProvider.autoDispose<List<String>>((ref) async {
+final availableAppChipsProvider = FutureProvider.autoDispose<List<String>>((
+  ref,
+) async {
   final repository = ref.watch(historyRepositoryProvider);
   final entries = await repository.getAllEntries();
   final appNames = <String>{'All Apps'};
@@ -186,4 +195,3 @@ final historyNotifierProvider =
     StateNotifierProvider<HistoryNotifier, AsyncValue<void>>(
       HistoryNotifier.new,
     );
-

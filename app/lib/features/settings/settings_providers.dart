@@ -20,7 +20,9 @@ final exclusionListProvider = FutureProvider<List<String>>((ref) async {
 });
 
 // Installed Apps provider
-final installedAppsProvider = FutureProvider<List<InstalledAppInfo>>((ref) async {
+final installedAppsProvider = FutureProvider<List<InstalledAppInfo>>((
+  ref,
+) async {
   final captureService = ref.watch(captureServiceProvider);
   final repo = ref.watch(historyRepositoryProvider);
   final apps = await captureService.getInstalledApps();
@@ -32,7 +34,8 @@ final installedAppsProvider = FutureProvider<List<InstalledAppInfo>>((ref) async
       final currentExclusions = await repo.getExclusionList();
       final currentExclusionSet = currentExclusions.toSet();
       for (final app in apps) {
-        if (app.isBankingApp && !currentExclusionSet.contains(app.packageName)) {
+        if (app.isBankingApp &&
+            !currentExclusionSet.contains(app.packageName)) {
           await repo.addExclusion(app.packageName);
         }
       }
@@ -45,7 +48,6 @@ final installedAppsProvider = FutureProvider<List<InstalledAppInfo>>((ref) async
 
   return apps;
 });
-
 
 // Retention Days provider (default 30)
 final retentionDaysProvider = FutureProvider<int>((ref) async {
@@ -89,7 +91,6 @@ final targetLanguageProvider = FutureProvider<String>((ref) async {
   return 'es';
 });
 
-
 class SettingsController {
   SettingsController(this.ref);
   final Ref ref;
@@ -130,7 +131,6 @@ class SettingsController {
     final captureService = ref.read(captureServiceProvider);
     await captureService.syncExclusionList(updatedList);
   }
-
 
   Future<void> updateRetentionDays(int days) async {
     final repo = ref.read(historyRepositoryProvider);
@@ -188,7 +188,8 @@ final settingsControllerProvider = Provider<SettingsController>(
 );
 
 class CapturePausedNotifier extends StateNotifier<bool> {
-  CapturePausedNotifier(this._captureService) : super(_captureService.isPaused) {
+  CapturePausedNotifier(this._captureService)
+    : super(_captureService.isPaused) {
     _init();
   }
 
@@ -220,7 +221,6 @@ class CapturePausedNotifier extends StateNotifier<bool> {
   }
 
   Future<void> syncWithNative() async {
-
     final paused = await _captureService.isCapturePaused();
     state = paused;
   }
@@ -232,15 +232,14 @@ class CapturePausedNotifier extends StateNotifier<bool> {
 
 final capturePausedProvider =
     StateNotifierProvider<CapturePausedNotifier, bool>((ref) {
-  final captureService = ref.watch(captureServiceProvider);
-  return CapturePausedNotifier(captureService);
-});
+      final captureService = ref.watch(captureServiceProvider);
+      return CapturePausedNotifier(captureService);
+    });
 
 final accessibilityServiceEnabledProvider = FutureProvider<bool>((ref) async {
   final captureService = ref.watch(captureServiceProvider);
   return captureService.isAccessibilityServiceEnabled();
 });
-
 
 class FloatingBubbleNotifier extends StateNotifier<bool> {
   FloatingBubbleNotifier(this._captureService, this._ref) : super(false) {
@@ -267,7 +266,9 @@ class FloatingBubbleNotifier extends StateNotifier<bool> {
   Future<bool> toggleBubble() async {
     if (state) {
       await _captureService.hideOverlayBubble();
-      await _ref.read(settingsControllerProvider).setOverlayBubbleEnabled(false);
+      await _ref
+          .read(settingsControllerProvider)
+          .setOverlayBubbleEnabled(false);
       state = false;
       return true;
     } else {
@@ -277,7 +278,9 @@ class FloatingBubbleNotifier extends StateNotifier<bool> {
       }
       final success = await _captureService.showOverlayBubble();
       if (success) {
-        await _ref.read(settingsControllerProvider).setOverlayBubbleEnabled(true);
+        await _ref
+            .read(settingsControllerProvider)
+            .setOverlayBubbleEnabled(true);
         state = true;
       }
       return success;
@@ -301,8 +304,6 @@ class FloatingBubbleNotifier extends StateNotifier<bool> {
 
 final floatingBubbleProvider =
     StateNotifierProvider<FloatingBubbleNotifier, bool>((ref) {
-  final captureService = ref.watch(captureServiceProvider);
-  return FloatingBubbleNotifier(captureService, ref);
-});
-
-
+      final captureService = ref.watch(captureServiceProvider);
+      return FloatingBubbleNotifier(captureService, ref);
+    });

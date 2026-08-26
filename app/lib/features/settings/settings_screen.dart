@@ -11,7 +11,6 @@ import '../profile/profile_modal.dart';
 import 'excluded_apps_screen.dart';
 import 'settings_providers.dart';
 
-
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
@@ -71,7 +70,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             _buildFloatingBubbleCard(),
 
             const SizedBox(height: 24),
-
 
             // 2. EXCLUSION LIST SECTION
             _buildSectionHeader('EXCLUSION LIST'),
@@ -187,7 +185,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -257,7 +258,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           Row(
             children: [
               Icon(
-                isPaused ? Icons.pause_circle_outline : Icons.play_circle_outline,
+                isPaused
+                    ? Icons.pause_circle_outline
+                    : Icons.play_circle_outline,
                 size: 20,
                 color: isPaused ? AppColors.accentOrange : AppColors.secondary,
               ),
@@ -339,7 +342,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   duration: const Duration(seconds: 3),
                 ),
               );
-              ref.read(capturePausedProvider.notifier).openAccessibilitySettings();
+              ref
+                  .read(capturePausedProvider.notifier)
+                  .openAccessibilitySettings();
             },
             borderRadius: BorderRadius.circular(8),
             child: Padding(
@@ -349,7 +354,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   Icon(
                     Icons.accessibility_new_rounded,
                     size: 18,
-                    color: isA11yEnabled ? AppColors.secondary : AppColors.accentOrange,
+                    color: isA11yEnabled
+                        ? AppColors.secondary
+                        : AppColors.accentOrange,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -371,7 +378,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                               : 'OS Permission: Disabled in Settings',
                           style: TextStyle(
                             fontSize: 11,
-                            color: isA11yEnabled ? AppColors.secondary : AppColors.accentOrange,
+                            color: isA11yEnabled
+                                ? AppColors.secondary
+                                : AppColors.accentOrange,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -379,14 +388,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
-                      color: (isA11yEnabled ? AppColors.secondary : AppColors.accentOrange)
-                          .withValues(alpha: 0.12),
+                      color:
+                          (isA11yEnabled
+                                  ? AppColors.secondary
+                                  : AppColors.accentOrange)
+                              .withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: (isA11yEnabled ? AppColors.secondary : AppColors.accentOrange)
-                            .withValues(alpha: 0.3),
+                        color:
+                            (isA11yEnabled
+                                    ? AppColors.secondary
+                                    : AppColors.accentOrange)
+                                .withValues(alpha: 0.3),
                       ),
                     ),
                     child: Text(
@@ -394,12 +412,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: isA11yEnabled ? AppColors.secondary : AppColors.accentOrange,
+                        color: isA11yEnabled
+                            ? AppColors.secondary
+                            : AppColors.accentOrange,
                       ),
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.textMuted),
+                  const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 12,
+                    color: AppColors.textMuted,
+                  ),
                 ],
               ),
             ),
@@ -408,7 +432,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       ),
     );
   }
-
 
   // Floating Assistant Overlay Card
   Widget _buildFloatingBubbleCard() {
@@ -447,9 +470,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       _showOverlayPermissionDialog(context);
                       return;
                     }
-
                   }
-                  await ref.read(floatingBubbleProvider.notifier).toggleBubble();
+                  await ref
+                      .read(floatingBubbleProvider.notifier)
+                      .toggleBubble();
                 },
                 activeThumbColor: AppColors.primary,
                 activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
@@ -589,7 +613,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         const SizedBox(height: 6),
         const Text(
           'Keystrokes typed in excluded apps are discarded immediately. Banking & payment apps are auto-protected.',
-          style: TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.3),
+          style: TextStyle(
+            fontSize: 12,
+            color: AppColors.textMuted,
+            height: 1.3,
+          ),
         ),
         const SizedBox(height: 14),
         OutlinedButton.icon(
@@ -618,17 +646,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               : Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: exclusions.map(
-                    (app) => Chip(
-                      label: Text(app, style: const TextStyle(fontSize: 11)),
-                      deleteIcon: const Icon(Icons.close, size: 13),
-                      onDeleted: () {
-                        ref.read(settingsControllerProvider).removeExclusion(app);
-                      },
-                      backgroundColor: AppColors.cardSurface,
-                      side: const BorderSide(color: AppColors.cardBorder),
-                    ),
-                  ).toList(),
+                  children: exclusions
+                      .map(
+                        (app) => Chip(
+                          label: Text(
+                            app,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                          deleteIcon: const Icon(Icons.close, size: 13),
+                          onDeleted: () {
+                            ref
+                                .read(settingsControllerProvider)
+                                .removeExclusion(app);
+                          },
+                          backgroundColor: AppColors.cardSurface,
+                          side: const BorderSide(color: AppColors.cardBorder),
+                        ),
+                      )
+                      .toList(),
                 ),
           loading: () => const CircularProgressIndicator(),
           error: (err, _) => Text(
@@ -667,8 +702,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       ],
     ),
   );
-
-
 
   // 2. Retention Card
   Widget _buildRetentionCard(AsyncValue<int> retentionAsync) => KeyFlowCard(

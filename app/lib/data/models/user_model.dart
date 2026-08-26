@@ -101,9 +101,13 @@ class UserSession {
 
   factory UserSession.fromJson(Map<String, dynamic> json) => UserSession(
     id: json['id'] as String? ?? '',
-    deviceName: (json['deviceName'] ?? json['device_name']) as String? ?? 'Device',
+    deviceName:
+        (json['deviceName'] ?? json['device_name']) as String? ?? 'Device',
     osInfo: (json['osInfo'] ?? json['os_info']) as String? ?? 'Unknown OS',
-    lastActive: (json['lastActive'] ?? json['last_sync_at'] ?? json['started_at']) as String? ?? 'Just now',
+    lastActive:
+        (json['lastActive'] ?? json['last_sync_at'] ?? json['started_at'])
+            as String? ??
+        'Just now',
     isCurrent: json['isCurrent'] as bool? ?? false,
     ipAddress: json['ipAddress'] as String?,
   );

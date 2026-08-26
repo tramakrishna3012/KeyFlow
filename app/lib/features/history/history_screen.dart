@@ -58,7 +58,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   IconButton(
-                    icon: const Icon(Icons.refresh_rounded, size: 20, color: AppColors.textMuted),
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      size: 20,
+                      color: AppColors.textMuted,
+                    ),
                     onPressed: () {
                       ref
                         ..invalidate(historyEntriesProvider)
@@ -95,7 +99,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   final grouped = _groupEntries(entries);
 
                   return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 6,
+                    ),
                     itemCount: grouped.length,
                     itemBuilder: (context, dateIndex) {
                       final dateHeader = grouped.keys.elementAt(dateIndex);
@@ -158,7 +165,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 ref.read(activeTagProvider.notifier).state = tag;
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: isActive ? AppColors.primary : AppColors.cardSurface,
                   borderRadius: BorderRadius.circular(20),
@@ -172,7 +182,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                             color: AppColors.primary.withValues(alpha: 0.25),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
-                          )
+                          ),
                         ]
                       : null,
                 ),
@@ -195,41 +205,44 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   }
 
   Widget _buildDateHeader(String dateHeader, int totalCount) => Padding(
-      padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            dateHeader.toUpperCase(),
+    padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          dateHeader.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFFB45309), // amber-700
+            letterSpacing: 0.8,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+          decoration: BoxDecoration(
+            color: AppColors.scaffoldBackground,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: Text(
+            '$totalCount ${totalCount == 1 ? 'entry' : 'entries'}',
             style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFFB45309), // amber-700
-              letterSpacing: 0.8,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
-            decoration: BoxDecoration(
-              color: AppColors.scaffoldBackground,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: Text(
+        ),
+      ],
+    ),
+  );
 
-              '$totalCount ${totalCount == 1 ? 'entry' : 'entries'}',
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-  Widget _buildAppCard(BuildContext context, String sourceApp, List<HistoryEntry> items) {
+  Widget _buildAppCard(
+    BuildContext context,
+    String sourceApp,
+    List<HistoryEntry> items,
+  ) {
     final meta = getAppVisualMeta(sourceApp);
 
     return Container(
@@ -342,10 +355,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primaryGhost : AppColors.scaffoldBackground,
+                  color: isSelected
+                      ? AppColors.primaryGhost
+                      : AppColors.scaffoldBackground,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.cardBorder,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.cardBorder,
                     width: isSelected ? 1.2 : 0.8,
                   ),
                 ),
@@ -373,9 +390,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(4),
                           child: Icon(
-                            isSelected ? Icons.check_rounded : Icons.copy_rounded,
+                            isSelected
+                                ? Icons.check_rounded
+                                : Icons.copy_rounded,
                             size: 14,
-                            color: isSelected ? AppColors.primary : AppColors.textMuted,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.textMuted,
                           ),
                         ),
                       ),
@@ -437,7 +458,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     ),
   );
 
-  Map<String, Map<String, List<HistoryEntry>>> _groupEntries(List<HistoryEntry> entries) {
+  Map<String, Map<String, List<HistoryEntry>>> _groupEntries(
+    List<HistoryEntry> entries,
+  ) {
     final grouped = <String, Map<String, List<HistoryEntry>>>{};
     for (final entry in entries) {
       final dateHeader = _formatDateHeader(entry.capturedAt);
@@ -460,8 +483,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     } else {
       const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
       ];
       final weekday = weekdays[dt.weekday - 1];
       final month = months[dt.month - 1];

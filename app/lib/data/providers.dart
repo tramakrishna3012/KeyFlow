@@ -91,6 +91,5 @@ final captureServiceProvider = Provider<CaptureService>((ref) {
         ..invalidate(historyEntriesProvider)
         ..invalidate(allHistoryEntriesProvider);
     },
-
   );
 });

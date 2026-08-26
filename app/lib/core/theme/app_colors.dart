@@ -116,4 +116,3 @@ class AppColors {
   /// Bot border accent: 15% white opacity
   static const Color botBorder = Color(0x26FFFFFF);
 }
-

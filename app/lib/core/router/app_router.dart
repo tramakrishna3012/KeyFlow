@@ -129,10 +129,12 @@ class _ScaffoldWithNavBar extends StatelessWidget {
                     Expanded(
                       child: NavigationRail(
                         selectedIndex: navigationShell.currentIndex,
-                        onDestinationSelected: (index) => navigationShell.goBranch(
-                          index,
-                          initialLocation: index == navigationShell.currentIndex,
-                        ),
+                        onDestinationSelected: (index) =>
+                            navigationShell.goBranch(
+                              index,
+                              initialLocation:
+                                  index == navigationShell.currentIndex,
+                            ),
                         labelType: NavigationRailLabelType.all,
                         destinations: const [
                           NavigationRailDestination(
@@ -255,7 +257,9 @@ class _DesktopHeader extends ConsumerWidget {
       height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.cardBorder, width: 0.8)),
+        border: Border(
+          bottom: BorderSide(color: AppColors.cardBorder, width: 0.8),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -283,9 +287,19 @@ class _DesktopHeader extends ConsumerWidget {
                 value: 'profile',
                 child: Row(
                   children: [
-                    const Icon(Icons.person_outline, size: 18, color: AppColors.primary),
+                    const Icon(
+                      Icons.person_outline,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 10),
-                    Text('Profile ($name)', style: const TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+                    Text(
+                      'Profile ($name)',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -293,9 +307,19 @@ class _DesktopHeader extends ConsumerWidget {
                 value: 'switch',
                 child: Row(
                   children: [
-                    Icon(Icons.swap_horiz_rounded, size: 18, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.swap_horiz_rounded,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
                     SizedBox(width: 10),
-                    Text('Switch Account', style: TextStyle(fontSize: 13, color: AppColors.textPrimary)),
+                    Text(
+                      'Switch Account',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -304,9 +328,19 @@ class _DesktopHeader extends ConsumerWidget {
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout_rounded, size: 18, color: AppColors.destructive),
+                    Icon(
+                      Icons.logout_rounded,
+                      size: 18,
+                      color: AppColors.destructive,
+                    ),
                     SizedBox(width: 10),
-                    Text('Sign Out', style: TextStyle(fontSize: 13, color: AppColors.destructive)),
+                    Text(
+                      'Sign Out',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.destructive,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -335,7 +369,11 @@ class _DesktopHeader extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppColors.textMuted),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                  color: AppColors.textMuted,
+                ),
               ],
             ),
           ),
@@ -352,10 +390,11 @@ class _DesktopSidebarFooter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final initial = (user?.fullName.isNotEmpty == true
-            ? user!.fullName[0]
-            : (user?.email.isNotEmpty == true ? user!.email[0] : 'K'))
-        .toUpperCase();
+    final initial =
+        (user?.fullName.isNotEmpty == true
+                ? user!.fullName[0]
+                : (user?.email.isNotEmpty == true ? user!.email[0] : 'K'))
+            .toUpperCase();
 
     return InkWell(
       onTap: () => ProfileModal.show(context),
@@ -378,4 +417,3 @@ class _DesktopSidebarFooter extends ConsumerWidget {
     );
   }
 }
-

@@ -7,7 +7,6 @@ import '../../data/sync_service.dart';
 import '../look_monitor/look_window_sanitizer.dart';
 import '../settings/models/installed_app_info.dart';
 
-
 class CaptureService {
   CaptureService(
     this._repository, {
@@ -48,7 +47,6 @@ class CaptureService {
     } on Exception catch (e) {
       debugPrint('Sync exclusions error: $e');
     }
-
   }
 
   Future<bool> startCapture() async {
@@ -144,7 +142,9 @@ class CaptureService {
 
   Future<bool> canDrawOverlays() async {
     try {
-      final allowed = await _methodChannel.invokeMethod<bool>('canDrawOverlays');
+      final allowed = await _methodChannel.invokeMethod<bool>(
+        'canDrawOverlays',
+      );
       return allowed ?? false;
     } on PlatformException catch (e) {
       debugPrint('CaptureService canDrawOverlays error: ${e.message}');
@@ -162,7 +162,9 @@ class CaptureService {
 
   Future<bool> showOverlayBubble() async {
     try {
-      final result = await _methodChannel.invokeMethod<bool>('showOverlayBubble');
+      final result = await _methodChannel.invokeMethod<bool>(
+        'showOverlayBubble',
+      );
       return result ?? false;
     } on PlatformException catch (e) {
       debugPrint('CaptureService showOverlayBubble error: ${e.message}');
@@ -172,7 +174,9 @@ class CaptureService {
 
   Future<bool> hideOverlayBubble() async {
     try {
-      final result = await _methodChannel.invokeMethod<bool>('hideOverlayBubble');
+      final result = await _methodChannel.invokeMethod<bool>(
+        'hideOverlayBubble',
+      );
       return result ?? true;
     } on PlatformException catch (e) {
       debugPrint('CaptureService hideOverlayBubble error: ${e.message}');
@@ -182,14 +186,18 @@ class CaptureService {
 
   Future<bool> isOverlayShowing() async {
     try {
-      final result = await _methodChannel.invokeMethod<bool>('isOverlayShowing');
+      final result = await _methodChannel.invokeMethod<bool>(
+        'isOverlayShowing',
+      );
       return result ?? false;
     } on PlatformException catch (_) {
       return false;
     }
   }
 
-  Future<List<InstalledAppInfo>> getInstalledApps({bool includeSystem = false}) async {
+  Future<List<InstalledAppInfo>> getInstalledApps({
+    bool includeSystem = false,
+  }) async {
     try {
       final result = await _methodChannel.invokeMethod<List<dynamic>>(
         'getInstalledApps',
@@ -197,7 +205,9 @@ class CaptureService {
       );
       if (result == null) return [];
       return result
-          .map((item) => InstalledAppInfo.fromMap(item as Map<dynamic, dynamic>))
+          .map(
+            (item) => InstalledAppInfo.fromMap(item as Map<dynamic, dynamic>),
+          )
           .toList();
     } on PlatformException catch (e) {
       debugPrint('CaptureService getInstalledApps error: ${e.message}');
@@ -297,7 +307,9 @@ class CaptureService {
       final lastSaved = _lastSavedTextPerApp[appName];
       final lastSavedTime = _lastSavedTimePerApp[appName] ?? 0;
       if (lastSaved == sanitizedText && (now - lastSavedTime) < 10000) {
-        debugPrint('[CaptureService] Skipping duplicate entry for $appName: $sanitizedText');
+        debugPrint(
+          '[CaptureService] Skipping duplicate entry for $appName: $sanitizedText',
+        );
         return;
       }
 
@@ -327,4 +339,3 @@ class CaptureService {
     }
   }
 }
-
