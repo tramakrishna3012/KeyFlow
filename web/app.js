@@ -648,7 +648,46 @@ function setupTypingHistory() {
       loadTypingHistory(q, appName);
     }
   });
+
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-copy-snippet');
+    if (btn) {
+      const textToCopy = btn.getAttribute('data-copy') || '';
+      if (!textToCopy) return;
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(textToCopy);
+        } else {
+          const textArea = document.createElement('textarea');
+          textArea.value = textToCopy;
+          textArea.style.position = 'fixed';
+          textArea.style.left = '-999999px';
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+          document.execCommand('copy');
+          textArea.remove();
+        }
+
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span>✅</span> Copied!';
+        btn.style.borderColor = 'var(--accent-emerald)';
+        btn.style.color = 'var(--accent-emerald)';
+        showToast('Snippet copied to clipboard!', 'success');
+
+        setTimeout(() => {
+          btn.innerHTML = originalHtml;
+          btn.style.borderColor = 'var(--border-color)';
+          btn.style.color = '';
+        }, 2000);
+      } catch (err) {
+        showToast('Could not copy to clipboard: ' + err.message, 'error');
+      }
+    }
+  });
 }
+
 
 async function fetchSupabaseEntries() {
   try {
@@ -664,6 +703,154 @@ async function fetchSupabaseEntries() {
   } catch (err) {
     console.warn('Supabase entries fetch error:', err);
     return [];
+  }
+}
+
+async function decryptSupabasePayload(ciphertextB64, ivB64, userId) {
+  if (!ciphertextB64) return '';
+  try {
+    // 1. Try decoding if base64 utf8 plaintext
+    try {
+      const decoded = atob(ciphertextB64);
+      if (/^[\x20-\x7E\r\n\t]+$/.test(decoded) && !decoded.includes('\x00')) {
+        return decoded;
+      }
+    } catch (_) {}
+
+    // 2. Try AES-GCM decryption with WebCrypto
+    if (window.crypto && window.crypto.subtle && userId && ivB64) {
+      try {
+        const enc = new TextEncoder();
+        const rawKeyMaterial = enc.encode(userId);
+        const salt = enc.encode('kf_' + userId);
+        const info = enc.encode('keyflow-history-encryption');
+
+        const baseKey = await window.crypto.subtle.importKey(
+          'raw',
+          rawKeyMaterial,
+          'HKDF',
+          false,
+          ['deriveKey']
+        );
+
+        const derivedKey = await window.crypto.subtle.deriveKey(
+          {
+            name: 'HKDF',
+            hash: 'SHA-256',
+            salt: salt,
+            info: info
+          },
+          baseKey,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['decrypt']
+        );
+
+        let ivB64Standard = ivB64.replace(/-/g, '+').replace(/_/g, '/');
+        while (ivB64Standard.length % 4) ivB64Standard += '=';
+        const ivBytes = Uint8Array.from(atob(ivB64Standard), c => c.charCodeAt(0));
+
+        let cipherStandard = ciphertextB64.replace(/-/g, '+').replace(/_/g, '/');
+        while (cipherStandard.length % 4) cipherStandard += '=';
+        const cipherBytes = Uint8Array.from(atob(cipherStandard), c => c.charCodeAt(0));
+
+        const decryptedBuffer = await window.crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv: ivBytes },
+          derivedKey,
+          cipherBytes
+        );
+
+        return new TextDecoder().decode(decryptedBuffer);
+      } catch (_) {}
+    }
+  } catch (err) {
+    console.warn('Decryption helper error:', err);
+  }
+  return '';
+}
+
+let activeAppFilter = 'All';
+
+function getAppVisualMeta(rawPackageOrName) {
+  const lower = (rawPackageOrName || '').toLowerCase();
+  if (lower.includes('calc')) {
+    return {
+      displayName: 'Calculator',
+      icon: '🧮',
+      iconBg: '#059669', // Emerald
+      iconColor: '#ffffff'
+    };
+  } else if (lower.includes('chrome')) {
+    return {
+      displayName: 'Chrome',
+      icon: '🌐',
+      iconBg: '#D97706', // Amber
+      iconColor: '#ffffff'
+    };
+  } else if (lower.includes('whatsapp')) {
+    return {
+      displayName: 'WhatsApp',
+      icon: '💬',
+      iconBg: '#10B981',
+      iconColor: '#ffffff'
+    };
+  } else if (lower.includes('word') || lower.includes('doc')) {
+    return {
+      displayName: 'Microsoft Word',
+      icon: '📄',
+      iconBg: '#2563EB',
+      iconColor: '#ffffff'
+    };
+  } else if (lower.includes('gmail') || lower.includes('mail')) {
+    return {
+      displayName: 'Gmail',
+      icon: '✉️',
+      iconBg: '#DC2626',
+      iconColor: '#ffffff'
+    };
+  } else if (lower.includes('telegram')) {
+    return {
+      displayName: 'Telegram',
+      icon: '✈️',
+      iconBg: '#0284C7',
+      iconColor: '#ffffff'
+    };
+  } else if (lower.includes('keyflow')) {
+    return {
+      displayName: 'KeyFlow',
+      icon: '⌨️',
+      iconBg: '#7C3AED',
+      iconColor: '#ffffff'
+    };
+  } else if (lower.includes('note') || lower.includes('memo') || lower.includes('keep')) {
+    return {
+      displayName: 'Notes',
+      icon: '📝',
+      iconBg: '#9333EA',
+      iconColor: '#ffffff'
+    };
+  } else if (lower.includes('code') || lower.includes('vscode') || lower.includes('studio')) {
+    return {
+      displayName: 'VS Code',
+      icon: '💻',
+      iconBg: '#0284C7',
+      iconColor: '#ffffff'
+    };
+  } else {
+    let cleanName = rawPackageOrName || 'Application';
+    if (cleanName.includes('.')) {
+      const parts = cleanName.split('.');
+      cleanName = parts[parts.length - 1];
+    }
+    if (cleanName.length > 0) {
+      cleanName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+    }
+    return {
+      displayName: cleanName,
+      icon: '📱',
+      iconBg: '#4F46E5',
+      iconColor: '#ffffff'
+    };
   }
 }
 
@@ -683,33 +870,61 @@ async function loadTypingHistory(q = '', appName = '') {
         });
         if (res.ok) {
           const data = await res.json();
-          backendHistory = data.history || [];
+          backendHistory = (data.history || []).map(item => ({
+            id: item.id || `hist_${item.capturedAt}`,
+            appName: item.appName || item.sourceApp || 'Google Chrome',
+            content: item.content || item.textRecord || item.text || '',
+            capturedAt: item.capturedAt ? new Date(item.capturedAt).toISOString() : new Date().toISOString(),
+            deviceName: item.deviceName || 'Motorola Edge 40',
+            isExcluded: Boolean(item.isExcluded)
+          }));
         }
       } catch (_) {}
     }
 
     const supaEntries = await fetchSupabaseEntries();
-    const formattedSupa = supaEntries.map(s => {
-      let preview = s.sanitized_preview || s.text || '';
-      if (!preview && s.encrypted_text) {
-        preview = `[Encrypted Activity Record] • ID: ${s.id.substring(0, 10)}`;
-      }
-      return {
-        id: s.id,
-        appName: s.source_app || s.sourceApp || 'Google Chrome',
-        content: preview || 'User typing captured on physical device',
-        capturedAt: s.captured_at ? new Date(s.captured_at).toISOString() : (s.created_at || new Date().toISOString()),
-        deviceName: s.device_id === 'mobile_native' ? 'Motorola Edge 40' : (s.device_id || 'Mobile Device'),
-        isExcluded: false
-      };
-    });
+    const formattedSupa = [];
 
+    for (const s of supaEntries) {
+      let preview = s.sanitized_preview || s.text || s.content || s.text_record || '';
+      let app = s.source_app || s.sourceApp || '';
+
+      if (!preview && s.encrypted_text) {
+        const decrypted = await decryptSupabasePayload(s.encrypted_text, s.iv, s.user_id);
+        if (decrypted) preview = decrypted;
+      }
+
+      if (!app && s.encrypted_source_app) {
+        const decryptedApp = await decryptSupabasePayload(s.encrypted_source_app, s.iv, s.user_id);
+        if (decryptedApp) app = decryptedApp;
+      }
+
+      // Ignore unresolved encrypted placeholders
+      if (!preview || preview.startsWith('[Encrypted Activity Record]')) {
+        continue;
+      }
+
+      if (!app) app = 'Google Chrome';
+
+      formattedSupa.push({
+        id: s.id,
+        appName: app,
+        content: preview,
+        capturedAt: s.captured_at ? new Date(s.captured_at).toISOString() : (s.created_at || new Date().toISOString()),
+        deviceName: s.device_id === 'mobile_native' ? 'Motorola Edge 40' : (s.device_id || 'Motorola Edge 40'),
+        isExcluded: false
+      });
+    }
+
+    // Combine and deduplicate
     const combinedMap = new Map();
     for (const item of backendHistory) {
-      combinedMap.set(item.id || item.capturedAt, item);
+      if (item.content && !item.content.startsWith('[Encrypted')) {
+        combinedMap.set(item.id || item.capturedAt, item);
+      }
     }
     for (const item of formattedSupa) {
-      if (!combinedMap.has(item.id)) {
+      if (!combinedMap.has(item.id) && item.content && !item.content.startsWith('[Encrypted')) {
         combinedMap.set(item.id, item);
       }
     }
@@ -717,47 +932,170 @@ async function loadTypingHistory(q = '', appName = '') {
     let history = Array.from(combinedMap.values());
     history.sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime());
 
+    // Search query filter
     if (q) {
       const qLow = q.toLowerCase();
       history = history.filter(h => (h.content || '').toLowerCase().includes(qLow) || (h.appName || '').toLowerCase().includes(qLow));
     }
+
+    // App chip filter
+    const appCounts = { All: history.length };
+    history.forEach(item => {
+      const meta = getAppVisualMeta(item.appName);
+      const name = meta.displayName;
+      appCounts[name] = (appCounts[name] || 0) + 1;
+    });
+
+    if (activeAppFilter !== 'All') {
+      history = history.filter(h => getAppVisualMeta(h.appName).displayName === activeAppFilter);
+    }
+
     if (appName) {
       const aLow = appName.toLowerCase();
       history = history.filter(h => (h.appName || '').toLowerCase().includes(aLow));
     }
 
+    // Render Filter Chips
+    const chipsHtml = `
+      <div class="app-chips-scroll" style="display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 16px 0; margin-bottom: 8px; scrollbar-width: none;">
+        ${Object.entries(appCounts).map(([chipName, count]) => {
+          const isActive = chipName === activeAppFilter;
+          return `
+            <button class="app-filter-chip" data-chip="${chipName}" style="
+              display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+              border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer;
+              transition: all 0.2s ease; white-space: nowrap;
+              background: ${isActive ? 'var(--accent-indigo)' : 'var(--bg-surface)'};
+              color: ${isActive ? '#ffffff' : 'var(--text-secondary)'};
+              border: 0.8px solid ${isActive ? 'var(--accent-indigo)' : 'var(--border-color)'};
+              box-shadow: ${isActive ? '0 2px 6px rgba(99, 102, 241, 0.25)' : 'none'};
+            ">
+              <span>${chipName}</span>
+              <span style="font-size: 10px; opacity: 0.85; background: ${isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-body)'}; padding: 1px 6px; border-radius: 10px;">${count}</span>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+
     if (history.length === 0) {
-      container.innerHTML = `
-        <div class="text-muted text-center py-4">
-          No typing snippets recorded yet. As you type on any enrolled device, permitted snippets will appear here automatically.
+      container.innerHTML = chipsHtml + `
+        <div class="text-muted text-center py-5" style="background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 40px 20px;">
+          <div style="font-size: 32px; margin-bottom: 8px;">⌨️</div>
+          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No typing snippets recorded yet</div>
+          <div style="font-size: 13px; color: var(--text-muted);">As you type on your Motorola Edge 40 or any enrolled device, your snippets will appear here in real-time.</div>
         </div>
       `;
+      _bindChipEvents();
       return;
     }
 
-    container.innerHTML = history.map((item) => {
-      const formattedDate = new Date(item.capturedAt).toLocaleString();
+    // Grouping: Level 1 (Date Header) -> Level 2 (App Card)
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toDateString();
 
-      return `
-        <div class="typing-card">
-          <div class="typing-card-header">
-            <div class="typing-card-meta">
-              <span class="device-badge">${item.deviceName || 'Motorola Edge 40'}</span>
-              <strong style="color: var(--accent-indigo);">${item.appName}</strong>
-              <span>•</span>
-              <span>${formattedDate}</span>
-            </div>
-            ${item.isExcluded ? '<span class="badge" style="color: var(--accent-red);">Excluded by Privacy</span>' : ''}
-          </div>
-          <div class="typing-card-content">${item.content || '—'}</div>
+    const dateGroups = {}; // dateTitle -> { appKey -> [items] }
+    for (const item of history) {
+      const d = new Date(item.capturedAt);
+      let dateTitle = '';
+      if (d.toDateString() === todayStr) {
+        dateTitle = 'Today';
+      } else if (d.toDateString() === yesterdayStr) {
+        dateTitle = 'Yesterday';
+      } else {
+        dateTitle = d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+      }
+
+      if (!dateGroups[dateTitle]) dateGroups[dateTitle] = {};
+      const appKey = item.appName || 'General';
+      if (!dateGroups[dateTitle][appKey]) dateGroups[dateTitle][appKey] = [];
+      dateGroups[dateTitle][appKey].push(item);
+    }
+
+    let cardsHtml = '';
+    for (const [dateTitle, appMap] of Object.entries(dateGroups)) {
+      let totalDateEntries = 0;
+      for (const list of Object.values(appMap)) totalDateEntries += list.length;
+
+      // Level 1 Date Header
+      cardsHtml += `
+        <div class="date-section-header" style="display: flex; justify-content: space-between; align-items: center; margin: 18px 4px 10px 4px;">
+          <span style="font-size: 12px; font-weight: 800; color: #B45309; letter-spacing: 0.8px; text-transform: uppercase;">
+            ${dateTitle.toUpperCase()}
+          </span>
+          <span class="badge" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-secondary); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 12px;">
+            ${totalDateEntries} ${totalDateEntries === 1 ? 'entry' : 'entries'}
+          </span>
         </div>
       `;
-    }).join('');
+
+      // Level 2 App Cards
+      for (const [appKey, items] of Object.entries(appMap)) {
+        const meta = getAppVisualMeta(appKey);
+
+        cardsHtml += `
+          <div class="app-history-card" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);">
+            <!-- App Header -->
+            <div style="display: flex; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+              <div style="width: 28px; height: 28px; background: ${meta.iconBg}; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; margin-right: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.12);">
+                ${meta.icon}
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <strong style="font-size: 14px; color: var(--text-primary);">${meta.displayName}</strong>
+                <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${appKey}</span>
+              </div>
+              <span style="margin-left: auto; font-size: 11px; background: rgba(99, 102, 241, 0.1); color: var(--accent-indigo); font-weight: 600; padding: 3px 8px; border-radius: 10px;">
+                📱 ${items[0].deviceName || 'Motorola Edge 40'}
+              </span>
+            </div>
+
+            <!-- List of timestamped snippet entries with Copy button -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${items.map(item => {
+                const timeStr = new Date(item.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const escaped = (item.content || '').replace(/"/g, '&quot;');
+                return `
+                  <div class="snippet-row" style="display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; background: var(--bg-body); border-radius: 10px; border: 1px solid var(--border-color);">
+                    <span class="time-badge" style="font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-surface); border: 1px solid var(--border-color); padding: 3px 8px; border-radius: 6px; white-space: nowrap; margin-top: 2px;">
+                      ${timeStr}
+                    </span>
+                    <div style="flex: 1; font-size: 14px; line-height: 1.5; color: var(--text-primary); word-break: break-word; font-family: inherit;">
+                      ${item.content || '—'}
+                    </div>
+                    <button class="btn btn-sm btn-outline btn-copy-snippet" data-copy="${escaped}" title="Copy Snippet" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); white-space: nowrap;">
+                      <span>📋</span> Copy
+                    </button>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    container.innerHTML = chipsHtml + cardsHtml;
+    _bindChipEvents();
   } catch (err) {
     console.error('Failed to fetch typing history:', err);
     container.innerHTML = `<div class="text-muted text-center py-4">Unable to connect to typing history service.</div>`;
   }
 }
+
+function _bindChipEvents() {
+  document.querySelectorAll('.app-filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeAppFilter = btn.getAttribute('data-chip') || 'All';
+      const q = document.getElementById('typing-keyword-input')?.value || '';
+      loadTypingHistory(q);
+    });
+  });
+}
+
+
 
 // ==========================================================================
 // Dashboard Overview, Sessions, Breakdown, Exclusions

@@ -106,9 +106,10 @@ class KeyflowCapturePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
                 result.success(true)
             }
             "isOverlayShowing" -> {
-                result.success(KeyflowOverlayService.isShowing)
+                result.success(KeyflowOverlayService.isRunning)
             }
             "getInstalledApps" -> {
+
 
                 val includeSystem = call.argument<Boolean>("includeSystem") ?: false
                 Thread {

@@ -25,30 +25,11 @@ class EncryptionService {
   Future<Uint8List> _getOrCreateKey() async {
     if (_cachedKey != null) return _cachedKey!;
 
-    Uint8List salt;
-    try {
-      final existingSalt = await _storage.read(key: _saltKeyName);
-      if (existingSalt != null && existingSalt.isNotEmpty) {
-        salt = base64Url.decode(existingSalt);
-      } else {
-        salt = _generateSecureRandom(_keyLengthBytes);
-        try {
-          await _storage.write(
-            key: _saltKeyName,
-            value: base64Url.encode(salt),
-          );
-        } on Object catch (_) {}
-      }
-    } on Object catch (_) {
-      salt = _generateSecureRandom(_keyLengthBytes);
-      try {
-        await _storage.write(key: _saltKeyName, value: base64Url.encode(salt));
-      } on Object catch (_) {}
-    }
-
+    final salt = Uint8List.fromList(utf8.encode('kf_$_userId'));
     _cachedKey = _deriveKey(Uint8List.fromList(utf8.encode(_userId)), salt);
     return _cachedKey!;
   }
+
 
   Uint8List _deriveKey(Uint8List inputKeyMaterial, Uint8List salt) {
     final hkdf = pc.HKDFKeyDerivator(pc.SHA256Digest());
