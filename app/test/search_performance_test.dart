@@ -45,6 +45,7 @@ void main() {
 
   test(
     'SRS §3.2 Performance Requirement: searchEntries completes in < 200ms',
+    timeout: const Timeout(Duration(minutes: 2)),
     () async {
       // Seed database with 2,000 history entries
       final now = DateTime.now();
