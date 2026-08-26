@@ -157,11 +157,54 @@ class KeyflowCapturePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
                 val installSuccess = installApkFile(filePath)
                 result.success(installSuccess)
             }
+            "getPendingEvents" -> {
+                val file = java.io.File(context.filesDir, "pending_events.jsonl")
+                if (file.exists()) {
+                    val lines = file.readLines()
+                    val list = lines.filter { it.isNotBlank() }.mapNotNull { line ->
+                        try {
+                            val json = org.json.JSONObject(line)
+                            val map = mutableMapOf<String, Any?>()
+                            json.keys().forEach { k -> map[k] = json.get(k) }
+                            map
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
+                    file.delete()
+                    result.success(list)
+                } else {
+                    result.success(emptyList<Map<String, Any?>>())
+                }
+            }
+            "isBatteryOptimizationIgnored" -> {
+                val powerManager = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                val isIgnored = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    powerManager?.isIgnoringBatteryOptimizations(context.packageName) ?: false
+                } else {
+                    true
+                }
+                result.success(isIgnored)
+            }
+            "requestIgnoreBatteryOptimizations" -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    val powerManager = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+                    if (powerManager?.isIgnoringBatteryOptimizations(context.packageName) == false) {
+                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(intent)
+                    }
+                }
+                result.success(true)
+            }
             else -> {
                 result.notImplemented()
             }
         }
     }
+
 
     private fun installApkFile(filePath: String): Boolean {
         return try {

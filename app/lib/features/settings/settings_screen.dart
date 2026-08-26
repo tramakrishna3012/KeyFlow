@@ -428,10 +428,68 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          InkWell(
+            onTap: () async {
+              final captureService = ref.read(captureServiceProvider);
+              await captureService.requestIgnoreBatteryOptimizations();
+            },
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.surface.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: AppColors.cardBorder.withValues(alpha: 0.6),
+                ),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.battery_charging_full_rounded,
+                    size: 18,
+                    color: AppColors.secondary,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Background Battery Optimization',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Unrestricted background capture & Doze protection',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+
 
   // Floating Assistant Overlay Card
   Widget _buildFloatingBubbleCard() {

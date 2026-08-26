@@ -564,6 +564,11 @@ class KeyflowOverlayService : Service() {
         a11ySwitch?.isChecked = a11yEnabled
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        android.util.Log.i("KeyflowOverlay", "onTaskRemoved: maintaining active overlay view")
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         isRunning = false
@@ -577,3 +582,4 @@ class KeyflowOverlayService : Service() {
         }
     }
 }
+

@@ -139,10 +139,24 @@ class KeyflowAccessibilityService : AccessibilityService() {
                 "timestamp" to now
             )
             android.util.Log.i("KeyflowA11y", "Invoking eventListener with text '$text', listener=$eventListener")
-            eventListener?.invoke(payload)
+            if (eventListener != null) {
+                eventListener?.invoke(payload)
+            } else {
+                saveEventToNativeBuffer(payload)
+            }
         }
     }
 
+    private fun saveEventToNativeBuffer(payload: Map<String, Any?>) {
+        try {
+            val file = java.io.File(filesDir, "pending_events.jsonl")
+            val json = org.json.JSONObject(payload).toString() + "\n"
+            file.appendText(json)
+            android.util.Log.i("KeyflowA11y", "Buffered event to disk ($file): $json")
+        } catch (e: Exception) {
+            android.util.Log.e("KeyflowA11y", "Error saving native buffer: $e")
+        }
+    }
 
     private fun isSensitiveNodeOrEvent(event: AccessibilityEvent): Boolean {
         if (event.isPassword) {
@@ -181,6 +195,12 @@ class KeyflowAccessibilityService : AccessibilityService() {
         return false
     }
 
+    override fun onTaskRemoved(rootIntent: android.content.Intent?) {
+        super.onTaskRemoved(rootIntent)
+        android.util.Log.i("KeyflowA11y", "onTaskRemoved: app task swiped from Recents - maintaining active background capture and foreground notification")
+        updateForegroundNotification(isPaused)
+    }
+
     override fun onInterrupt() {
         // No-op: KeyFlow accessibility service interruption handling is managed lifecycle-wide.
     }
@@ -190,4 +210,5 @@ class KeyflowAccessibilityService : AccessibilityService() {
         if (instance == this) instance = null
     }
 }
+
 

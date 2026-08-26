@@ -41,6 +41,7 @@ class CaptureService {
 
   Future<void> initialize() async {
     await startCapture();
+    await _flushPendingNativeEvents();
     try {
       final exclusions = await _repository.getExclusionList();
       await syncExclusionList(exclusions);
@@ -49,8 +50,44 @@ class CaptureService {
     }
   }
 
+  Future<void> _flushPendingNativeEvents() async {
+    try {
+      final pending = await _methodChannel.invokeMethod<List<dynamic>>('getPendingEvents');
+      if (pending != null && pending.isNotEmpty) {
+        debugPrint('[CaptureService] Flushing ${pending.length} pending events from disk buffer');
+        for (final item in pending) {
+          if (item is Map) {
+            _onNativeEvent(item);
+          }
+        }
+      }
+    } on PlatformException catch (e) {
+      debugPrint('CaptureService _flushPendingNativeEvents error: ${e.message}');
+    }
+  }
+
+  Future<bool> isBatteryOptimizationIgnored() async {
+    try {
+      final ignored = await _methodChannel.invokeMethod<bool>('isBatteryOptimizationIgnored');
+      return ignored ?? true;
+    } on PlatformException catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> requestIgnoreBatteryOptimizations() async {
+    try {
+      await _methodChannel.invokeMethod('requestIgnoreBatteryOptimizations');
+    } on PlatformException catch (e) {
+      debugPrint('CaptureService requestIgnoreBatteryOptimizations error: ${e.message}');
+    }
+  }
+
   Future<bool> startCapture() async {
-    if (_isCapturing) return true;
+    if (_isCapturing) {
+      await _flushPendingNativeEvents();
+      return true;
+    }
     try {
       final result = await _methodChannel.invokeMethod('startCapture');
       _subscription = _eventChannel.receiveBroadcastStream().listen(
@@ -58,12 +95,14 @@ class CaptureService {
         onError: (error) => debugPrint('CaptureService stream error: $error'),
       );
       _isCapturing = true;
+      await _flushPendingNativeEvents();
       return result == true || true;
     } on PlatformException catch (e) {
       debugPrint('CaptureService startCapture error: ${e.message}');
       return false;
     }
   }
+
 
   Future<bool> stopCapture() async {
     if (!_isCapturing) return true;
