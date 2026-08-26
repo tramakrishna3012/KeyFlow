@@ -5,6 +5,8 @@ import '../../data/history_repository.dart';
 import '../../data/models/history_entry.dart';
 import '../../data/sync_service.dart';
 import '../look_monitor/look_window_sanitizer.dart';
+import '../settings/models/installed_app_info.dart';
+
 
 class CaptureService {
   CaptureService(
@@ -132,6 +134,70 @@ class CaptureService {
     }
   }
 
+  Future<bool> canDrawOverlays() async {
+    try {
+      final bool? allowed = await _methodChannel.invokeMethod<bool>('canDrawOverlays');
+      return allowed ?? false;
+    } on PlatformException catch (e) {
+      debugPrint('CaptureService canDrawOverlays error: ${e.message}');
+      return false;
+    }
+  }
+
+  Future<void> requestOverlayPermission() async {
+    try {
+      await _methodChannel.invokeMethod('requestOverlayPermission');
+    } on PlatformException catch (e) {
+      debugPrint('CaptureService requestOverlayPermission error: ${e.message}');
+    }
+  }
+
+  Future<bool> showOverlayBubble() async {
+    try {
+      final bool? result = await _methodChannel.invokeMethod<bool>('showOverlayBubble');
+      return result ?? false;
+    } on PlatformException catch (e) {
+      debugPrint('CaptureService showOverlayBubble error: ${e.message}');
+      return false;
+    }
+  }
+
+  Future<bool> hideOverlayBubble() async {
+    try {
+      final bool? result = await _methodChannel.invokeMethod<bool>('hideOverlayBubble');
+      return result ?? true;
+    } on PlatformException catch (e) {
+      debugPrint('CaptureService hideOverlayBubble error: ${e.message}');
+      return false;
+    }
+  }
+
+  Future<bool> isOverlayShowing() async {
+    try {
+      final bool? result = await _methodChannel.invokeMethod<bool>('isOverlayShowing');
+      return result ?? false;
+    } on PlatformException catch (_) {
+      return false;
+    }
+  }
+
+
+  Future<List<InstalledAppInfo>> getInstalledApps({bool includeSystem = false}) async {
+    try {
+      final List<dynamic>? result = await _methodChannel.invokeMethod<List<dynamic>>(
+        'getInstalledApps',
+        {'includeSystem': includeSystem},
+      );
+      if (result == null) return [];
+      return result
+          .map((item) => InstalledAppInfo.fromMap(item as Map<dynamic, dynamic>))
+          .toList();
+    } on PlatformException catch (e) {
+      debugPrint('CaptureService getInstalledApps error: ${e.message}');
+      return [];
+    }
+  }
+
   Future<void> setExclusionList(List<String> exclusions) async {
     try {
       await _methodChannel.invokeMethod('setExclusionList', exclusions);
@@ -143,6 +209,7 @@ class CaptureService {
   Future<void> syncExclusionList(List<String> exclusions) async {
     await setExclusionList(exclusions);
   }
+
 
   Future<bool> setAutostart(bool enabled) async {
     try {

@@ -8,7 +8,9 @@ import '../../core/widgets/keyflow_card.dart';
 import '../../data/providers.dart';
 import '../auth/auth_modal.dart';
 import '../profile/profile_modal.dart';
+import 'excluded_apps_screen.dart';
 import 'settings_providers.dart';
+
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -18,13 +20,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  final TextEditingController _addExclusionController = TextEditingController();
 
-  @override
-  void dispose() {
-    _addExclusionController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +48,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildSectionHeader('TYPING CAPTURE CONTROL'),
             const SizedBox(height: 8),
             _buildPauseCaptureCard(),
+            const SizedBox(height: 12),
+            _buildFloatingBubbleCard(),
 
             const SizedBox(height: 24),
 
@@ -337,6 +335,141 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  // Floating Assistant Overlay Card
+  Widget _buildFloatingBubbleCard() {
+    final isBubbleActive = ref.watch(floatingBubbleProvider);
+
+    return KeyFlowCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.bubble_chart_outlined,
+                size: 20,
+                color: AppColors.primary,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Floating Assistant Bubble',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Switch(
+                value: isBubbleActive,
+                onChanged: (val) async {
+                  if (val) {
+                    final captureService = ref.read(captureServiceProvider);
+                    final allowed = await captureService.canDrawOverlays();
+                    if (!allowed) {
+                      if (context.mounted) {
+                        _showOverlayPermissionDialog(context);
+                      }
+                      return;
+                    }
+                  }
+                  await ref.read(floatingBubbleProvider.notifier).toggleBubble();
+                },
+                activeColor: AppColors.primary,
+                activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Display a system-wide draggable assistant bubble on top of other apps for instant pause/resume capture controls.',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textMuted,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  isBubbleActive
+                      ? Icons.check_circle_outline
+                      : Icons.info_outline,
+                  size: 14,
+                  color: isBubbleActive
+                      ? AppColors.secondary
+                      : AppColors.textMuted,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    isBubbleActive
+                        ? 'Floating bubble is active on top of other apps'
+                        : 'Requires "Display over other apps" system permission',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isBubbleActive
+                          ? AppColors.secondary
+                          : AppColors.textMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showOverlayPermissionDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.layers_outlined, color: AppColors.primary),
+            SizedBox(width: 10),
+            Text('Enable Floating Assistant', style: TextStyle(fontSize: 16)),
+          ],
+        ),
+        content: const Text(
+          'KeyFlow requires the "Display over other apps" permission to show a floating assistant bubble.\n\n'
+          'This allows you to quickly pause typing capture before entering sensitive apps without switching windows.\n\n'
+          'Tap "Open Settings", find KeyFlow, and enable "Allow display over other apps".',
+          style: TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Not Now'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(captureServiceProvider).requestOverlayPermission();
+            },
+            child: const Text(
+              'Open Settings',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // 1. Exclusion List Card
   Widget _buildExclusionCard(
     AsyncValue<List<String>> exclusionAsync,
@@ -344,56 +477,86 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(Icons.block, size: 20, color: AppColors.primary),
-            SizedBox(width: 10),
-            Text(
-              'Excluded Applications',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            const Row(
+              children: [
+                Icon(Icons.block, size: 20, color: AppColors.primary),
+                SizedBox(width: 10),
+                Text(
+                  'Excluded Applications',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+              ],
+            ),
+            exclusionAsync.when(
+              data: (exclusions) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGhost,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${exclusions.length} Excluded',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
             ),
           ],
         ),
         const SizedBox(height: 6),
         const Text(
-          'Text typed in excluded applications is discarded immediately.',
-          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+          'Keystrokes typed in excluded apps are discarded immediately. Banking & payment apps are auto-protected.',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted, height: 1.3),
+        ),
+        const SizedBox(height: 14),
+        OutlinedButton.icon(
+          onPressed: () => ExcludedAppsScreen.show(context),
+          icon: const Icon(Icons.apps_rounded, size: 16),
+          label: const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Manage Installed App Exclusions'),
+              Icon(Icons.arrow_forward_ios, size: 12),
+            ],
+          ),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.cardBorder),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          ),
         ),
         const SizedBox(height: 12),
         exclusionAsync.when(
-          data: (exclusions) => Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ...exclusions.map(
-                (app) => Chip(
-                  label: Text(app, style: const TextStyle(fontSize: 12)),
-                  deleteIcon: const Icon(Icons.close, size: 14),
-                  onDeleted: () {
-                    ref.read(settingsControllerProvider).removeExclusion(app);
-                  },
-                  backgroundColor: AppColors.cardSurface,
-                  side: const BorderSide(color: AppColors.cardBorder),
+          data: (exclusions) => exclusions.isEmpty
+              ? const SizedBox.shrink()
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: exclusions.map(
+                    (app) => Chip(
+                      label: Text(app, style: const TextStyle(fontSize: 11)),
+                      deleteIcon: const Icon(Icons.close, size: 13),
+                      onDeleted: () {
+                        ref.read(settingsControllerProvider).removeExclusion(app);
+                      },
+                      backgroundColor: AppColors.cardSurface,
+                      side: const BorderSide(color: AppColors.cardBorder),
+                    ),
+                  ).toList(),
                 ),
-              ),
-              ActionChip(
-                avatar: const Icon(
-                  Icons.add,
-                  size: 16,
-                  color: AppColors.primary,
-                ),
-                label: const Text(
-                  'Add App',
-                  style: TextStyle(fontSize: 12, color: AppColors.primary),
-                ),
-                onPressed: _showAddExclusionDialog,
-                backgroundColor: AppColors.primaryGhost,
-                side: BorderSide.none,
-              ),
-            ],
-          ),
           loading: () => const CircularProgressIndicator(),
-          error: (err, stack) => Text(
+          error: (err, _) => Text(
             'Error: $err',
             style: const TextStyle(color: AppColors.destructive),
           ),
@@ -430,37 +593,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ),
   );
 
-  void _showAddExclusionDialog() {
-    _addExclusionController.clear();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add App Exclusion'),
-        content: TextField(
-          controller: _addExclusionController,
-          decoration: const InputDecoration(
-            hintText: 'e.g. 1password.exe or com.apple.Safari',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final text = _addExclusionController.text.trim();
-              if (text.isNotEmpty) {
-                ref.read(settingsControllerProvider).addExclusion(text);
-                Navigator.of(ctx).pop();
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   // 2. Retention Card
   Widget _buildRetentionCard(AsyncValue<int> retentionAsync) => KeyFlowCard(

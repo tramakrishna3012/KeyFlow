@@ -11,10 +11,22 @@ class KeyflowAccessibilityService : AccessibilityService() {
     companion object {
         var instance: KeyflowAccessibilityService? = null
         var isPaused: Boolean = false
+            set(value) {
+                field = value
+                try {
+                    KeyflowOverlayService.notifyStatusChanged()
+                } catch (_: Exception) {}
+            }
         var eventListener: ((Map<String, Any?>) -> Unit)? = null
+        val exclusionSet = mutableSetOf<String>()
+
+        fun updateExclusions(exclusions: List<String>) {
+            exclusionSet.clear()
+            exclusionSet.addAll(exclusions)
+            android.util.Log.i("KeyflowA11y", "Updated exclusion set: $exclusionSet")
+        }
     }
 
-    private val exclusionList = mutableSetOf<String>()
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -68,10 +80,11 @@ class KeyflowAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         val packageName = event.packageName?.toString() ?: "unknown"
-        android.util.Log.i("KeyflowA11y", "onAccessibilityEvent: type=${event.eventType}, pkg=$packageName, paused=$isPaused")
+        android.util.Log.i("KeyflowA11y", "onAccessibilityEvent: type=${event.eventType}, pkg=$packageName, paused=$isPaused, isExcluded=${exclusionSet.contains(packageName)}")
         if (isPaused) return
 
-        if (exclusionList.contains(packageName)) return
+        if (exclusionSet.contains(packageName)) return
+
 
         if (event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED ||
             event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
@@ -146,9 +159,5 @@ class KeyflowAccessibilityService : AccessibilityService() {
         super.onDestroy()
         if (instance == this) instance = null
     }
-
-    fun updateExclusions(exclusions: List<String>) {
-        exclusionList.clear()
-        exclusionList.addAll(exclusions)
-    }
 }
+
