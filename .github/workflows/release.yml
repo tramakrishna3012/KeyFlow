@@ -1,0 +1,151 @@
+name: Publish Multi-Platform Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+  push:
+    tags:
+      - 'v*'
+
+env:
+  FLUTTER_VERSION: '3.44.7'
+
+jobs:
+  build-and-release-windows:
+    name: Build & Release Windows
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff # v2.18.0
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
+        cache-key: flutter-${{ env.FLUTTER_VERSION }}
+        cache-path: ${{ github.workspace }}/.pub-cache
+        
+    - name: Get Flutter dependencies
+      run: |
+        cd app
+        flutter pub get --enforce-lockfile
+        
+    - name: Build Windows executable
+      run: |
+        cd app
+        flutter build windows --release
+        
+    - name: Package Windows Zip
+      run: |
+        cd app/build/windows/x64/runner/Release
+        Compress-Archive -Path * -DestinationPath KeyFlow-Windows-x64.zip -Force
+        
+    - name: Upload to GitHub Release
+      uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+      with:
+        tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+        files: app/build/windows/x64/runner/Release/KeyFlow-Windows-x64.zip
+
+  build-and-release-apple:
+    name: Build & Release iOS & macOS
+    runs-on: macos-latest
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff # v2.18.0
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
+        cache-key: flutter-${{ env.FLUTTER_VERSION }}
+        cache-path: ${{ github.workspace }}/.pub-cache
+        
+    - name: Get Flutter dependencies
+      run: |
+        cd app
+        flutter pub get --enforce-lockfile
+        
+    - name: Build macOS Application
+      run: |
+        cd app
+        flutter build macos --release
+        cd build/macos/Build/Products/Release
+        zip -r KeyFlow-macOS-Universal.zip *.app
+        
+    - name: Build iOS Application & Package IPA
+      run: |
+        cd app
+        flutter build ios --release --no-codesign
+        mkdir -p build/ios/ipa/Payload
+        cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+        cd build/ios/ipa
+        zip -r KeyFlow.ipa Payload
+        
+    - name: Upload Apple Assets to GitHub Release
+      uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+      with:
+        tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+        files: |
+          app/build/macos/Build/Products/Release/KeyFlow-macOS-Universal.zip
+          app/build/ios/ipa/KeyFlow.ipa
+
+  build-and-release-android:
+    name: Build & Release Android
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff # v2.18.0
+      with:
+        flutter-version: ${{ env.FLUTTER_VERSION }}
+        cache: true
+        cache-key: flutter-${{ env.FLUTTER_VERSION }}
+        cache-path: ${{ github.workspace }}/.pub-cache
+        
+    - name: Setup Java
+      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Configure Keystore & Build Android
+      run: |
+        cd app
+        flutter pub get --enforce-lockfile
+        keytool -genkeypair -v -keystore android/android_keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias keyflow -dname "CN=KeyFlow, OU=CI, O=KeyFlow, L=City, ST=State, C=US" -storepass "KeyFlowPass2026!" -keypass "KeyFlowPass2026!"
+        cat > android/key.properties <<EOF
+        storePassword=KeyFlowPass2026!
+        keyPassword=KeyFlowPass2026!
+        keyAlias=keyflow
+        storeFile=android_keystore.jks
+        EOF
+        flutter build apk --release --split-per-abi --no-tree-shake-icons
+        flutter build apk --release --no-tree-shake-icons
+        cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/KeyFlow.apk
+        
+    - name: Upload Android Assets to GitHub Release
+      uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2.0.8
+      with:
+        tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+        files: |
+          app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          app/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+          app/build/app/outputs/flutter-apk/app-x86_64-release.apk
+          app/build/app/outputs/flutter-apk/KeyFlow.apk
