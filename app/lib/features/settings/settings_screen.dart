@@ -19,8 +19,27 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(accessibilityServiceEnabledProvider);
+      ref.read(capturePausedProvider.notifier).syncWithNative();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +71,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _buildFloatingBubbleCard(),
 
             const SizedBox(height: 24),
+
 
             // 2. EXCLUSION LIST SECTION
             _buildSectionHeader('EXCLUSION LIST'),
@@ -227,6 +247,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // Quick Typing Capture Control Card
   Widget _buildPauseCaptureCard() {
     final isPaused = ref.watch(capturePausedProvider);
+    final a11yAsync = ref.watch(accessibilityServiceEnabledProvider);
+    final isA11yEnabled = a11yAsync.value ?? false;
 
     return KeyFlowCard(
       child: Column(
@@ -304,28 +326,80 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
           const SizedBox(height: 14),
           const Divider(color: AppColors.cardBorder, height: 1),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           InkWell(
             onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    isA11yEnabled
+                        ? 'Tap KeyFlow in the list, then toggle it off'
+                        : 'Tap KeyFlow in the list, then toggle it on',
+                  ),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
               ref.read(capturePausedProvider.notifier).openAccessibilitySettings();
             },
             borderRadius: BorderRadius.circular(8),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 4),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
-                  Icon(Icons.open_in_new, size: 14, color: AppColors.primary),
-                  SizedBox(width: 6),
+                  Icon(
+                    Icons.accessibility_new_rounded,
+                    size: 18,
+                    color: isA11yEnabled ? AppColors.secondary : AppColors.accentOrange,
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Open Android Accessibility Settings',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          isA11yEnabled
+                              ? 'OS Permission: Active (Listening)'
+                              : 'OS Permission: Disabled in Settings',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isA11yEnabled ? AppColors.secondary : AppColors.accentOrange,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: (isA11yEnabled ? AppColors.secondary : AppColors.accentOrange)
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: (isA11yEnabled ? AppColors.secondary : AppColors.accentOrange)
+                            .withValues(alpha: 0.3),
+                      ),
+                    ),
                     child: Text(
-                      'Open Android Accessibility Settings',
+                      isA11yEnabled ? 'ON' : 'OFF',
                       style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: isA11yEnabled ? AppColors.secondary : AppColors.accentOrange,
                       ),
                     ),
                   ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.textMuted),
                 ],
               ),
             ),
@@ -334,6 +408,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+
 
   // Floating Assistant Overlay Card
   Widget _buildFloatingBubbleCard() {

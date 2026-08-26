@@ -219,6 +219,12 @@ class CapturePausedNotifier extends StateNotifier<bool> {
     }
   }
 
+  Future<void> syncWithNative() async {
+
+    final paused = await _captureService.isCapturePaused();
+    state = paused;
+  }
+
   Future<void> openAccessibilitySettings() async {
     await _captureService.openAccessibilitySettings();
   }
@@ -229,6 +235,12 @@ final capturePausedProvider =
   final captureService = ref.watch(captureServiceProvider);
   return CapturePausedNotifier(captureService);
 });
+
+final accessibilityServiceEnabledProvider = FutureProvider<bool>((ref) async {
+  final captureService = ref.watch(captureServiceProvider);
+  return captureService.isAccessibilityServiceEnabled();
+});
+
 
 class FloatingBubbleNotifier extends StateNotifier<bool> {
   FloatingBubbleNotifier(this._captureService, this._ref) : super(false) {

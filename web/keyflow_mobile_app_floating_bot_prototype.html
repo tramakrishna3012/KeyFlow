@@ -310,6 +310,36 @@
                             </div>
                         </div>
 
+                        <!-- Dual Capture & Permission Controls Inside Phone Bot Overlay -->
+                        <div class="space-y-1.5 mb-2.5">
+                            <!-- Toggle 1: Pause Typing Capture (Internal App Flag) -->
+                            <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-circle-pause text-amber-400 text-xs"></i>
+                                    <div>
+                                        <div class="text-[11px] font-bold text-slate-200">Pause Typing Capture</div>
+                                        <div class="text-[9px] text-slate-400">Quick pause for banking apps</div>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="phoneBotPauseCaptureSwitch" onchange="togglePhoneBotPauseCapture(this.checked)" class="sr-only peer">
+                                    <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
+                            </div>
+
+                            <!-- Toggle 2: Accessibility Access (Android OS Permission) -->
+                            <div onclick="handlePrototypeAccessibilityToggle()" class="bg-slate-950/80 hover:bg-slate-900 p-2 rounded-xl border border-slate-800 flex items-center justify-between cursor-pointer transition-colors">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-universal-access text-emerald-400 text-xs"></i>
+                                    <div>
+                                        <div class="text-[11px] font-bold text-emerald-400" id="phoneBotA11yLabel">Accessibility Access: ON</div>
+                                        <div class="text-[9px] text-slate-400">Tap to manage in Android Settings</div>
+                                    </div>
+                                </div>
+                                <span id="phoneBotA11yBadge" class="text-[9px] font-bold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/40">ON</span>
+                            </div>
+                        </div>
+
                         <!-- Quick Phone Bot Actions -->
                         <div class="grid grid-cols-2 gap-1.5 text-xs mb-2">
                             <button onclick="triggerPhoneBotAction('SUMMARIZE')" class="p-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-[10px] font-medium flex items-center gap-1.5 transition-colors">
@@ -1589,6 +1619,33 @@
                 panel.classList.remove('hidden');
             } else {
                 panel.classList.add('hidden');
+            }
+        }
+
+        let isProtoA11yEnabled = true;
+        function handlePrototypeAccessibilityToggle() {
+            if (isProtoA11yEnabled) {
+                showToast("Tap KeyFlow in the list, then toggle it off", "fa-universal-access", "text-amber-400");
+                isProtoA11yEnabled = false;
+                document.getElementById('phoneBotA11yLabel').textContent = "Accessibility Access: OFF";
+                document.getElementById('phoneBotA11yLabel').className = "text-[11px] font-bold text-amber-400";
+                document.getElementById('phoneBotA11yBadge').textContent = "OFF";
+                document.getElementById('phoneBotA11yBadge').className = "text-[9px] font-bold bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/40";
+            } else {
+                showToast("Tap KeyFlow in the list, then toggle it on", "fa-universal-access", "text-emerald-400");
+                isProtoA11yEnabled = true;
+                document.getElementById('phoneBotA11yLabel').textContent = "Accessibility Access: ON";
+                document.getElementById('phoneBotA11yLabel').className = "text-[11px] font-bold text-emerald-400";
+                document.getElementById('phoneBotA11yBadge').textContent = "ON";
+                document.getElementById('phoneBotA11yBadge').className = "text-[9px] font-bold bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/40";
+            }
+        }
+
+        function togglePhoneBotPauseCapture(isPaused) {
+            if (isPaused) {
+                showToast("Typing capture paused (Banking Mode)", "fa-circle-pause", "text-amber-400");
+            } else {
+                showToast("Typing capture active (Monitoring)", "fa-circle-play", "text-emerald-400");
             }
         }
 

@@ -91,4 +91,8 @@ class MockPausedNotifier extends StateNotifier<bool> implements CapturePausedNot
 
   @override
   Future<void> openAccessibilitySettings() async {}
+
+  @override
+  Future<void> syncWithNative() async {}
 }
+
