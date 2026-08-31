@@ -1,5 +1,5 @@
 // ==========================================================================
-// KeyFlow & Look System — Web Application & Marketing Controller (Light Theme)
+// KeyFlow Web Application & Cloud Sync Controller (Light Theme)
 // ==========================================================================
 
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -36,16 +36,15 @@ function safeRemoveItem(key) {
   }
 }
 
-let authToken = safeGetItem('look_jwt_token');
+let authToken = safeGetItem('keyflow_jwt_token') || safeGetItem('look_jwt_token');
 let currentUser = null;
-let currentSessionId = null;
 
 // Initialize on DOM Load
 document.addEventListener('DOMContentLoaded', async () => {
   setupMarketingSite();
   setupDownloadsGrid();
   setupNavigation();
-  setupSessionControls();
+  setupDashboardControls();
   setupTypingHistory();
   setupSearch();
   setupExclusions();
@@ -113,7 +112,7 @@ function hideAuthAlert() {
 // ==========================================================================
 
 function setupMarketingSite() {
-  // Feature Tabs Switcher (PRD §5)
+  // Feature Tabs Switcher
   const tabButtons = document.querySelectorAll('.feature-tabs-nav .f-tab-btn');
   tabButtons.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -140,7 +139,7 @@ function setupMarketingSite() {
   const simInput = document.getElementById('sim-input');
   const simContainer = document.getElementById('sim-results-container');
   const mockSnippets = [
-    { title: 'feat(look-system): implement hierarchical session explorer & AES-256 sync', app: 'VS Code', time: 'Today at 11:42 AM', match: '98%' },
+    { title: 'feat(sync): implement cross-device typing sync & AES-256 HKDF encryption', app: 'VS Code', time: 'Today at 11:42 AM', match: '98%' },
     { title: 'Reviewing pull request checklist and database migration scripts for Neon Postgres', app: 'Google Chrome', time: 'Yesterday at 4:15 PM', match: '92%' },
     { title: 'ssh -i ~/.ssh/keyflow-deploy.pem admin@api.keyflow.io -p 2200', app: 'Terminal', time: '2 days ago', match: '89%' },
     { title: 'curl -X POST https://api.keyflow.io/api/v1/activity/batch -H "Authorization: Bearer ***"', app: 'Postman', time: '3 days ago', match: '85%' }
@@ -174,7 +173,7 @@ function setupMarketingSite() {
   btnOpenDash?.addEventListener('click', () => {
     if (!currentUser || !authToken) {
       document.getElementById('auth-modal').style.display = 'flex';
-      showAuthAlert('Please sign in to access the Look System Dashboard.', 'info');
+      showAuthAlert('Please sign in to access the KeyFlow Dashboard.', 'info');
       return;
     }
     document.body.classList.add('dashboard-mode');
@@ -186,7 +185,7 @@ function setupMarketingSite() {
     e.preventDefault();
     if (!currentUser || !authToken) {
       document.getElementById('auth-modal').style.display = 'flex';
-      showAuthAlert('Please sign in to access the Look System Dashboard.', 'info');
+      showAuthAlert('Please sign in to access the KeyFlow Dashboard.', 'info');
       return;
     }
     document.body.classList.add('dashboard-mode');
@@ -219,61 +218,8 @@ function setupMarketingSite() {
 // Downloads Grid & Client-Side OS Auto-Detection
 // ==========================================================================
 
-async function setupDownloadsGrid() {
-  const container = document.getElementById('downloads-grid-container');
-  if (!container) return;
-
-  const detectedPlatform = detectVisitorOS();
-
-  try {
-    const res = await fetch('releases.json');
-    if (!res.ok) throw new Error('Could not load releases.json');
-    const releases = await res.json();
-
-    if (!Array.isArray(releases) || releases.length === 0) {
-      container.innerHTML = '<div class="text-muted text-center py-4">No published release packages found.</div>';
-      return;
-    }
-
-    container.innerHTML = releases.map((rel) => {
-      const isRecommended = rel.platform === detectedPlatform;
-      const downloadUrl = rel.fileUrl || rel.testflightUrl || '#';
-      const buttonLabel = `Download for ${rel.displayName}`;
-
-
-      const platformIcons = {
-        windows: '🪟',
-        macos: '🍎',
-        android: '🤖',
-        ios: '📱'
-      };
-
-      const iconEmoji = platformIcons[rel.platform] || '📦';
-
-      return `
-        <div class="platform-card ${isRecommended ? 'recommended' : ''}">
-          ${isRecommended ? '<span class="recommended-pill">Recommended for your device</span>' : ''}
-          <div class="platform-header">
-            <div class="platform-icon">${iconEmoji}</div>
-            <h3 class="platform-title">${rel.displayName}</h3>
-            <div class="platform-version">Version ${rel.version} • ${rel.sizeMB}</div>
-          </div>
-
-          <ul class="platform-specs">
-            <li><span class="spec-check">✓</span> ${rel.systemRequirements}</li>
-            ${(rel.changelog || []).map(item => `<li><span class="spec-check">✓</span> ${item}</li>`).join('')}
-          </ul>
-
-          <a href="${downloadUrl}" class="btn ${isRecommended ? 'btn-primary' : 'btn-outline'} w-100" target="_blank" rel="noopener">
-            ${buttonLabel}
-          </a>
-        </div>
-      `;
-    }).join('');
-  } catch (err) {
-    console.error('Failed to render downloads grid:', err);
-    container.innerHTML = '<div class="text-muted text-center py-4">Direct release links are available on GitHub Releases (v1.0.0).</div>';
-  }
+function setupDownloadsGrid() {
+  // Downloads tab links and installers
 }
 
 function detectVisitorOS() {
@@ -291,9 +237,6 @@ function detectVisitorOS() {
 
 function setupAuthModal() {
   const modal = document.getElementById('auth-modal');
-  const btnNavTrigger = document.getElementById('btn-nav-auth');
-  const userChip = document.getElementById('user-chip-btn');
-  const btnLogout = document.getElementById('btn-logout');
   const btnClose = document.getElementById('btn-close-auth');
   const tabSignIn = document.getElementById('tab-btn-signin');
   const tabSignUp = document.getElementById('tab-btn-signup');
@@ -301,21 +244,26 @@ function setupAuthModal() {
   const formSignUp = document.getElementById('form-signup');
   const btnSubmitSignIn = document.getElementById('btn-submit-signin');
   const btnSubmitSignUp = document.getElementById('btn-submit-signup');
+  const btnLogout = document.getElementById('btn-logout');
+  const userChip = document.getElementById('user-chip-btn');
+  const navAuthBtn = document.getElementById('btn-nav-auth');
 
   const showModal = () => {
     hideAuthAlert();
-    if (modal) modal.style.display = 'flex';
+    modal.style.display = 'flex';
   };
 
   const hideModal = () => {
-    hideAuthAlert();
-    if (modal) modal.style.display = 'none';
+    modal.style.display = 'none';
   };
 
-  btnNavTrigger?.addEventListener('click', () => {
+  navAuthBtn?.addEventListener('click', () => {
     if (currentUser) {
-      document.body.classList.toggle('dashboard-mode');
       if (document.body.classList.contains('dashboard-mode')) {
+        showModal();
+      } else {
+        document.body.classList.add('dashboard-mode');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         refreshAllDashboardData();
       }
     } else {
@@ -328,10 +276,10 @@ function setupAuthModal() {
 
   // Logout Handler
   btnLogout?.addEventListener('click', () => {
+    safeRemoveItem('keyflow_jwt_token');
     safeRemoveItem('look_jwt_token');
     authToken = '';
     currentUser = null;
-    currentSessionId = null;
     updateUserUI();
     document.body.classList.remove('dashboard-mode');
     showToast('You have been signed out.', 'info');
@@ -378,7 +326,7 @@ function setupAuthModal() {
       }
 
       authToken = data.token;
-      safeSetItem('look_jwt_token', authToken);
+      safeSetItem('keyflow_jwt_token', authToken);
       currentUser = data.user;
       updateUserUI();
       hideModal();
@@ -393,7 +341,7 @@ function setupAuthModal() {
     } finally {
       if (btnSubmitSignIn) {
         btnSubmitSignIn.disabled = false;
-        btnSubmitSignIn.textContent = 'Sign In to Workstation';
+        btnSubmitSignIn.textContent = 'Sign In to KeyFlow';
       }
     }
   });
@@ -437,13 +385,13 @@ function setupAuthModal() {
       }
 
       authToken = data.token;
-      safeSetItem('look_jwt_token', authToken);
+      safeSetItem('keyflow_jwt_token', authToken);
       currentUser = data.user;
       updateUserUI();
       hideModal();
 
       const name = currentUser.fullName || currentUser.full_name || 'Owner';
-      showToast(`Account created! Welcome, ${name}.`, 'success');
+      showToast(`Account created! Welcome to KeyFlow, ${name}.`, 'success');
       document.body.classList.add('dashboard-mode');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       await refreshAllDashboardData();
@@ -452,7 +400,7 @@ function setupAuthModal() {
     } finally {
       if (btnSubmitSignUp) {
         btnSubmitSignUp.disabled = false;
-        btnSubmitSignUp.textContent = 'Create Account & Start Session';
+        btnSubmitSignUp.textContent = 'Create Account & Access KeyFlow';
       }
     }
   });
@@ -470,6 +418,7 @@ async function verifyAuthOrPrompt() {
         updateUserUI();
       } else {
         authToken = '';
+        safeRemoveItem('keyflow_jwt_token');
         safeRemoveItem('look_jwt_token');
         updateUserUI();
       }
@@ -484,19 +433,16 @@ async function verifyAuthOrPrompt() {
 function updateUserUI() {
   const dashBtn = document.getElementById('btn-open-dashboard');
   const logoutBtn = document.getElementById('btn-logout');
-  const navAuthBtn = document.getElementById('btn-nav-auth');
   const userName = document.getElementById('user-name');
   const userRole = document.getElementById('user-role');
   const userAvatar = document.getElementById('user-avatar');
+  const navAuthBtn = document.getElementById('btn-nav-auth');
 
-  if (currentUser && authToken) {
-    const nameStr = currentUser.fullName || 
-                    currentUser.fullname || 
-                    currentUser.full_name || 
-                    (currentUser.email ? currentUser.email.split('@')[0] : 'Rama Krishna');
-
+  if (currentUser) {
     if (dashBtn) dashBtn.style.display = 'inline-flex';
     if (logoutBtn) logoutBtn.style.display = 'block';
+
+    const nameStr = currentUser.fullName || currentUser.full_name || currentUser.email || 'Authorized Owner';
     if (userName) userName.textContent = nameStr;
     if (userRole) userRole.textContent = currentUser.role === 'admin' ? 'Administrator' : 'Team Member';
     
@@ -506,7 +452,7 @@ function updateUserUI() {
       .map(n => n[0])
       .join('')
       .substring(0, 2)
-      .toUpperCase() || 'RK';
+      .toUpperCase() || 'KF';
 
     if (userAvatar) userAvatar.textContent = initials;
     if (navAuthBtn) navAuthBtn.textContent = `Dashboard (${nameStr.split(' ')[0]})`;
@@ -528,7 +474,6 @@ async function refreshAllDashboardData() {
   await Promise.allSettled([
     loadOverviewData(),
     loadTypingHistory(),
-    loadSessions(),
     loadAppBreakdown(),
     loadExclusions()
   ]);
@@ -549,84 +494,25 @@ function setupNavigation() {
       const titles = {
         overview: 'Executive Overview',
         typing: 'Cross-Device Typing History',
-        sessions: 'Monitoring Session Explorer',
         search: 'Multi-Criteria Search & Filtering',
         apps: 'Application Telemetry Matrix',
         admin: 'Admin & Organization Controls',
         privacy: 'Privacy & Exclusions'
       };
-      document.getElementById('page-title').textContent = titles[tabId] || 'Look System';
+      document.getElementById('page-title').textContent = titles[tabId] || 'KeyFlow';
 
       if (tabId === 'typing') loadTypingHistory();
-      if (tabId === 'sessions') loadSessions();
       if (tabId === 'apps') loadAppBreakdown();
       if (tabId === 'privacy') loadExclusions();
     });
   });
 }
 
-function setupSessionControls() {
-  document.getElementById('btn-start-session-header')?.addEventListener('click', async () => {
-    try {
-      const res = await fetch(`${API_BASE}/activity/sessions/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ deviceName: 'Web Console Workstation' })
-      });
-      const data = await res.json();
-      if (data.sessionId) {
-        currentSessionId = data.sessionId;
-        showToast(`Session started: ${data.sessionId.substring(0, 8)}...`, 'success');
-        refreshAllDashboardData();
-      }
-    } catch (err) {
-      showToast(`Could not start session: ${err.message}`, 'error');
-    }
-  });
-
-  document.getElementById('btn-pause-session-header')?.addEventListener('click', async () => {
-    if (!currentSessionId) {
-      showToast('No active session to pause.', 'info');
-      return;
-    }
-    try {
-      await fetch(`${API_BASE}/activity/sessions/pause`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ sessionId: currentSessionId })
-      });
-      showToast('Session paused.', 'info');
-    } catch (err) {
-      showToast(`Error pausing session: ${err.message}`, 'error');
-    }
-  });
-
-  document.getElementById('btn-stop-session-header')?.addEventListener('click', async () => {
-    if (!currentSessionId) {
-      showToast('No active session to stop.', 'info');
-      return;
-    }
-    try {
-      await fetch(`${API_BASE}/activity/sessions/stop`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken}`
-        },
-        body: JSON.stringify({ sessionId: currentSessionId })
-      });
-      showToast('Session stopped and archived.', 'success');
-      currentSessionId = null;
-      refreshAllDashboardData();
-    } catch (err) {
-      showToast(`Error stopping session: ${err.message}`, 'error');
-    }
+function setupDashboardControls() {
+  document.getElementById('btn-refresh-telemetry')?.addEventListener('click', async () => {
+    showToast('Refreshing cloud telemetry...', 'info');
+    await refreshAllDashboardData();
+    showToast('Telemetry refreshed.', 'success');
   });
 }
 
@@ -1172,68 +1058,11 @@ async function loadOverviewData() {
           </div>
         `).join('');
       } else {
-        topAppsContainer.innerHTML = '<div class="text-muted py-2">No applications recorded yet. Start a session to record telemetry.</div>';
+        topAppsContainer.innerHTML = '<div class="text-muted py-2">No applications recorded yet. Typing activity from enrolled devices will appear here automatically.</div>';
       }
     }
   } catch (err) {
     console.warn('Overview telemetry fetch:', err);
-  }
-}
-
-async function loadSessions() {
-  const container = document.getElementById('sessions-list-container');
-  if (!container) return;
-
-  try {
-    let sessions = [];
-    if (authToken) {
-      try {
-        const res = await fetch(`${API_BASE}/activity/sessions`, {
-          headers: { Authorization: `Bearer ${authToken}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          sessions = data.sessions || [];
-        }
-      } catch (_) {}
-    }
-
-    const supaEntries = await fetchSupabaseEntries();
-    if (sessions.length === 0 && supaEntries.length > 0) {
-      sessions = [
-        {
-          id: 'sess-motorola-edge-40-active',
-          status: 'active',
-          started_at: supaEntries[supaEntries.length - 1]?.created_at || new Date().toISOString(),
-          device_name: 'Motorola Edge 40 (Mobile Native)',
-        },
-        {
-          id: 'sess-web-telemetry-console',
-          status: 'active',
-          started_at: new Date(Date.now() - 3600000).toISOString(),
-          device_name: 'Web Console Workstation',
-        }
-      ];
-    }
-
-    if (sessions.length === 0) {
-      container.innerHTML = '<div class="text-muted text-center py-4">No recorded monitoring sessions.</div>';
-      return;
-    }
-
-    container.innerHTML = sessions.map(s => `
-      <div style="padding: 14px; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-sm); margin-bottom: 10px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <strong>Session ID: ${(s.id || '').substring(0, 16)}...</strong>
-          <span class="badge ${s.status === 'active' ? 'badge-emerald' : ''}">${(s.status || 'ACTIVE').toUpperCase()}</span>
-        </div>
-        <div style="font-size: 12px; color: var(--text-muted);">
-          Started: ${new Date(s.started_at).toLocaleString()} • Device: ${s.device_name || 'Motorola Edge 40'}
-        </div>
-      </div>
-    `).join('');
-  } catch (err) {
-    container.innerHTML = '<div class="text-muted text-center py-4">Could not load session explorer.</div>';
   }
 }
 

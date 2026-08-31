@@ -47,9 +47,9 @@ void main() {
 
         // SRS Requirement: Under 10ms latency per lookup
         expect(
-          stopwatch.elapsedMilliseconds,
-          lessThan(100),
-          reason: 'Total 100 lookups exceeded 100ms threshold',
+          avgMsPerLookup,
+          lessThan(10.0),
+          reason: 'Average lookup latency exceeded 10ms threshold',
         );
       });
 

@@ -489,23 +489,22 @@
   </div>
 
   <!-- =========================================================================
-       LOOK SYSTEM DASHBOARD & TELEMETRY CONSOLE
+       KEYFLOW DASHBOARD & TELEMETRY CONSOLE
        ========================================================================= -->
   <div id="dashboard-container">
     <aside class="sidebar">
       <div>
         <div class="brand-link mb-4" style="margin-bottom: 24px;">
-          <div class="brand-logo">LS</div>
+          <div class="brand-logo">KF</div>
           <div>
-            <div style="font-size: 15px; font-weight: 800;">LOOK SYSTEM</div>
-            <div style="font-size: 10px; color: var(--accent-cyan); font-weight: 600;">TELEMETRY DASHBOARD</div>
+            <div style="font-size: 15px; font-weight: 800; letter-spacing: 0.5px;">KEYFLOW</div>
+            <div style="font-size: 10px; color: var(--accent-indigo); font-weight: 600;">CLOUD SYNC CONSOLE</div>
           </div>
         </div>
 
         <nav style="display: flex; flex-direction: column; gap: 6px;">
           <button class="f-tab-btn active w-100" data-tab="overview" id="nav-overview" style="justify-content: flex-start;">Executive Overview</button>
           <button class="f-tab-btn w-100" data-tab="typing" id="nav-typing" style="justify-content: flex-start;">Typing History</button>
-          <button class="f-tab-btn w-100" data-tab="sessions" id="nav-sessions" style="justify-content: flex-start;">Session Explorer</button>
           <button class="f-tab-btn w-100" data-tab="search" id="nav-search" style="justify-content: flex-start;">Search & Filtering</button>
           <button class="f-tab-btn w-100" data-tab="apps" id="nav-apps" style="justify-content: flex-start;">App Usage Breakdown</button>
           <button class="f-tab-btn w-100" data-tab="admin" id="nav-admin" style="justify-content: flex-start;">Admin & Org Controls</button>
@@ -530,20 +529,20 @@
       <header class="header">
         <div>
           <h2 id="page-title" style="font-size: 26px; font-weight: 800;">Executive Overview</h2>
-          <p style="color: var(--text-muted); font-size: 13px;">Real-time productivity, session hierarchy & transparent telemetry.</p>
+          <p style="color: var(--text-muted); font-size: 13px;">Real-time typing activity, cross-device sync & productivity insights.</p>
         </div>
 
         <div style="display: flex; gap: 10px;">
-          <button class="btn btn-sm btn-primary" id="btn-start-session-header">Start Session</button>
-          <button class="btn btn-sm btn-outline" id="btn-pause-session-header">Pause</button>
-          <button class="btn btn-sm btn-outline" id="btn-stop-session-header" style="color: var(--accent-red);">Stop</button>
+          <button class="btn btn-sm btn-primary" id="btn-refresh-telemetry" style="display: inline-flex; align-items: center; gap: 6px;">
+            <span>🔄</span> Refresh Telemetry
+          </button>
         </div>
       </header>
 
       <!-- KPI Summary Cards -->
       <div class="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-title">Today's Session Duration</div>
+          <div class="kpi-title">Today's Active Duration</div>
           <div class="kpi-value" id="kpi-duration">0h 0m</div>
         </div>
         <div class="kpi-card">
@@ -564,7 +563,7 @@
       <section class="tab-content active" id="tab-overview">
         <div class="form-card mb-4" style="margin-bottom: 24px;">
           <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">Top Applications & Category Distribution</h3>
-          <div id="top-apps-container" class="text-muted py-2">No applications recorded yet. Start a session to record telemetry.</div>
+          <div id="top-apps-container" class="text-muted py-2">No applications recorded yet. Typing activity from enrolled devices will appear here automatically.</div>
         </div>
       </section>
 
@@ -580,16 +579,6 @@
           </div>
           <div class="typing-history-list" id="typing-history-cards-container">
             <div class="text-muted text-center py-4">Loading your cross-device typing history...</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Tab: Session Explorer -->
-      <section class="tab-content" id="tab-sessions">
-        <div class="form-card">
-          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 16px;">Session Application Tree</h3>
-          <div id="sessions-list-container">
-            <div class="text-muted text-center py-4">No active monitoring sessions.</div>
           </div>
         </div>
       </section>
@@ -677,7 +666,7 @@
           <label for="signin-password">Password</label>
           <input type="password" id="signin-password" class="input-control" placeholder="••••••••••••" autocomplete="current-password" required>
         </div>
-        <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-submit-signin">Sign In to Workstation</button>
+        <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-submit-signin">Sign In to KeyFlow</button>
       </form>
 
       <!-- Sign Up Form -->
@@ -698,7 +687,7 @@
           <label for="signup-org">Organization Name</label>
           <input type="text" id="signup-org" class="input-control" placeholder="Acme Corporation" value="Default Organization" autocomplete="organization">
         </div>
-        <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-submit-signup">Create Account & Start Session</button>
+        <button type="submit" class="btn btn-primary w-100 mt-2" id="btn-submit-signup">Create Account & Access KeyFlow</button>
       </form>
     </div>
   </div>

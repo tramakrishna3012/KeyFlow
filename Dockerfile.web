@@ -1,4 +1,4 @@
-# Look System Application - Web Dashboard Container
+# KeyFlow Application - Web Dashboard Container
 FROM nginx:alpine
 
 # Copy custom Nginx configuration with SPA fallback and caching headers

@@ -25,11 +25,18 @@ class EncryptionService {
   Future<Uint8List> _getOrCreateKey() async {
     if (_cachedKey != null) return _cachedKey!;
 
-    final salt = Uint8List.fromList(utf8.encode('kf_$_userId'));
+    Uint8List salt;
+    final storedSalt = await _storage.read(key: _saltKeyName);
+    if (storedSalt != null) {
+      salt = base64Decode(storedSalt);
+    } else {
+      salt = Uint8List.fromList(utf8.encode('kf_$_userId'));
+      await _storage.write(key: _saltKeyName, value: base64Encode(salt));
+    }
+
     _cachedKey = _deriveKey(Uint8List.fromList(utf8.encode(_userId)), salt);
     return _cachedKey!;
   }
-
 
   Uint8List _deriveKey(Uint8List inputKeyMaterial, Uint8List salt) {
     final hkdf = pc.HKDFKeyDerivator(pc.SHA256Digest());
@@ -88,6 +95,8 @@ class EncryptionService {
   Future<void> deleteSalt() async {
     try {
       await _storage.delete(key: _saltKeyName);
+      final newSalt = _generateSecureRandom(16);
+      await _storage.write(key: _saltKeyName, value: base64Encode(newSalt));
     } on Object catch (_) {}
     _cachedKey = null;
   }

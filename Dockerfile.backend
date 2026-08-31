@@ -1,4 +1,4 @@
-# Look System Application - Backend Service Container
+# KeyFlow Application - Backend Service Container
 FROM node:20-alpine
 
 WORKDIR /app
@@ -15,12 +15,12 @@ RUN npm ci --only=production --ignore-scripts && npm cache clean --force
 COPY backend/src ./src
 
 # Create non-root system user and adjust permissions
-RUN addgroup -g 1001 -S lookgroup && \
-    adduser -u 1001 -S lookuser -G lookgroup && \
+RUN addgroup -g 1001 -S keyflowgroup && \
+    adduser -u 1001 -S keyflowuser -G keyflowgroup && \
     mkdir -p /app/data && \
-    chown -R lookuser:lookgroup /app
+    chown -R keyflowuser:keyflowgroup /app
 
-USER lookuser
+USER keyflowuser
 
 EXPOSE 4000
 

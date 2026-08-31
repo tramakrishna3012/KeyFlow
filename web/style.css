@@ -1,5 +1,5 @@
 /* ==========================================================================
-   KeyFlow & Look System — Datanova Design System (Light Theme)
+   KeyFlow Web Application & Cloud Sync Console (Light Theme)
    ========================================================================== */
 
 :root {
@@ -781,7 +781,7 @@ body {
 }
 
 /* ==========================================================================
-   LOOK SYSTEM DASHBOARD CONSOLE (Integrated Telemetry View)
+   KEYFLOW DASHBOARD CONSOLE (Integrated Cloud Sync View)
    ========================================================================== */
 
 #dashboard-container {
