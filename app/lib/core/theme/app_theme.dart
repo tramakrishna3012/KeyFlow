@@ -174,16 +174,21 @@ class AppTheme {
         thickness: 0.8,
       ),
 
-      // ── Switch ────────────────────────────────────────────────────
+      // ── Switch Theme (Clean toggle with crisp white ball thumb knob) ─
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.all(AppColors.toggleKnob),
+        thumbColor: const WidgetStatePropertyAll(Colors.white),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.toggleOn;
+            return AppColors.primary;
           }
-          return AppColors.toggleOff;
+          return const Color(0xFFCBD5E1);
         }),
-        trackOutlineColor: WidgetStateProperty.all(AppColors.cardBorder),
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.transparent;
+          }
+          return const Color(0xFF94A3B8);
+        }),
       ),
     );
   }

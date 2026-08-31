@@ -280,9 +280,16 @@ class _ExcludedAppsScreenState extends ConsumerState<ExcludedAppsScreen> {
                                         .read(settingsControllerProvider)
                                         .toggleAppExclusion(app.packageName);
                                   },
-                                  activeThumbColor: AppColors.accentOrange,
-                                  activeTrackColor: AppColors.accentOrange
-                                      .withValues(alpha: 0.3),
+                                  thumbColor: const WidgetStatePropertyAll(
+                                    Colors.white,
+                                  ),
+                                  activeTrackColor: AppColors.accentOrange,
+                                  inactiveThumbColor: Colors.white,
+                                  inactiveTrackColor: const Color(0xFFCBD5E1),
+                                  trackOutlineColor:
+                                      const WidgetStatePropertyAll(
+                                        Colors.transparent,
+                                      ),
                                 ),
                               ],
                             ),

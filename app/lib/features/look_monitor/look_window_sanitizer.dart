@@ -35,11 +35,15 @@ class LookWindowSanitizer {
   }
 
   /// Checks if text content contains sensitive fields (passwords, OTPs, card numbers).
-  bool containsSensitiveContent(String? text) {
+  bool containsSensitiveContent(String? text, {String? appName}) {
     if (text == null || text.trim().isEmpty) return false;
+    final lowerApp = (appName ?? '').toLowerCase();
+    // Calculator and mathematical utilities never contain masked financial secrets or OTPs
+    if (lowerApp.contains('calculator') || lowerApp.contains('calc')) {
+      return false;
+    }
     if (_creditCardRegex.hasMatch(text)) return true;
     if (_authSecretRegex.hasMatch(text)) return true;
-    if (_otpDigitRegex.hasMatch(text)) return true;
     return false;
   }
 

@@ -104,71 +104,86 @@ class _ScaffoldWithNavBar extends StatelessWidget {
       final isWideScreen = constraints.maxWidth > 600;
 
       if (isWideScreen) {
+        final showDesktopHeader = constraints.maxHeight >= 480;
+
         return Scaffold(
           body: Row(
             children: [
               SizedBox(
                 width: 80,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 16),
-                    // KeyFlow Brand Icon
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.keyboard_command_key_rounded,
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
+                child: SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
                     ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: NavigationRail(
-                        selectedIndex: navigationShell.currentIndex,
-                        onDestinationSelected: (index) =>
-                            navigationShell.goBranch(
-                              index,
-                              initialLocation:
-                                  index == navigationShell.currentIndex,
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 12),
+                          // KeyFlow Brand Icon
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                        labelType: NavigationRailLabelType.all,
-                        destinations: const [
-                          NavigationRailDestination(
-                            icon: Icon(Icons.home_rounded),
-                            selectedIcon: Icon(Icons.home_rounded),
-                            label: Text('Home'),
+                            child: const Icon(
+                              Icons.keyboard_command_key_rounded,
+                              color: AppColors.primary,
+                              size: 22,
+                            ),
                           ),
-                          NavigationRailDestination(
-                            icon: Icon(Icons.history_rounded),
-                            selectedIcon: Icon(Icons.history_rounded),
-                            label: Text('History'),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: NavigationRail(
+                              selectedIndex: navigationShell.currentIndex,
+                              onDestinationSelected: (index) =>
+                                  navigationShell.goBranch(
+                                    index,
+                                    initialLocation:
+                                        index == navigationShell.currentIndex,
+                                  ),
+                              labelType: NavigationRailLabelType.all,
+                              destinations: const [
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.home_rounded),
+                                  selectedIcon: Icon(Icons.home_rounded),
+                                  label: Text('Home'),
+                                ),
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.history_rounded),
+                                  selectedIcon: Icon(Icons.history_rounded),
+                                  label: Text('History'),
+                                ),
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.translate_rounded),
+                                  selectedIcon: Icon(Icons.translate_rounded),
+                                  label: Text('Translate'),
+                                ),
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.emoji_emotions_rounded),
+                                  selectedIcon: Icon(
+                                    Icons.emoji_emotions_rounded,
+                                  ),
+                                  label: Text('Emoji'),
+                                ),
+                                NavigationRailDestination(
+                                  icon: Icon(Icons.settings_rounded),
+                                  selectedIcon: Icon(Icons.settings_rounded),
+                                  label: Text('Settings'),
+                                ),
+                              ],
+                            ),
                           ),
-                          NavigationRailDestination(
-                            icon: Icon(Icons.translate_rounded),
-                            selectedIcon: Icon(Icons.translate_rounded),
-                            label: Text('Translate'),
-                          ),
-                          NavigationRailDestination(
-                            icon: Icon(Icons.emoji_emotions_rounded),
-                            selectedIcon: Icon(Icons.emoji_emotions_rounded),
-                            label: Text('Emoji'),
-                          ),
-                          NavigationRailDestination(
-                            icon: Icon(Icons.settings_rounded),
-                            selectedIcon: Icon(Icons.settings_rounded),
-                            label: Text('Settings'),
-                          ),
+                          // Desktop Sidebar Footer: Profile Trigger (only if vertical space allows)
+                          if (constraints.maxHeight >= 420) ...[
+                            const _DesktopSidebarFooter(),
+                            const SizedBox(height: 12),
+                          ],
                         ],
                       ),
                     ),
-                    // Desktop Sidebar Footer: Profile Trigger
-                    const _DesktopSidebarFooter(),
-                    const SizedBox(height: 16),
-                  ],
+                  ),
                 ),
               ),
               const VerticalDivider(
@@ -179,8 +194,8 @@ class _ScaffoldWithNavBar extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    // Desktop Header Bar with Profile Dropdown
-                    const _DesktopHeader(),
+                    // Desktop Header Bar with Profile Dropdown (when height permits)
+                    if (showDesktopHeader) const _DesktopHeader(),
                     Expanded(child: navigationShell),
                   ],
                 ),

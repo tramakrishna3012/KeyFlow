@@ -19,22 +19,27 @@ class ProfileModal extends ConsumerStatefulWidget {
 
   /// Helper to display ProfileModal responsively
   static Future<void> show(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 600;
+    final mediaQuery = MediaQuery.of(context);
+    final isDesktop = mediaQuery.size.width > 600;
     if (isDesktop) {
+      final maxHeight = mediaQuery.size.height * 0.90;
       return showDialog<void>(
         context: context,
         builder: (ctx) => Dialog(
           backgroundColor: AppColors.scaffoldBackground,
           insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 32,
+            horizontal: 20,
+            vertical: 16,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: AppColors.cardBorder),
           ),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520, maxHeight: 760),
+            constraints: BoxConstraints(
+              maxWidth: 520,
+              maxHeight: maxHeight.clamp(320.0, 760.0),
+            ),
             child: const ProfileModal(),
           ),
         ),
@@ -861,7 +866,15 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                                 cloudSyncEnabled: val,
                               );
                             },
-                            activeThumbColor: AppColors.primary,
+                            thumbColor: const WidgetStatePropertyAll(
+                              Colors.white,
+                            ),
+                            activeTrackColor: AppColors.primary,
+                            inactiveThumbColor: Colors.white,
+                            inactiveTrackColor: const Color(0xFFCBD5E1),
+                            trackOutlineColor: const WidgetStatePropertyAll(
+                              Colors.transparent,
+                            ),
                           ),
                         ],
                       ),

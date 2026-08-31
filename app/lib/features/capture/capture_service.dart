@@ -318,8 +318,15 @@ class CaptureService {
     final text = (event['text'] as String?) ?? '';
     final timestamp =
         (event['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch;
+    final isCopied = (event['isCopied'] as bool?) ?? (appName == 'Clipboard');
 
     if (text.trim().isEmpty) return;
+
+    // For clipboard copied events, save immediately without debounce
+    if (isCopied) {
+      _saveDirectEntry(appName, text.trim(), timestamp);
+      return;
+    }
 
     // Buffer incoming text for this application
     _inputBuffers[appName] = text;
@@ -329,6 +336,47 @@ class CaptureService {
     _debounceTimers[appName] = Timer(const Duration(milliseconds: 800), () {
       _flushBufferForApp(appName, windowTitle, timestamp);
     });
+  }
+
+  Future<void> _saveDirectEntry(
+    String appName,
+    String rawText,
+    int timestamp,
+  ) async {
+    final sanitizedText = _sanitizer.sanitizeTextRecord(
+      rawText,
+      appName: appName,
+    );
+
+    if (sanitizedText.isEmpty ||
+        sanitizedText == '[Excluded Content]' ||
+        sanitizedText == '[Redacted Sensitive Record]') {
+      return;
+    }
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final lastSaved = _lastSavedTextPerApp[appName];
+    final lastSavedTime = _lastSavedTimePerApp[appName] ?? 0;
+    if (lastSaved == sanitizedText && (now - lastSavedTime) < 5000) {
+      return;
+    }
+
+    _lastSavedTextPerApp[appName] = sanitizedText;
+    _lastSavedTimePerApp[appName] = now;
+
+    final entry = HistoryEntry(
+      id: '${timestamp}_${appName.hashCode}',
+      text: sanitizedText,
+      sourceApp: appName,
+      capturedAt: DateTime.fromMillisecondsSinceEpoch(timestamp),
+      deviceId: 'mobile_native',
+    );
+    await _repository.addEntry(entry);
+    onEntryCaptured?.call(entry);
+    debugPrint(
+      '[CaptureService] Copied entry ${entry.id} added locally, triggering cloud sync',
+    );
+    unawaited(activeSyncService?.syncEntry(entry));
   }
 
   Future<void> _flushBufferForApp(

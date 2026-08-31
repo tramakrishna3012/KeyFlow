@@ -280,8 +280,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 onChanged: (val) {
                   ref.read(capturePausedProvider.notifier).setPaused(val);
                 },
-                activeThumbColor: AppColors.accentOrange,
-                activeTrackColor: AppColors.accentOrange.withValues(alpha: 0.3),
+                thumbColor: const WidgetStatePropertyAll(Colors.white),
+                activeTrackColor: AppColors.accentOrange,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: const Color(0xFFCBD5E1),
+                trackOutlineColor: const WidgetStatePropertyAll(
+                  Colors.transparent,
+                ),
               ),
             ],
           ),
@@ -532,8 +537,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       .read(floatingBubbleProvider.notifier)
                       .toggleBubble();
                 },
-                activeThumbColor: AppColors.primary,
-                activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
+                thumbColor: const WidgetStatePropertyAll(Colors.white),
+                activeTrackColor: AppColors.primary,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: const Color(0xFFCBD5E1),
+                trackOutlineColor: const WidgetStatePropertyAll(
+                  Colors.transparent,
+                ),
               ),
             ],
           ),
@@ -752,7 +762,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             Switch(
               value: true,
               onChanged: null, // Locked ON by default per UIUX §2.4
-              activeThumbColor: AppColors.secondary,
+              thumbColor: WidgetStatePropertyAll(Colors.white),
+              activeTrackColor: AppColors.secondary,
+              trackOutlineColor: WidgetStatePropertyAll(Colors.transparent),
             ),
           ],
         ),
@@ -834,7 +846,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 onChanged: (v) {
                   ref.read(settingsControllerProvider).setAutocorrectEnabled(v);
                 },
-                activeThumbColor: AppColors.primary,
+                thumbColor: const WidgetStatePropertyAll(Colors.white),
+                activeTrackColor: AppColors.primary,
+                inactiveThumbColor: Colors.white,
+                inactiveTrackColor: const Color(0xFFCBD5E1),
+                trackOutlineColor: const WidgetStatePropertyAll(
+                  Colors.transparent,
+                ),
               ),
             ],
           ),

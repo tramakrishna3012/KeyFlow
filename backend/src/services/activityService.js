@@ -58,16 +58,33 @@ const CATEGORY_MAP = {
   'brave': 'Browsing'
 };
 
-// Sensitive patterns: passwords, OTPs, auth codes, credit cards, banking info
+// Sensitive patterns: credit cards, SSN, passwords, auth secrets
 const SENSITIVE_PATTERNS = [
   /\b(?:\d[ -]*?){13,16}\b/g, // Credit card numbers
   /\b(?:\d{3}-\d{2}-\d{4})\b/g, // SSN
   /\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret)\s*[:=]\s*\S+/gi,
-  /\b(?:\d{6,8})\b/g, // 6-8 digit OTPs
 ];
 
-function isSensitiveFieldOrText(text = '') {
+// Banking & payment app identifiers where text capture is automatically excluded
+const PAYMENT_BANKING_APPS = [
+  'paytm', 'gpay', 'phonepe', 'banking', 'paypal', 'wallet', 'venmo', 'chase',
+  'wellsfargo', 'bank', 'cred', 'bhim', 'mobikwik', 'freecharge'
+];
+
+function isSensitiveFieldOrText(appName = '', text = '') {
   if (!text) return false;
+  const cleanApp = String(appName || '').toLowerCase();
+
+  // Calculator and utility apps never contain financial secrets
+  if (cleanApp.includes('calculator') || cleanApp.includes('calc')) {
+    return false;
+  }
+
+  // Check if app is an explicit banking/payment app
+  for (const pApp of PAYMENT_BANKING_APPS) {
+    if (cleanApp.includes(pApp)) return true;
+  }
+
   for (const pattern of SENSITIVE_PATTERNS) {
     if (pattern.test(text)) return true;
   }
@@ -342,7 +359,7 @@ async function ingestBatchActivity({ userId, deviceId, sessionId, entries }) {
 
     // If text record is included and not excluded/sensitive, encrypt at rest
     if (textRecord && typeof textRecord === 'string' && textRecord.trim().length > 0) {
-      const isSensitive = isSensitiveFieldOrText(textRecord);
+      const isSensitive = isSensitiveFieldOrText(appName, textRecord);
       const markExcluded = isExcluded || isSensitive;
       const sanitizedPreview = markExcluded ? '[Redacted Privacy Record]' : sanitizeWindowTitle(textRecord.substring(0, 60));
       const encrypted = encryptRecord(markExcluded ? '[Redacted Content]' : textRecord);

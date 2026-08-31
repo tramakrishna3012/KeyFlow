@@ -109,7 +109,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth > 600;
-        final gridAspectRatio = isWide ? 2.2 : 1.55;
 
         return RefreshIndicator(
           color: AppColors.primary,
@@ -120,7 +119,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               _buildHeader(context),
               const SizedBox(height: 20),
               _buildStatsGrid(
-                gridAspectRatio: gridAspectRatio,
+                isWide: isWide,
+                gridAspectRatio: isWide ? 1.6 : 1.55,
                 totalSnippets: totalSnippets,
                 todayChars: todayChars,
                 timeSavedStr: timeSavedStr,
@@ -236,6 +236,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildStatsGrid({
+    required bool isWide,
     required double gridAspectRatio,
     required int totalSnippets,
     required int todayChars,
@@ -247,7 +248,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         : '$todayChars';
 
     return GridView.count(
-      crossAxisCount: 2,
+      crossAxisCount: isWide ? 4 : 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 12,

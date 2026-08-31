@@ -194,8 +194,8 @@ class EmojiScreen extends ConsumerWidget {
   ) => GridView.builder(
     shrinkWrap: true,
     physics: const NeverScrollableScrollPhysics(),
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-      crossAxisCount: 6,
+    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+      maxCrossAxisExtent: 64,
       mainAxisSpacing: 10,
       crossAxisSpacing: 10,
     ),

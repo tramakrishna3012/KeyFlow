@@ -49,6 +49,52 @@ class KeyflowAccessibilityService : AccessibilityService() {
         serviceInfo = info
 
         updateForegroundNotification(isPaused)
+        setupClipboardListener()
+    }
+
+    private var lastCopiedText: String = ""
+    private var lastCopiedTime: Long = 0L
+
+    private fun setupClipboardListener() {
+        try {
+            val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+            clipboard?.addPrimaryClipChangedListener {
+                try {
+                    if (isPaused) return@addPrimaryClipChangedListener
+                    val clip = clipboard.primaryClip
+                    if (clip != null && clip.itemCount > 0) {
+                        val item = clip.getItemAt(0)
+                        val text = item?.coerceToText(this@KeyflowAccessibilityService)?.toString()?.trim() ?: ""
+                        if (text.isNotBlank()) {
+                            val now = System.currentTimeMillis()
+                            if (text == lastCopiedText && (now - lastCopiedTime) < 1500L) {
+                                return@addPrimaryClipChangedListener
+                            }
+                            lastCopiedText = text
+                            lastCopiedTime = now
+
+                            val payload = mapOf(
+                                "appName" to "Clipboard",
+                                "windowTitle" to "Copied Text",
+                                "text" to text,
+                                "timestamp" to now,
+                                "isCopied" to true
+                            )
+                            android.util.Log.i("KeyflowA11y", "Captured user copied text: '$text'")
+                            if (eventListener != null) {
+                                eventListener?.invoke(payload)
+                            } else {
+                                saveEventToNativeBuffer(payload)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("KeyflowA11y", "Clipboard listener callback error: $e")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("KeyflowA11y", "setupClipboardListener error: $e")
+        }
     }
 
     fun updateForegroundNotification(paused: Boolean) {
