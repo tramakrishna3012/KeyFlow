@@ -15,12 +15,15 @@ class SupabaseHistoryRepository {
 
   static const String _tableName = 'history_entries';
 
-  String get effectiveUserId => _client.auth.currentUser?.id ?? _encryption.userId;
+  String get effectiveUserId =>
+      _client.auth.currentUser?.id ?? _encryption.userId;
 
   Future<void> upsertEntry(HistoryEntry entry) async {
     try {
       final userId = effectiveUserId;
-      debugPrint('[SupabaseHistoryRepo] upsertEntry starting: id=${entry.id}, user=$userId, app=${entry.sourceApp}');
+      debugPrint(
+        '[SupabaseHistoryRepo] upsertEntry starting: id=${entry.id}, user=$userId, app=${entry.sourceApp}',
+      );
       if (userId.isEmpty) {
         debugPrint(
           'SupabaseHistoryRepo: No authenticated user, skipping upsert',
@@ -40,13 +43,14 @@ class SupabaseHistoryRepository {
         'captured_at': entry.capturedAt.millisecondsSinceEpoch,
         'device_id': entry.deviceId,
       });
-      debugPrint('[SupabaseHistoryRepo] upsertEntry SUCCESS for id=${entry.id}');
+      debugPrint(
+        '[SupabaseHistoryRepo] upsertEntry SUCCESS for id=${entry.id}',
+      );
     } on Exception catch (e) {
       debugPrint('SupabaseHistoryRepo: upsertEntry failed — $e');
       rethrow;
     }
   }
-
 
   Future<List<HistoryEntry>> getAllEntries() async {
     try {
@@ -110,7 +114,11 @@ class SupabaseHistoryRepository {
       final userId = effectiveUserId;
       if (userId.isEmpty) return;
 
-      await _client.from(_tableName).delete().eq('id', id).eq('user_id', userId);
+      await _client
+          .from(_tableName)
+          .delete()
+          .eq('id', id)
+          .eq('user_id', userId);
     } on Exception catch (e) {
       debugPrint('SupabaseHistoryRepo: deleteEntry failed — $e');
       rethrow;
@@ -169,4 +177,3 @@ class SupabaseHistoryRepository {
     }
   }
 }
-

@@ -53,7 +53,6 @@ final encryptionServiceProvider = Provider<EncryptionService?>((ref) {
   return EncryptionService(userId: 'usr_active_device_sync');
 });
 
-
 final supabaseHistoryRepositoryProvider = Provider<SupabaseHistoryRepository?>((
   ref,
 ) {
@@ -96,4 +95,3 @@ final captureServiceProvider = Provider<CaptureService>((ref) {
     },
   );
 });
-

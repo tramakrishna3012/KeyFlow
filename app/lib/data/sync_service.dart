@@ -8,10 +8,8 @@ import 'models/history_entry.dart';
 import 'supabase_history_repository.dart';
 
 class SyncService {
-  SyncService({
-    required this.cloudRepo,
-    http.Client? httpClient,
-  })  : _client = httpClient ?? http.Client();
+  SyncService({required this.cloudRepo, http.Client? httpClient})
+    : _client = httpClient ?? http.Client();
 
   final SupabaseHistoryRepository cloudRepo;
   SupabaseHistoryRepository get _cloudRepo => cloudRepo;
@@ -39,7 +37,9 @@ class SyncService {
     try {
       final token = AuthService.instance.token;
       if (token != null && token.isNotEmpty) {
-        final url = Uri.parse('https://keyflow-dnsd.onrender.com/api/v1/activity/batch');
+        final url = Uri.parse(
+          'https://keyflow-dnsd.onrender.com/api/v1/activity/batch',
+        );
         final payload = {
           'deviceName': 'Motorola Edge 40',
           'osInfo': 'Android 15',
@@ -52,29 +52,34 @@ class SyncService {
               'textRecord': entry.text,
               'durationSeconds': 5,
               'startedAt': entry.capturedAt.toIso8601String(),
-              'endedAt': entry.capturedAt.add(const Duration(seconds: 5)).toIso8601String(),
-            }
-          ]
+              'endedAt': entry.capturedAt
+                  .add(const Duration(seconds: 5))
+                  .toIso8601String(),
+            },
+          ],
         };
 
-        final response = await _client.post(
-          url,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode(payload),
-        ).timeout(const Duration(seconds: 5));
+        final response = await _client
+            .post(
+              url,
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: jsonEncode(payload),
+            )
+            .timeout(const Duration(seconds: 5));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
-          debugPrint('SyncService: Entry ${entry.id} synced to Express backend');
+          debugPrint(
+            'SyncService: Entry ${entry.id} synced to Express backend',
+          );
         }
       }
     } on Object catch (e) {
       debugPrint('SyncService backend batch error (non-fatal): $e');
     }
   }
-
 
   Future<void> deleteEntry(String id) async {
     try {

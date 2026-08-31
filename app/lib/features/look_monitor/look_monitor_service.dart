@@ -6,7 +6,6 @@ import '../../data/auth_service.dart';
 import 'look_activity_models.dart';
 import 'look_window_sanitizer.dart';
 
-
 /// Transparent, privacy-preserving desktop activity monitoring engine.
 ///
 /// Features:
@@ -451,31 +450,46 @@ class LookMonitorService extends ChangeNotifier {
     try {
       final token = AuthService.instance.token;
       if (token != null && token.isNotEmpty) {
-        final url = Uri.parse('https://keyflow-dnsd.onrender.com/api/v1/activity/batch');
-        final entries = items.map((item) => {
-          'id': item.id,
-          'appName': item.appName,
-          'windowTitle': item.windowTitle,
-          'textRecord': item.textRecord,
-          'durationSeconds': item.durationSeconds,
-          'startedAt': item.timestamp.toIso8601String(),
-          'endedAt': item.timestamp.add(Duration(seconds: item.durationSeconds > 0 ? item.durationSeconds : 5)).toIso8601String(),
-        }).toList();
+        final url = Uri.parse(
+          'https://keyflow-dnsd.onrender.com/api/v1/activity/batch',
+        );
+        final entries = items
+            .map(
+              (item) => {
+                'id': item.id,
+                'appName': item.appName,
+                'windowTitle': item.windowTitle,
+                'textRecord': item.textRecord,
+                'durationSeconds': item.durationSeconds,
+                'startedAt': item.timestamp.toIso8601String(),
+                'endedAt': item.timestamp
+                    .add(
+                      Duration(
+                        seconds: item.durationSeconds > 0
+                            ? item.durationSeconds
+                            : 5,
+                      ),
+                    )
+                    .toIso8601String(),
+              },
+            )
+            .toList();
 
-
-        await http.post(
-          url,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode({
-            'deviceName': 'Motorola Edge 40',
-            'osInfo': 'Android 15',
-            'agentVersion': '1.0.0',
-            'entries': entries,
-          }),
-        ).timeout(const Duration(seconds: 5));
+        await http
+            .post(
+              url,
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: jsonEncode({
+                'deviceName': 'Motorola Edge 40',
+                'osInfo': 'Android 15',
+                'agentVersion': '1.0.0',
+                'entries': entries,
+              }),
+            )
+            .timeout(const Duration(seconds: 5));
       }
     } on Object catch (e) {
       debugPrint('LookMonitor flushOfflineQueue error: $e');
@@ -483,7 +497,6 @@ class LookMonitorService extends ChangeNotifier {
 
     return count;
   }
-
 
   String _inferCategory(String appName) {
     final lower = appName.toLowerCase();

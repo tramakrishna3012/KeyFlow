@@ -20,8 +20,9 @@ void main() async {
   const isDemoMode = bool.fromEnvironment('DEMO_MODE');
   if (isDemoMode) {
     try {
-      await const MethodChannel('com.keyflow.app/security')
-          .invokeMethod('setSecureFlag', {'enabled': false});
+      await const MethodChannel(
+        'com.keyflow.app/security',
+      ).invokeMethod('setSecureFlag', {'enabled': false});
     } on Object catch (_) {}
   }
 
@@ -62,7 +63,6 @@ void main() async {
 
   runApp(const ProviderScope(child: KeyFlowApp()));
 }
-
 
 class KeyFlowApp extends ConsumerStatefulWidget {
   const KeyFlowApp({super.key});

@@ -7,7 +7,6 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthResponse;
 
 import 'models/user_model.dart';
 
-
 /// Unified Authentication Service connecting to the online Supabase PostgreSQL backend.
 class AuthService extends ChangeNotifier {
   AuthService({
@@ -105,10 +104,7 @@ class AuthService extends ChangeNotifier {
       final salt = 'kf_$cleanEmail';
       final passwordHash = base64Encode(utf8.encode('$password:$salt'));
 
-      final rows = await supa
-          .from('users')
-          .select()
-          .eq('email', cleanEmail);
+      final rows = await supa.from('users').select().eq('email', cleanEmail);
 
       if (rows.isNotEmpty) {
         final row = rows.first;
@@ -118,7 +114,8 @@ class AuthService extends ChangeNotifier {
           final userObj = UserModel(
             id: row['id'] as String,
             email: row['email'] as String,
-            fullName: (row['full_name'] as String?) ?? cleanEmail.split('@').first,
+            fullName:
+                (row['full_name'] as String?) ?? cleanEmail.split('@').first,
             createdAt: DateTime.now().toIso8601String(),
           );
 
@@ -179,7 +176,6 @@ class AuthService extends ChangeNotifier {
       debugPrint('Supabase login error: $e');
     }
 
-
     // 3. Fallback to Express backend if available
     try {
       final url = Uri.parse('$_apiBase/auth/login');
@@ -233,8 +229,11 @@ class AuthService extends ChangeNotifier {
     String? organizationName,
   }) async {
     final cleanEmail = email.trim().toLowerCase();
-    final cleanName = fullName.trim().isEmpty ? cleanEmail.split('@').first : fullName.trim();
-    final userId = 'usr_${cleanEmail.hashCode.abs()}_${DateTime.now().millisecondsSinceEpoch % 100000}';
+    final cleanName = fullName.trim().isEmpty
+        ? cleanEmail.split('@').first
+        : fullName.trim();
+    final userId =
+        'usr_${cleanEmail.hashCode.abs()}_${DateTime.now().millisecondsSinceEpoch % 100000}';
     final salt = 'kf_$cleanEmail';
     final passwordHash = base64Encode(utf8.encode('$password:$salt'));
 
@@ -352,9 +351,11 @@ class AuthService extends ChangeNotifier {
           _currentUser = UserModel(
             id: row['id'] as String,
             email: row['email'] as String,
-            fullName: (row['full_name'] as String?) ??
+            fullName:
+                (row['full_name'] as String?) ??
                 row['email'].toString().split('@').first,
-            createdAt: row['created_at']?.toString() ??
+            createdAt:
+                row['created_at']?.toString() ??
                 DateTime.now().toIso8601String(),
           );
           await _storage.write(
@@ -405,7 +406,6 @@ class AuthService extends ChangeNotifier {
     }
     return _currentUser;
   }
-
 
   /// Fetch active sessions for the current user
   Future<List<UserSession>> fetchActiveSessions() async {
@@ -607,4 +607,3 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 }
-

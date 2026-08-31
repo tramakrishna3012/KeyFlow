@@ -30,8 +30,8 @@ class CaptureService {
   final void Function(HistoryEntry entry)? onEntryCaptured;
   StreamSubscription<dynamic>? _subscription;
 
-  SyncService? get activeSyncService => syncServiceGetter?.call() ?? syncService;
-
+  SyncService? get activeSyncService =>
+      syncServiceGetter?.call() ?? syncService;
 
   bool _isCapturing = false;
   bool get isCapturing => _isCapturing;
@@ -57,9 +57,13 @@ class CaptureService {
 
   Future<void> _flushPendingNativeEvents() async {
     try {
-      final pending = await _methodChannel.invokeMethod<List<dynamic>>('getPendingEvents');
+      final pending = await _methodChannel.invokeMethod<List<dynamic>>(
+        'getPendingEvents',
+      );
       if (pending != null && pending.isNotEmpty) {
-        debugPrint('[CaptureService] Flushing ${pending.length} pending events from disk buffer');
+        debugPrint(
+          '[CaptureService] Flushing ${pending.length} pending events from disk buffer',
+        );
         for (final item in pending) {
           if (item is Map) {
             _onNativeEvent(item);
@@ -67,13 +71,17 @@ class CaptureService {
         }
       }
     } on PlatformException catch (e) {
-      debugPrint('CaptureService _flushPendingNativeEvents error: ${e.message}');
+      debugPrint(
+        'CaptureService _flushPendingNativeEvents error: ${e.message}',
+      );
     }
   }
 
   Future<bool> isBatteryOptimizationIgnored() async {
     try {
-      final ignored = await _methodChannel.invokeMethod<bool>('isBatteryOptimizationIgnored');
+      final ignored = await _methodChannel.invokeMethod<bool>(
+        'isBatteryOptimizationIgnored',
+      );
       return ignored ?? true;
     } on PlatformException catch (_) {
       return true;
@@ -84,7 +92,9 @@ class CaptureService {
     try {
       await _methodChannel.invokeMethod('requestIgnoreBatteryOptimizations');
     } on PlatformException catch (e) {
-      debugPrint('CaptureService requestIgnoreBatteryOptimizations error: ${e.message}');
+      debugPrint(
+        'CaptureService requestIgnoreBatteryOptimizations error: ${e.message}',
+      );
     }
   }
 
@@ -107,7 +117,6 @@ class CaptureService {
       return false;
     }
   }
-
 
   Future<bool> stopCapture() async {
     if (!_isCapturing) return true;
@@ -239,7 +248,6 @@ class CaptureService {
     }
   }
 
-
   Future<List<InstalledAppInfo>> getInstalledApps({
     bool includeSystem = false,
   }) async {
@@ -370,12 +378,12 @@ class CaptureService {
       );
       await _repository.addEntry(entry);
       onEntryCaptured?.call(entry);
-      debugPrint('[CaptureService] Entry ${entry.id} added locally, triggering cloud sync (activeSyncService != null: ${activeSyncService != null})');
+      debugPrint(
+        '[CaptureService] Entry ${entry.id} added locally, triggering cloud sync (activeSyncService != null: ${activeSyncService != null})',
+      );
       unawaited(activeSyncService?.syncEntry(entry));
     }
   }
-
-
 
   Future<dynamic> _handleNativeMethodCall(MethodCall call) async {
     switch (call.method) {

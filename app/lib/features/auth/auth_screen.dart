@@ -86,7 +86,6 @@ class _AuthScreenState extends State<AuthScreen> {
           );
           if (mounted) context.go('/home');
         } else {
-
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(res.errorMessage ?? 'Invalid email or password'),

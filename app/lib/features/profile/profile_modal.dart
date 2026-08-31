@@ -1075,7 +1075,6 @@ class _ProfileModalState extends ConsumerState<ProfileModal> {
                             context.go('/login');
                           }
                         },
-
                       ),
                       const Divider(color: AppColors.cardBorder, height: 1),
 

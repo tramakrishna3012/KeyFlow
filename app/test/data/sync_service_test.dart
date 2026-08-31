@@ -15,7 +15,6 @@ class FakeSupabaseHistoryRepository implements SupabaseHistoryRepository {
   @override
   String get effectiveUserId => 'test_user_id';
 
-
   @override
   Future<void> upsertEntry(HistoryEntry entry) async {
     if (shouldFail || _currentFailCount < failCount) {

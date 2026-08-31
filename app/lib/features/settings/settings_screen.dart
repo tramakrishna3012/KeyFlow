@@ -490,7 +490,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     );
   }
 
-
   // Floating Assistant Overlay Card
   Widget _buildFloatingBubbleCard() {
     final isBubbleActive = ref.watch(floatingBubbleProvider);
