@@ -1,14 +1,14 @@
 # KeyFlow — Full System Architecture & Security Blueprint
 
-**Document Version:** 2.0  
+**Document Version:** 3.0  
 **Status:** Implemented & Verified  
-**Scope:** Mobile Client (Flutter/Kotlin), Express Telemetry Server, Cloudflare Workers Dashboard, Supabase Relay  
+**Scope:** Mobile Client (Flutter/Kotlin), Express Telemetry Server, Cloudflare Workers Dashboard, Supabase PostgreSQL Relay  
 
 ---
 
 ## 1. Architectural Overview
 
-KeyFlow is designed around a **Local-First, Zero-Knowledge Privacy Architecture** with optional, end-to-end encrypted cloud telemetry synchronization.
+KeyFlow is built upon a **Local-First, Zero-Knowledge Privacy Architecture** with real-time session debouncing and multi-device clipboard synchronization.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -21,18 +21,18 @@ KeyFlow is designed around a **Local-First, Zero-Knowledge Privacy Architecture*
 │  │ ────────────────────────────── │  │  │  (Node.js / SQLite3)     │  │   Edge Dashboard (SPA) │ │
 │  │ • AccessibilityService (Kotlin)│  │  │                          │  │                        │ │
 │  │ • ClipboardManager Listener    │──┼──┼─►• Ingestion & Debounce  │  │ • Executive Overview   │ │
-│  │ • WindowManager Overlay Bot    │  │  │  • JWT Auth & RBAC       │  │ • Cross-Device History │ │
-│  │ • Broadcast Channels           │  │  │  • Privacy Auto-Masking  │  │ • WebCrypto HKDF Decr  │ │
-│  └───────────────┬────────────────┘  │  │  • Retention Purge Jobs  │  │ • Search & Filtering   │ │
+│  │ • WindowManager Overlay Bot    │  │  │  • JWT Auth & RBAC       │  │ • Typing Stream Feed   │ │
+│  │ • Broadcast Channels           │  │  │  • Session Upsert Engine │  │ • Clipboard Feed (Sync)│ │
+│  └───────────────┬────────────────┘  │  │  • Retention Purge Jobs  │  │ • Replay Draft Modal   │ │
 │                  │ MethodChannel     │  └─────────────┬────────────┘  └───────────▲────────────┘ │
 │  ┌───────────────▼────────────────┐  │                │                           │              │
 │  │     Flutter Application        │  │                │ REST / Activity           │ HTTPS Static │
 │  │ ────────────────────────────── │  │                ▼                           │ & Web APIs   │
-│  │ • Riverpod State Management    │  │  ┌─────────────────────────────────────────┴────────────┐ │
-│  │ • Adaptive GoRouter (Rail/Bar) │  │  │            Supabase Cloud Relay (PostgreSQL)         │ │
-│  │ • 2-Level Grouped History UI   │  │  │ ─────────────────────────────────────────────────── │ │
-│  │ • 1-Click Copy & Search Engine │──┼──┼─► • E2E Encrypted History Payload Table              │ │
-│  │ • Material 3 Custom Switches   │  │  │ • Client-Side HKDF Derived AES-GCM Storage           │ │
+│  │ • DartSessionAggregator (2.5s) │  │  ┌─────────────────────────────────────────┴────────────┐ │
+│  │ • Riverpod State Management    │  │  │            Supabase Cloud Relay (PostgreSQL)         │ │
+│  │ • Adaptive GoRouter (Rail/Bar) │  │  │ ─────────────────────────────────────────────────── │ │
+│  │ • 1-Click Copy & Search Engine │──┼──┼─► • Typing Sessions Table (RLS Tenant Isolated)      │ │
+│  │ • Material 3 Custom Switches   │  │  │ • Clipboard Entries Table (Auto-Classified)          │ │
 │  └───────────────┬────────────────┘  │  └──────────────────────────────────────────────────────┘ │
 │                  │                   │                                                           │
 │  ┌───────────────▼────────────────┐  │                                                           │
@@ -51,39 +51,31 @@ KeyFlow is designed around a **Local-First, Zero-Knowledge Privacy Architecture*
 
 ### 2.1 Native Android Capture Subsystem (`app/android`)
 1. **`KeyflowAccessibilityService.kt`**:
-   - Registered as an Android accessibility service listening for `TYPE_VIEW_TEXT_CHANGED`, `TYPE_VIEW_FOCUSED`, and `TYPE_WINDOW_CONTENT_CHANGED`.
-   - **Clipboard Monitoring**: Hooks `ClipboardManager.OnPrimaryClipChangedListener` to capture text copied to clipboard instantly without debounce delay.
+   - Registered as an Android accessibility service listening for text and focus change events.
+   - **Clipboard Monitoring**: Hooks `ClipboardManager.OnPrimaryClipChangedListener` to capture copied text immediately.
    - **Exclusion Engine**: Filters blacklisted applications at the native layer before text reaches Dart code.
-   - **Discreet Foreground Execution**: Runs under the neutral notification title *"System Sync Service"* with minimal status text (*"Active"* / *"Paused"*).
+   - **Discreet Foreground Execution**: Runs under the neutral notification title *"System Sync Service"* with minimal status text.
 2. **`KeyflowOverlayService.kt`**:
    - Implements a draggable floating assistant bot overlay via `WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY`.
    - Provides quick privacy controls (instant capture pause/resume) and accessibility settings diagnostics.
 
-### 2.2 Flutter Core Layer (`app/lib`)
-1. **`CaptureService` & Debounce Engine**:
-   - Ingests events from native platform channels into an in-memory buffer.
-   - Applies an **800ms adaptive burst debounce timer** for typing events and a **10-second deduplication cache**.
-   - Direct path for clipboard events: persists immediately to local database and triggers background cloud sync.
-2. **`LookWindowSanitizer` (Privacy Guard)**:
-   - Inspects active application package and text contents.
-   - Exempts Calculator and mathematical tools from numeric masking.
-   - Automatically redacts password fields, authorization headers, and payment applications.
-3. **`EncryptedDatabase` (SQLCipher AES-256)**:
-   - Stores history records encrypted with AES-256.
-   - Encryption key is stored in hardware Keystore via `flutter_secure_storage`.
-4. **Adaptive Navigation & Theme System**:
-   - `AppRouter`: Adapts from bottom navigation bar to `NavigationRail` sidebar on landscape and wide viewports.
-   - `AppTheme`: Enforces Material 3 switch styling with prominent **white ball thumb knobs** (`Colors.white`).
+### 2.2 Client-Side Session Aggregator (`DartSessionAggregator` / `SessionAggregator.ts`)
+1. **2.5s Inactivity Debounce Buffer**: Buffers raw typing and flushes only after 2.5s of typing silence.
+2. **60s Termination Boundary**: Spawns a new session container when switching applications or pausing >60s.
+3. **Composite Grouping Key**: `appName.toLowerCase()::windowTitle.toLowerCase()::deviceName.toLowerCase()`.
+4. **Draft Progression Snapshots**: Records chronological typing snapshots for draft replay.
 
 ### 2.3 Cloud Relay & Web Dashboard (`backend` & `web`)
-1. **Express Telemetry Server (`backend/src`)**:
-   - Ingests activity batches, verifies JWT auth, enforces RBAC, applies privacy masking, and schedules retention purge jobs.
-2. **Supabase Relay Subsystem**:
-   - Synchronizes encrypted payloads (`encrypted_text`, `iv`, `auth_tag`) derived client-side via HKDF (`SHA-256`).
+1. **Express Telemetry & Session Server (`backend/src`)**:
+   - Endpoints: `POST /api/v1/sessions/upsert`, `GET /api/v1/sessions`, `POST /api/v1/clipboard/insert`, `GET /api/v1/clipboard`.
+   - SQLite tables: `typing_sessions` and `clipboard_entries`.
+2. **Supabase PostgreSQL Relay**:
+   - Tables: `typing_sessions` and `clipboard_entries` with Row Level Security (RLS) policies (`auth.uid() = user_id`).
+   - Automated metrics trigger: `calculate_typing_session_metrics()` for character and word counts.
 3. **Cloudflare Workers Web Dashboard (`web/`)**:
-   - Static Single Page Application (SPA) deployed at the edge with zero cold starts.
-   - Features 6 responsive tabs: Executive Overview, Cross-Device Typing History, Search & Filtering, App Usage Breakdown, Admin & Org Controls, and Privacy & Exclusions.
-   - Utilizes standard browser WebCrypto API to decrypt payloads in the client browser.
+   - SPA served via Cloudflare Workers Static Assets (`wrangler.toml` and `worker.js`).
+   - Client-side AES-256-GCM WebCrypto decryption.
+   - Tabs: Executive Overview, Typing Stream, Clipboard History, Search & Filtering, App Breakdown, Admin Controls, and Privacy & Exclusions.
 
 ---
 
@@ -94,40 +86,19 @@ sequenceDiagram
     autonumber
     participant User as User / App (e.g. Chrome / Calc)
     participant A11y as Native Accessibility & Clipboard
-    participant Cap as CaptureService (Dart)
+    participant Agg as DartSessionAggregator
     participant DB as SQLCipher AES-256 (Local SQLite)
     participant Sync as Cloud Sync Service
-    participant Supa as Supabase Relay
-    participant Web as Web Dashboard (Cloudflare Workers)
+    participant Supa as Supabase PostgreSQL / REST API
+    participant Web as Web Dashboard (Cloudflare)
 
-    User->>A11y: Types text OR Copies text to Clipboard
-    A11y->>A11y: Check Excluded Apps & Mask Passwords
-    A11y->>Cap: Emit Native Event via MethodChannel
-    
-    alt Is Clipboard Event
-        Cap->>DB: Save Immediately (sourceApp: "Clipboard")
-        Cap->>Sync: Trigger Cloud Relay Sync
-    else Is Typing Event
-        Cap->>Cap: Buffer & Debounce (800ms window)
-        Cap->>DB: Save Entry (sourceApp: App Name)
-        Cap->>Sync: Queue for Batch Cloud Relay Sync
-    end
-
-    Sync->>Sync: Derive AES-GCM Key via HKDF(userId)
-    Sync->>Supa: Upload Encrypted Payload (Ciphertext + IV)
-    
-    Web->>Supa: Fetch Encrypted Entries on Refresh
-    Web->>Web: WebCrypto HKDF Key Derivation & Decryption
-    Web->>User: Render 2-Level Grouped History Cards
+    User->>A11y: Types paragraph in Chrome
+    A11y->>Agg: Emits typing event stream
+    Note over Agg: Groups by app::window::device<br/>Buffers text with 2.5s debounce
+    Agg->>DB: Upserts paragraph session
+    Agg->>Sync: Dispatches debounced payload
+    Sync->>Supa: POST /api/v1/sessions/upsert (AES-256-GCM)
+    Web->>Supa: Pulls session stream (JWT Authenticated)
+    Web->>Web: Decrypts via WebCrypto API
+    Web->>User: Displays paragraph card with Replay Draft
 ```
-
----
-
-## 4. Cryptographic Key Management & Storage
-
-| Layer | Encryption Algorithm | Key Generation & Derivation | Storage Mechanism |
-| :--- | :--- | :--- | :--- |
-| **Local SQLite** | SQLCipher AES-256-CBC | Cryptographically secure 32-byte random key | Android Hardware Keystore / iOS Keychain via `FlutterSecureStorage` |
-| **Cloud Relay** | AES-256-GCM | HKDF (`SHA-256`) with user ID salt and context tag | Key derived client-side on device and browser; never stored on server |
-| **Backend REST** | AES-256-GCM / bcrypt | HMAC-SHA256 JWT secrets; salted bcrypt for passwords | Environment variables (`JWT_SECRET`) & hashed DB fields |
-| **Edge Delivery** | TLS 1.3 | Automated Cloudflare Edge Certificates | Edge CDN SSL/TLS Termination |
