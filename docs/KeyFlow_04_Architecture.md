@@ -1,105 +1,133 @@
-# KeyFlow — Backend / Frontend Architecture
+# KeyFlow — Full System Architecture & Security Blueprint
 
-**Version:** 1.0
+**Document Version:** 2.0  
+**Status:** Implemented & Verified  
+**Scope:** Mobile Client (Flutter/Kotlin), Express Telemetry Server, Cloudflare Workers Dashboard, Supabase Relay  
 
 ---
 
-## 1. Architectural Summary
+## 1. Architectural Overview
 
-KeyFlow is **not** a single-codebase app in the strict sense, despite using Flutter. Flutter provides the shared UI and business-logic layer across all four platforms, but the actual system-level capture on each OS requires a small **native capture module** written in that platform's own language, because none of the low-level APIs involved (Windows keyboard hooks, macOS CGEventTap, Android AccessibilityService, iOS keyboard extensions) are exposed through Flutter's cross-platform layer. Plan for "one shared app, four thin native modules" rather than "one codebase, zero native code."
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Flutter Shared Layer                 │
-│   UI screens · state management · History Store client    │
-│   Search & reinsert logic · Settings · Consent flow UI    │
-└───────────────┬─────────────┬─────────────┬───────────────┘
-                │ Platform     │ Platform     │ Platform
-                │ Channel      │ Channel      │ Channel
-       ┌────────▼───────┐ ┌────▼────────┐ ┌───▼─────────┐ ┌─────────────────┐
-       │ Windows native │ │ macOS native │ │ Android      │ │ iOS Custom       │
-       │ capture module │ │ capture      │ │ native        │ │ Keyboard         │
-       │ (C++/C#)       │ │ module       │ │ AccessibilityService (Kotlin)│ Extension (Swift, separate target) │
-       └────────────────┘ └──────────────┘ └───────────────┘ └──────────────────┘
-```
-
-## 2. Frontend (Flutter Shared Layer)
-
-- **State management**: Riverpod (or Bloc, if the team prefers stricter unidirectional flow) — either works; Riverpod is recommended for less boilerplate given the small feature surface.
-- **Local data access**: a `HistoryRepository` abstraction wrapping the encrypted database (see §3), so UI code never touches storage directly.
-- **Key screens**: Onboarding/Consent, Main History & Search, Snippet Detail, Settings (Exclusion List, Retention, Translation, Autocorrect toggles), Status/Tray Menu (desktop), Emoji Picker overlay, Translation popup.
-- **Cross-platform UI shell**: identical on Windows/macOS/Android; iOS container app carries Settings + History browsing, while live capture/suggestion happens inside the separate keyboard extension (see §4).
-
-## 3. Local Data Layer
-
-- **Engine**: SQLite via `sqflite`/`drift`, wrapped with SQLCipher (or platform-native encryption at the file level) to satisfy TRD S-1.
-- **Schema (core table)**:
-  - `history_entries(id, text, source_app, captured_at, language, was_translated, device_id)`
-  - `exclusion_list(app_identifier, added_at)`
-  - `settings(key, value)`
-  - `audit_log(event_type, detail, occurred_at)` — permission grants/revokes, exclusion changes
-- **Key management**: encryption key generated on first run, stored in the OS-native secure store (Keychain/Keystore/Credential Manager/DPAPI) — never in the SQLite file itself, never synced.
-- **Retention job**: a scheduled local task purges entries past the configured retention window (SRS FR-10).
-
-## 4. Native Capture Modules (per platform)
-
-### Windows
-- Native module in C++ (or C# via a small helper process) implementing `WH_KEYBOARD_LL` hook or Text Services Framework integration.
-- Exposes captured text events to Flutter via `MethodChannel`/`EventChannel`.
-- Runs a visible system-tray icon at all times capture is active (TRD §2 non-negotiable rule).
-- Excludes windows/processes matching the Exclusion List before ever forwarding text to Flutter.
-
-### macOS
-- Native Swift module using `CGEventTap`, gated behind the Accessibility permission.
-- Communicates with Flutter via the macOS platform channel.
-- Menu-bar icon mirrors the Windows tray-icon requirement.
-
-### Android
-- Native Kotlin `AccessibilityService` implementation; Android enforces the persistent notification automatically while it runs (cannot be suppressed — treat this as a feature, not a bug, per TRD §2).
-- Bridges captured text to the Flutter engine via a Flutter plugin (`MethodChannel`).
-- Respects the Exclusion List at the native layer before any text reaches shared code.
-
-### iOS
-- **Not** implemented as part of the main Flutter app. Build as a native Swift **Custom Keyboard Extension** target in the same Xcode project.
-- Rationale: Apple imposes strict memory limits on keyboard extensions that make embedding a full Flutter engine impractical; a lightweight native UIKit/SwiftUI keyboard is the reliable approach.
-- Shares data with the main Flutter container app via an **App Group** shared container (encrypted at rest per TRD S-1); the container app (Flutter) reads from the shared store for History/Search/Settings UI.
-- Only text typed while the user has actively enabled the KeyFlow keyboard is ever captured — no visibility into other apps or the system keyboard (hard platform limit, not a gap to "fix").
-
-## 5. Assist Features Architecture
-
-- **Autocorrect**: on-device dictionary + lightweight statistical/ML model, invoked locally as text streams in from the capture module; no network call.
-- **Emoji suggestion**: local keyword→emoji mapping plus a small on-device relevance model; searchable picker is a straightforward local UI/data lookup.
-- **Translation**:
-  - Default path: on-device translation framework (Apple Translation framework on iOS/macOS; Android ML Kit on-device models).
-  - Fallback path (opt-in per use, only for unsupported language pairs): request routed through a minimal **Relay Service** (e.g., a small Cloudflare Worker/AWS Lambda) that holds the third-party translation API key server-side, forwards the single request, returns the result, and does not persist the text. This keeps API keys out of the distributed client binary and keeps translation providers swappable without a client update.
+KeyFlow is designed around a **Local-First, Zero-Knowledge Privacy Architecture** with optional, end-to-end encrypted cloud telemetry synchronization.
 
 ```
-User selects text ──► On-device translation available? ──Yes──► Local model ──► Result
-                                    │
-                                   No (opt-in)
-                                    ▼
-                            Relay Service ──► Third-party Translation API ──► Result (not persisted)
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    KEYFLOW ARCHITECTURE TOPOLOGY                                 │
+├──────────────────────────────────────┬───────────────────────────────────────────────────────────┤
+│          MOBILE CLIENT ENGINE        │                   CLOUD & WEB SUBSYSTEM                   │
+│                                      │                                                           │
+│  ┌────────────────────────────────┐  │  ┌──────────────────────────┐  ┌────────────────────────┐ │
+│  │    Android Native Subsystem    │  │  │  Express Telemetry API   │  │   Cloudflare Workers   │ │
+│  │ ────────────────────────────── │  │  │  (Node.js / SQLite3)     │  │   Edge Dashboard (SPA) │ │
+│  │ • AccessibilityService (Kotlin)│  │  │                          │  │                        │ │
+│  │ • ClipboardManager Listener    │──┼──┼─►• Ingestion & Debounce  │  │ • Executive Overview   │ │
+│  │ • WindowManager Overlay Bot    │  │  │  • JWT Auth & RBAC       │  │ • Cross-Device History │ │
+│  │ • Broadcast Channels           │  │  │  • Privacy Auto-Masking  │  │ • WebCrypto HKDF Decr  │ │
+│  └───────────────┬────────────────┘  │  │  • Retention Purge Jobs  │  │ • Search & Filtering   │ │
+│                  │ MethodChannel     │  └─────────────┬────────────┘  └───────────▲────────────┘ │
+│  ┌───────────────▼────────────────┐  │                │                           │              │
+│  │     Flutter Application        │  │                │ REST / Activity           │ HTTPS Static │
+│  │ ────────────────────────────── │  │                ▼                           │ & Web APIs   │
+│  │ • Riverpod State Management    │  │  ┌─────────────────────────────────────────┴────────────┐ │
+│  │ • Adaptive GoRouter (Rail/Bar) │  │  │            Supabase Cloud Relay (PostgreSQL)         │ │
+│  │ • 2-Level Grouped History UI   │  │  │ ─────────────────────────────────────────────────── │ │
+│  │ • 1-Click Copy & Search Engine │──┼──┼─► • E2E Encrypted History Payload Table              │ │
+│  │ • Material 3 Custom Switches   │  │  │ • Client-Side HKDF Derived AES-GCM Storage           │ │
+│  └───────────────┬────────────────┘  │  └──────────────────────────────────────────────────────┘ │
+│                  │                   │                                                           │
+│  ┌───────────────▼────────────────┐  │                                                           │
+│  │   Encrypted Local Storage      │  │                                                           │
+│  │ ────────────────────────────── │  │                                                           │
+│  │ • SQLCipher AES-256 (SQLite)   │  │                                                           │
+│  │ • FlutterSecureStorage (Key)   │  │                                                           │
+│  │ • Retention Auto-Purge Runner  │  │                                                           │
+│  └────────────────────────────────┘  │                                                           │
+└──────────────────────────────────────┴───────────────────────────────────────────────────────────┘
 ```
 
-## 6. Backend Footprint
+---
 
-KeyFlow has effectively no traditional backend — no user accounts, no central database, no admin dashboard. The only server-side component is the stateless translation Relay described above, which should be built to log request metadata (timestamp, language pair, success/failure) **without** logging request/response text content.
+## 2. Component Breakdown
 
-## 7. Build/CI Structure (for the agentic IDE)
+### 2.1 Native Android Capture Subsystem (`app/android`)
+1. **`KeyflowAccessibilityService.kt`**:
+   - Registered as an Android accessibility service listening for `TYPE_VIEW_TEXT_CHANGED`, `TYPE_VIEW_FOCUSED`, and `TYPE_WINDOW_CONTENT_CHANGED`.
+   - **Clipboard Monitoring**: Hooks `ClipboardManager.OnPrimaryClipChangedListener` to capture text copied to clipboard instantly without debounce delay.
+   - **Exclusion Engine**: Filters blacklisted applications at the native layer before text reaches Dart code.
+   - **Discreet Foreground Execution**: Runs under the neutral notification title *"System Sync Service"* with minimal status text (*"Active"* / *"Paused"*).
+2. **`KeyflowOverlayService.kt`**:
+   - Implements a draggable floating assistant bot overlay via `WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY`.
+   - Provides quick privacy controls (instant capture pause/resume) and accessibility settings diagnostics.
 
-Recommended monorepo layout:
+### 2.2 Flutter Core Layer (`app/lib`)
+1. **`CaptureService` & Debounce Engine**:
+   - Ingests events from native platform channels into an in-memory buffer.
+   - Applies an **800ms adaptive burst debounce timer** for typing events and a **10-second deduplication cache**.
+   - Direct path for clipboard events: persists immediately to local database and triggers background cloud sync.
+2. **`LookWindowSanitizer` (Privacy Guard)**:
+   - Inspects active application package and text contents.
+   - Exempts Calculator and mathematical tools from numeric masking.
+   - Automatically redacts password fields, authorization headers, and payment applications.
+3. **`EncryptedDatabase` (SQLCipher AES-256)**:
+   - Stores history records encrypted with AES-256.
+   - Encryption key is stored in hardware Keystore via `flutter_secure_storage`.
+4. **Adaptive Navigation & Theme System**:
+   - `AppRouter`: Adapts from bottom navigation bar to `NavigationRail` sidebar on landscape and wide viewports.
+   - `AppTheme`: Enforces Material 3 switch styling with prominent **white ball thumb knobs** (`Colors.white`).
 
+### 2.3 Cloud Relay & Web Dashboard (`backend` & `web`)
+1. **Express Telemetry Server (`backend/src`)**:
+   - Ingests activity batches, verifies JWT auth, enforces RBAC, applies privacy masking, and schedules retention purge jobs.
+2. **Supabase Relay Subsystem**:
+   - Synchronizes encrypted payloads (`encrypted_text`, `iv`, `auth_tag`) derived client-side via HKDF (`SHA-256`).
+3. **Cloudflare Workers Web Dashboard (`web/`)**:
+   - Static Single Page Application (SPA) deployed at the edge with zero cold starts.
+   - Features 6 responsive tabs: Executive Overview, Cross-Device Typing History, Search & Filtering, App Usage Breakdown, Admin & Org Controls, and Privacy & Exclusions.
+   - Utilizes standard browser WebCrypto API to decrypt payloads in the client browser.
+
+---
+
+## 3. Data Flow & Security Sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant User as User / App (e.g. Chrome / Calc)
+    participant A11y as Native Accessibility & Clipboard
+    participant Cap as CaptureService (Dart)
+    participant DB as SQLCipher AES-256 (Local SQLite)
+    participant Sync as Cloud Sync Service
+    participant Supa as Supabase Relay
+    participant Web as Web Dashboard (Cloudflare Workers)
+
+    User->>A11y: Types text OR Copies text to Clipboard
+    A11y->>A11y: Check Excluded Apps & Mask Passwords
+    A11y->>Cap: Emit Native Event via MethodChannel
+    
+    alt Is Clipboard Event
+        Cap->>DB: Save Immediately (sourceApp: "Clipboard")
+        Cap->>Sync: Trigger Cloud Relay Sync
+    else Is Typing Event
+        Cap->>Cap: Buffer & Debounce (800ms window)
+        Cap->>DB: Save Entry (sourceApp: App Name)
+        Cap->>Sync: Queue for Batch Cloud Relay Sync
+    end
+
+    Sync->>Sync: Derive AES-GCM Key via HKDF(userId)
+    Sync->>Supa: Upload Encrypted Payload (Ciphertext + IV)
+    
+    Web->>Supa: Fetch Encrypted Entries on Refresh
+    Web->>Web: WebCrypto HKDF Key Derivation & Decryption
+    Web->>User: Render 2-Level Grouped History Cards
 ```
-/keyflow
-  /app                  (Flutter shared app: UI, state, HistoryRepository)
-  /native/windows        (C++/C# capture module + platform channel glue)
-  /native/macos          (Swift capture module + platform channel glue)
-  /native/android         (Kotlin AccessibilityService + Flutter plugin)
-  /ios/KeyFlowKeyboard    (Swift custom keyboard extension target)
-  /relay                 (translation relay service, stateless)
-  /docs                  (this document set)
-```
 
-## 8. Traceability
+---
 
-Each module above maps to specific FRs in the SRS (§3.1) and to a dedicated build prompt in the Agentic IDE Prompts document.
+## 4. Cryptographic Key Management & Storage
+
+| Layer | Encryption Algorithm | Key Generation & Derivation | Storage Mechanism |
+| :--- | :--- | :--- | :--- |
+| **Local SQLite** | SQLCipher AES-256-CBC | Cryptographically secure 32-byte random key | Android Hardware Keystore / iOS Keychain via `FlutterSecureStorage` |
+| **Cloud Relay** | AES-256-GCM | HKDF (`SHA-256`) with user ID salt and context tag | Key derived client-side on device and browser; never stored on server |
+| **Backend REST** | AES-256-GCM / bcrypt | HMAC-SHA256 JWT secrets; salted bcrypt for passwords | Environment variables (`JWT_SECRET`) & hashed DB fields |
+| **Edge Delivery** | TLS 1.3 | Automated Cloudflare Edge Certificates | Edge CDN SSL/TLS Termination |

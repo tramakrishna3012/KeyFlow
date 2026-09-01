@@ -1,74 +1,90 @@
-# KeyFlow — UI/UX Specification
+# KeyFlow — UI/UX Specification & Design System
 
-**Version:** 1.0
+**Document Version:** 2.0  
+**Design Paradigm:** Modern Light Theme, Glassmorphism, Adaptive Material 3  
+**Supported Viewports:** Mobile Portrait (360–440dp), Horizontal/Landscape (600–1080dp), Tablet & Desktop (1080–1920dp)  
 
 ---
 
-## 1. Design Principles
+## 1. Design Principles & Aesthetic Philosophy
 
-1. **Nothing hidden.** A visible status indicator is present any time capture is active, on every platform. This is a product principle, not just a technical requirement (TRD §2).
-2. **Consent before capability.** No capture, ever, before the user has completed the Consent Flow and granted the OS permission.
-3. **Fast to reuse, slow to intrude.** Search/reinsert should feel instant (Spotlight/Alfred-style); suggestions (autocorrect, emoji) should never block typing.
-4. **The user is always in control of their own data.** Every screen that shows captured history also offers delete; Settings always has an obvious "export" and "delete everything" action.
+1. **Radical Transparency**: The system state is always obvious. A clean, non-intrusive status notification or floating bubble indicates whether capture is *Active* or *Paused*.
+2. **Instant Reusability**: 1-Click copy buttons on every snippet row with instant toast feedback.
+3. **Adaptive Form Factors**: Seamless transitions from bottom navigation on mobile portrait to a scrollable `NavigationRail` sidebar in landscape/desktop modes.
+4. **High-Contrast Micro-Affordances**: Switches, inputs, and buttons feature clear, high-contrast visual cues (such as prominent white ball knobs on active toggles).
 
-## 2. Key Screens
+---
 
-### 2.1 Onboarding & Consent Flow
-- Screen 1 — **What KeyFlow does**: plain-language explanation ("KeyFlow saves what you type on this device so you can search and reuse it later. It also offers autocorrect, translation, and emoji suggestions.").
-- Screen 2 — **What it does not do**: explicitly states no capture from password fields (where detectable), no cloud sync by default, no sharing with anyone else.
-- Screen 3 — **Permission request**: explains the specific OS permission about to be requested (Accessibility, Input Monitoring, etc.) before triggering the native OS dialog, so the OS prompt isn't a surprise.
-- Screen 4 — **Exclusion list setup**: pre-populated with sensible defaults (password managers, banking apps/domains), user can add more before finishing.
-- Screen 5 — **Confirmation**: "KeyFlow is now active" with a preview of the always-on status indicator so the user knows what to look for.
+## 2. Color Palette & Typography (`AppColors`)
 
-### 2.2 Main History & Search
-- Global hotkey (desktop) or app-open (mobile) surfaces a quick-search palette.
-- Results ranked by recency + text relevance, grouped by source app.
-- Each result: preview snippet, source app icon, timestamp, one-click "insert," swipe/click-to-delete.
-- Empty state explains how history builds up over time.
+```
+Primary Accent (Indigo/Blue): #4F46E5 / #2563EB
+Background Primary:          #F8FAFC (Clean Light Slate)
+Surface Card Background:     #FFFFFF (Pure White with Subtle Border)
+Text Primary:                #0F172A (High-Contrast Slate Dark)
+Text Secondary:              #64748B (Muted Secondary Slate)
+Success / Active:            #10B981 (Emerald Green)
+Warning / Paused:            #F59E0B (Amber Gold)
+Error / Destructive:         #EF4444 (Rose Red)
+Border Color:                #E2E8F0 (Subtle Neutral Divider)
+```
 
-### 2.3 Snippet Detail
-- Full text view, source app, captured time, "insert," "delete," "copy," "translate this."
+---
 
-### 2.4 Settings
-- **Exclusion List**: add/remove apps or domains, toggle "auto-exclude fields marked secure by the OS" (on by default, cannot be turned off — this one is a hard rule, not a preference).
-- **Retention**: slider/dropdown (7 / 30 / 90 days / "keep until I delete"); default 30.
-- **Autocorrect**: on/off, per-app override list.
-- **Translation**: default target language, on-device-only vs. allow cloud fallback prompt-per-use toggle.
-- **Data**: "View everything KeyFlow has stored," "Export," "Delete all."
-- **About**: permission status per platform, link to this documentation set.
+## 3. Mobile Screen Specifications
 
-### 2.5 Status Indicator / Tray Menu (Desktop)
-- Always-visible tray/menu-bar icon while active; icon state changes (e.g., dimmed) if capture is paused.
-- Menu: Pause capture (1 hr / until re-enabled), Open History, Settings, Quit.
+### 3.1 Onboarding & Consent Flow
+- **Slide 1 — What KeyFlow Does**: Explains automatic keystroke and clipboard saving for fast search and reuse.
+- **Slide 2 — Privacy & Security**: Highlights zero-knowledge local SQLCipher AES-256 encryption and auto-masking of passwords.
+- **Slide 3 — Permission Grant**: Clear explanation of Android Accessibility and Notification requirements.
+- **Responsive Geometry**: Form factor clamped to max-width 440dp with `SingleChildScrollView` to prevent keyboard or landscape overflow.
 
-### 2.6 Emoji Picker Overlay
-- Triggered by hotkey or inline suggestion tap; searchable grid; recently-used row at top.
+### 3.2 Home Dashboard
+- **Greeting & Profile Avatar**: Time-aware greeting (*"Good morning"*, *"Good evening"*) with quick profile modal launcher.
+- **Metric KPI Grid**: Adaptive 2x2 grid in portrait (4x1 in landscape) displaying:
+  - Total Snippets Captured
+  - Total Characters Typed Today
+  - Estimated Time Saved
+  - Active Tracked Applications
+- **Weekly Typing Histogram**: Custom bar chart visualizing daily keystroke volume.
+- **Recent Snippets Reel**: Quick carousel of the latest 3 captured snippets with 1-click copy action.
 
-### 2.7 Translation Popup
-- Appears on selected text; shows source→target language, translated text, and a small label indicating "Translated on-device" or "Translated via cloud (you approved this)."
+### 3.3 Snippet History Screen (2-Level Hierarchy)
+- **Search Header**: Persistent search bar with clear button and sub-20ms query execution.
+- **App Filter Chips**: Horizontal scrollable chips (*All Apps*, *Chrome*, *Calculator*, *WhatsApp*) with active entry counts.
+- **Date Grouping (Level 1)**: Sticky date headers (*TODAY*, *YESTERDAY*, *DD MMM YYYY*) with total entry badge pills.
+- **App Card Hierarchy (Level 2)**:
+  - Header: Application package icon, title (*Chrome*), package identifier (`com.android.chrome`).
+  - Rows: Individual snippet entries with relative timestamps (*"9:06 PM"*) and 1-Click Copy icon button.
 
-## 3. Core User Flows
+### 3.4 Settings & Preference Screen
+- **Account & Profile Card**: Displays active sync status, local/cloud mode, and profile modal trigger.
+- **Capture Controls**:
+  - `Pause Typing Capture` toggle with high-contrast **white ball knob** (`Colors.white`).
+  - Android Accessibility Settings deep-link with live active state reflection.
+  - Background Battery Optimization un-restriction launcher.
+  - `Floating Assistant Bubble` system overlay toggle.
+- **Exclusions & Privacy**:
+  - `Excluded Applications` list manager.
+  - `Auto-exclude secure password fields` (Locked ON by default).
+- **Data Lifecycle & Export**:
+  - Retention policy picker (24 Hours, 7 Days, 30 Days, 90 Days, Indefinite).
+  - 1-Click JSON data export and secure data shredding action.
 
-1. **First run**: install → Onboarding & Consent (2.1) → status indicator appears → normal typing begins building history.
-2. **Everyday reuse**: user starts typing something familiar → hits search hotkey → finds past entry → inserts it.
-3. **Excluding an app**: user opens Settings → Exclusion List → adds an app → confirmation toast → future typing in that app is never captured.
-4. **Reviewing/deleting data**: Settings → "View everything KeyFlow has stored" → delete individual entries or "Delete all."
-5. **Translating on the fly**: user selects text → Translation Popup appears → reviews source/target → accepts or dismisses.
-6. **Uninstall**: standard OS uninstall triggers KeyFlow's cleanup routine (SRS FR-22) — local store and revocable permissions are cleared.
+### 3.5 Floating Assistant Bot Overlay
+- **Draggable Bubble**: Semi-transparent 56dp circular icon that snaps to screen edges.
+- **Expanded Quick Menu**: Instant capture pause/resume toggle, status badge, and direct shortcut back into KeyFlow.
 
-## 4. Accessibility
+---
 
-- All interactive elements reachable via keyboard navigation (desktop) and screen-reader labeled (all platforms).
-- Minimum 4.5:1 contrast ratio for text; status indicator states distinguishable by shape/label, not color alone.
-- Suggestion popups (autocorrect, emoji, translation) dismissible via keyboard (Esc) as well as click/tap.
+## 4. Web Dashboard Glassmorphism UI (`web/`)
 
-## 5. Visual Direction (for the design/agentic IDE handoff)
-
-- Neutral, low-attention palette for the ever-present status indicator and suggestion popups — this is a utility, not a marketing surface.
-- Consistent iconography for "captured," "excluded," and "paused" states across all four platforms.
-- History/search UI should feel closer to a command palette (fast, keyboard-first) than a document browser.
-
-## 6. Copy Guidelines
-
-- Consent and Settings copy must always be literal and specific ("KeyFlow stores text you type on this device, encrypted, for 30 days by default") — never vague reassurance ("your privacy matters to us") in place of a concrete fact.
-- Never use the word "monitor" or "track" in user-facing copy about the device's own owner — frame everything as "save," "search," "reuse," consistent with this being a tool *for* the user, not *on* them.
+- **Navigation Sidebar**: Left sidebar featuring KeyFlow branding, user avatar card, and 6 view tabs:
+  1. *Executive Overview*
+  2. *Typing History*
+  3. *Search & Filtering*
+  4. *App Usage Breakdown*
+  5. *Admin & Org Controls*
+  6. *Privacy & Exclusions*
+- **Typing History Table**: Matches mobile 2-level grouping with hardware device badges (`📱 Motorola Edge 40`), relative timestamps, and client-side decrypted snippet previews.
+- **Action Bar**: "Refresh Telemetry" button with loading spinners, global search bar, and app filter dropdowns.

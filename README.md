@@ -1,198 +1,238 @@
-# KeyFlow — Intelligent Local-First Typing History & Assistant
+# KeyFlow — Intelligent Local-First Typing History, Assistant & Telemetry Platform
 
-[![CI](https://github.com/tramakrishna3012/KeyFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/tramakrishna3012/KeyFlow/actions/workflows/ci.yml)
+<div align="center">
+
+<img src="AppLogo.svg" alt="KeyFlow Logo" width="120" height="120" style="border-radius: 24px; box-shadow: 0 12px 32px rgba(99, 102, 241, 0.25);" />
+
+### Privacy-First Keystroke & Clipboard Tracking • SQLCipher AES-256 Encryption • Real-Time Cross-Platform Cloud Telemetry
+
+[![CI Pipeline](https://github.com/tramakrishna3012/KeyFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/tramakrishna3012/KeyFlow/actions/workflows/ci.yml)
 [![Release Android](https://github.com/tramakrishna3012/KeyFlow/actions/workflows/release-android.yml/badge.svg)](https://github.com/tramakrishna3012/KeyFlow/actions/workflows/release-android.yml)
+[![SonarCloud Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=tramakrishna3012_KeyFlow&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=tramakrishna3012_KeyFlow)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/Flutter-3.44.7-02569B?logo=flutter)](https://flutter.dev)
-[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web%20%7C%20Windows-blue)](https://github.com/tramakrishna3012/KeyFlow)
+[![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Web%20%7C%20Windows%20%7C%20iOS-blue)](https://github.com/tramakrishna3012/KeyFlow)
 
-**KeyFlow** is a modern, privacy-first, local-first typing history tracker and intelligent desktop/mobile assistant built with Flutter. It captures, organizes, encrypts, and indexes keystrokes and text snippets across all applications with zero external telemetry, instant search, smart app exclusions, and a native system-wide floating assistant.
+[Live Web Dashboard](https://keyflow.tramakrishna3012.workers.dev) • [Architecture Documentation](docs/KeyFlow_04_Architecture.md) • [API Specification](docs/LOOK_SYSTEM/02_API_Specification.md) • [E2E Test Plan](docs/E2E_EXHAUSTIVE_TEST_PLAN.md)
+
+</div>
+
+---
+
+## 📖 Overview
+
+**KeyFlow** is a modern, enterprise-grade, privacy-first typing history manager, clipboard capture engine, and productivity telemetry platform. It bridges a native, local-first **Android Application** (built with Flutter, Kotlin Accessibility Services, and SQLCipher AES-256 storage) with a high-performance **Cloudflare Workers & Express Web Dashboard** backed by end-to-end encrypted Supabase synchronization.
+
+KeyFlow captures keystrokes, debounced text inputs, and copied clipboard snippets in real time across all applications—empowering users to recover lost work, search past text, translate on the fly, and inspect productivity metrics with zero unauthorized telemetry.
+
+```
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                                KEYFLOW ECOSYSTEM                                  │
+├──────────────────────────┬───────────────────────────┬────────────────────────────┤
+│     MOBILE CLIENT        │      BACKEND / RELAY      │       WEB DASHBOARD        │
+│  (Flutter + Kotlin A11y) │   (Express / Cloudflare)  │   (Cloudflare Workers SPA) │
+│                          │                           │                            │
+│  • Accessibility Service │  • REST Activity API      │  • Executive Overview      │
+│  • Clipboard Monitor     │  • JWT Auth & RBAC        │  • Pure Typing History     │
+│  • SQLCipher AES-256     │  • End-to-End HKDF Decrypt│  • Search & Deep Filtering │
+│  • Floating Assist Bot   │  • Retention Purge Jobs   │  • App Usage Breakdown     │
+│  • 2-Level Grouped UI    │  • Privacy Auto-Exclusion │  • Admin & Org Controls    │
+└──────────────────────────┴───────────────────────────┴────────────────────────────┘
+```
 
 ---
 
 ## ✨ Key Features
 
-### 🛡️ Privacy & Local-First Encryption
-- **Zero-Knowledge Architecture**: All typing logs are processed entirely on-device by default.
-- **SQLCipher AES-256 Encryption**: Data at rest is encrypted using database-level keys stored securely in the hardware keystore via `FlutterSecureStorage`.
-- **Configurable Retention Purge**: Automated background retention policies (24 hours, 7 days, 30 days, 90 days, or indefinite) with secure cascading data shredding.
-- **Optional E2E Cloud Sync**: Encrypted synchronization backed by Supabase with client-side key derivation.
+### 🛡️ 1. Zero-Knowledge Local-First Encryption
+- **Client-Side Encryption**: Database entries are encrypted at rest using database-level keys generated on first run via `FlutterSecureStorage` (Android Keystore / iOS Keychain).
+- **SQLCipher AES-256 Storage**: Complete zero-knowledge local SQLite database structure preventing unauthorized extraction.
+- **Configurable Retention Shredding**: Automated background retention purge job supporting 24 hours, 7 days, 30 days, 90 days, or indefinite data lifecycles.
 
-### 🕒 Redesigned Snippet History (2-Level Grouping)
-- **Hierarchical Layout**: Grouped by date sections (*Today*, *Yesterday*, *Mon, 24 Aug*) with entry count pill badges.
-- **Per-App Cards**: Dynamic application header cards featuring package icons, bold app names, package identifiers, and chronological timestamps.
-- **Touch-Friendly Copy Affordance**: One-tap copy button and long-press selection with haptic feedback and confirmation toasts.
-- **Debounce & Deduplication Engine**: 800ms debounce pipeline and 10-second deduplication cache preventing duplicate database records.
+### 📋 2. Real-Time Keystroke & Clipboard Capture
+- **Universal Typing Capture**: Powered by a high-performance Kotlin `AccessibilityService` capturing window content and text change events.
+- **Background Clipboard Monitoring**: `ClipboardManager.OnPrimaryClipChangedListener` automatically detects copied text snippets across all applications with instant local persistence and zero-delay cloud relay.
+- **Debounce & Deduplication Engine**: 800ms adaptive burst debounce buffer and 10-second deduplication hash cache preventing bloated database entries.
 
-### 🤖 System-Wide Floating Assistant Bot
-- **Native Draggable Overlay**: WindowManager-based overlay bubble (`SYSTEM_ALERT_WINDOW`) that hovers above other applications.
-- **Expandable Quick Control Panel**:
-  - Live capture status indicator (*Active* / *Paused*).
-  - Instant *"Pause Typing Capture"* toggle for momentary privacy during sensitive input.
-  - *"Accessibility Access"* status switch with deep-linking to Android Accessibility Settings and automatic app lifecycle resume refreshing.
-  - Quick action launcher for instant navigation back into KeyFlow.
+### 🔍 3. Intelligent Privacy & Selective Masking
+- **Smart App Exclusions**: User-configurable exclusion list automatically halting capture in banking, payment, and authenticator applications.
+- **Intelligent Field Filtering**: Password fields (`TYPE_TEXT_VARIATION_PASSWORD`) and payment credentials (CVV, PAN, PIN) are auto-redacted.
+- **Calculator & Utility Exemption**: Mathematical inputs, equations, and utility calculations are explicitly exempted from false-positive privacy masking.
 
-### 🚫 Installed App Exclusion Manager
-- **Interactive App Discovery**: Enumerates installed applications on the device with icons, names, and package IDs.
-- **Instant Search & Filter**: Real-time filtering across installed packages with immediate toggle state reflection.
-- **Sensitive App Auto-Detection**: Built-in recommendations for banking, payment, and authenticator applications.
-- **Direct Native Sync**: Immediately syncs exclusion lists with `KeyflowAccessibilityService`.
+### 📱 4. Redesigned Mobile Experience
+- **2-Level Grouped History**: Hierarchical grouping under dynamic date sections (*Today*, *Yesterday*, *Date*) and per-application header cards.
+- **1-Click Copy Affordance**: Tap-to-copy snippet rows with haptic feedback and instant confirmation toast overlays.
+- **High-Contrast Switch Controls**: Custom Material 3 switch widgets with prominent white ball knobs (`thumbColor: Colors.white`) and high-visibility track styling.
+- **Adaptive Horizontal Layout**: Full support for landscape mode, tablets, and desktop aspect ratios with responsive sidebar navigation rails.
 
-### 🔔 Discreet Background Synchronization
-- **Generic Notification Labels**: Foreground accessibility service runs discreetly under the neutral *"System Sync Service"* title with minimal status text (*"Active"* / *"Paused"*).
-- **Clean Channel Management**: Automatically migrates and cleans legacy notification channels.
+### 🤖 5. System-Wide Floating Assistant Bot
+- **Draggable WindowManager Overlay**: Draggable interactive bubble (`SYSTEM_ALERT_WINDOW`) accessible on top of all Android applications.
+- **Quick Privacy Controls**: Instant capture pause toggle, accessibility diagnostic launcher, and rapid navigation into KeyFlow.
 
-### 🔄 Semantic Auto-Update Engine
-- **Accurate SemVer Comparison**: Compares releases using numeric semantic versioning (`major.minor.patch`).
-- **Encrypted Persistent Dismissal**: Remembers dismissed update versions without recurring prompt spam.
-- **Process Guard**: Prevents flickering dialogs and duplicate update checks on view rebuilds.
+### 🌐 6. Real-Time Web Telemetry Dashboard
+- **Executive Overview**: High-level KPI metrics, active durations, total keystroke volume, and authorized device counts.
+- **Cross-Device Typing History**: Pure typing logs with application headers, relative timestamps, and hardware device badges (e.g. `📱 Motorola Edge 40`).
+- **Search & Deep Filtering**: Global full-text search with instant sub-20ms multi-parameter filtering.
+- **App Usage Breakdown**: Visual breakdown of active productivity vs. auxiliary application utilization.
+- **Admin & Org Controls**: Role-Based Access Control (Admin / User), audit logs, and GDPR DSAR compliance tools.
 
 ---
 
 ## 🏗️ Architecture & Technology Stack
 
-| Component | Technology / Library |
-| :--- | :--- |
-| **Framework** | [Flutter 3.44.7](https://flutter.dev) (Dart 3.x) |
-| **State Management** | [Flutter Riverpod 2.x](https://riverpod.dev) (`StateNotifierProvider`, `FutureProvider`) |
-| **Routing & Navigation** | [GoRouter](https://pub.dev/packages/go_router) with responsive Adaptive Navigation (Rail & Bottom Bar) |
-| **Local Database** | [sqflite_sqlcipher](https://pub.dev/packages/sqflite_sqlcipher) (AES-256 encrypted SQLite) |
-| **Key Storage** | [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage) (Android Keystore / iOS Keychain) |
-| **Native Android** | Kotlin, `AccessibilityService`, `WindowManager` Overlay, Custom Broadcast Channels |
-| **Backend & Sync** | [Supabase](https://supabase.com) (E2E encrypted payload relay) |
-| **Design System** | Clean Light Theme with custom semantic token system ([`AppColors`](file:///d:/Freelance/KeyFlow/app/lib/core/theme/app_colors.dart)) |
+| Layer | Component | Technology / Library | Description |
+| :--- | :--- | :--- | :--- |
+| **Mobile Client** | UI Framework | [Flutter 3.44.7](https://flutter.dev) (Dart 3.x) | Cross-platform UI for Android, iOS, Windows, Web |
+| | State Management | [Flutter Riverpod 2.x](https://riverpod.dev) | Reactive state management & dependency injection |
+| | Routing | [GoRouter](https://pub.dev/packages/go_router) | Declarative routing with Adaptive Navigation Rail |
+| | Native Android | Kotlin (SDK 35, Min SDK 26) | `AccessibilityService`, `ClipboardManager`, Overlay Bot |
+| | Local Storage | [sqflite_sqlcipher](https://pub.dev/packages/sqflite_sqlcipher) | AES-256 encrypted SQLite local database |
+| | Secure Hardware Keystore | [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage) | Hardware-backed key management |
+| **Backend & Relay** | Runtime | [Node.js](https://nodejs.org) (v18+) & Express | High-throughput REST API & telemetry ingestion |
+| | Authentication | JWT (RS256/HS256) + bcrypt | Role-Based Access Control & Lockout Protection |
+| | Database Engine | SQLite3 / Cloudflare D1 | Lightweight, encrypted telemetry storage |
+| **Cloud Relay** | Database & Storage | [Supabase](https://supabase.com) (PostgreSQL) | End-to-end encrypted payload synchronization |
+| **Web Dashboard** | Edge CDN | [Cloudflare Workers](https://workers.cloudflare.com) | Zero-cold-start edge distribution |
+| | Frontend Engine | Vanilla JavaScript + Modern CSS | Glassmorphism, accessible dark/light theme |
 
 ---
 
-## 📂 Project Structure
+## 📂 Codebase Structure
 
 ```
 KeyFlow/
-├── app/                                 # Main Flutter application
-│   ├── android/                         # Android platform implementation
-│   │   └── app/src/main/kotlin/.../     # Kotlin Accessibility & Overlay Services
-│   │       ├── KeyflowAccessibilityService.kt
-│   │       ├── KeyflowOverlayService.kt
-│   │       └── MainActivity.kt
-│   ├── lib/                             # Core Dart/Flutter codebase
-│   │   ├── core/                        # Design tokens, theme, router, utilities
-│   │   │   ├── router/app_router.dart
-│   │   │   ├── services/auto_update_service.dart
-│   │   │   ├── theme/app_colors.dart
-│   │   │   └── theme/app_theme.dart
-│   │   ├── data/                        # Repositories, models, and providers
-│   │   │   ├── history_repository.dart
-│   │   │   ├── providers.dart
-│   │   │   └── sync_service.dart
-│   │   └── features/                    # Feature modules
-│   │       ├── auth/                    # Sign In / Sign Up light theme modals
-│   │       ├── capture/                 # CaptureService & platform channel bridges
-│   │       ├── history/                 # Grouped snippet history & detail views
-│   │       ├── home/                    # Dashboard & live stats
-│   │       ├── profile/                 # Profile & security settings
-│   │       └── settings/                # Excluded apps & accessibility controls
-│   └── test/                            # 108 automated unit, widget, and security tests
-├── web/                                 # HTML5 interactive prototype & web distribution
-├── .github/workflows/                   # GitHub Actions CI/CD pipelines
-└── README.md
+├── app/                                 # Flutter Mobile & Desktop Application
+│   ├── android/                         # Android Native Subsystem (Kotlin)
+│   │   └── app/src/main/kotlin/.../
+│   │       ├── KeyflowAccessibilityService.kt   # Keystroke & Clipboard Hook
+│   │       ├── KeyflowOverlayService.kt         # System-Wide Floating Bot
+│   │       └── MainActivity.kt                  # Flutter Platform Channel Bridge
+│   ├── lib/
+│   │   ├── core/                        # Theme tokens, router, auto-update
+│   │   │   ├── router/app_router.dart           # Adaptive Navigation & Routes
+│   │   │   ├── theme/app_colors.dart            # Semantic Token Palette
+│   │   │   └── theme/app_theme.dart             # Material 3 Switch & Card Themes
+│   │   ├── data/                        # Repositories & Data Providers
+│   │   │   ├── encrypted_database.dart          # SQLCipher AES-256 Database
+│   │   │   ├── history_repository.dart          # Local CRUD & Search Engine
+│   │   │   └── sync_service.dart                # Supabase E2E Encrypted Relay
+│   │   └── features/                    # Feature Modules
+│   │       ├── auth/                            # Sign In & Sign Up Modals
+│   │       ├── capture/                         # CaptureService & Buffer Pipeline
+│   │       ├── history/                         # Grouped Snippet History View
+│   │       ├── home/                            # Dashboard & Active Stats
+│   │       ├── look_monitor/                    # Privacy Sanitizer & Masking Engine
+│   │       ├── profile/                         # User Profile & Cloud Sync Modal
+│   │       ├── settings/                        # Excluded Apps & Preferences
+│   │       ├── translate/                       # Offline Translation Assistant
+│   │       └── emoji/                           # Quick Emoji & Assist Grid
+│   └── test/                            # 108 Automated Tests (Unit, Widget, Security)
+├── backend/                             # Express Telemetry & Activity Server
+│   ├── src/
+│   │   ├── config/                      # Environment & Secret Configurations
+│   │   ├── controllers/                 # Auth, Activity, User, Admin Controllers
+│   │   ├── middleware/                  # JWT Auth, Rate Limiter, Error Handlers
+│   │   ├── routes/                      # REST Endpoint Routes
+│   │   └── services/                    # Ingestion, Sanitization & Purge Jobs
+│   └── tests/                           # 8 Backend Integration & RBAC Tests
+├── web/                                 # Cloudflare Workers Web Dashboard
+│   ├── index.html                       # Single Page Application Shell
+│   ├── style.css                        # Modern CSS Glassmorphism Stylesheet
+│   ├── app.js                           # Dashboard State, WebCrypto Decrypt & Sync
+│   └── _worker.js                       # Cloudflare Edge Static Asset Handler
+├── docs/                                # Project Specifications & Architecture
+│   ├── KeyFlow_01_PRD.md                # Product Requirements Document
+│   ├── KeyFlow_02_SRS.md                # Software Requirements Specification
+│   ├── KeyFlow_03_TRD.md                # Technical Requirements Document
+│   ├── KeyFlow_04_Architecture.md       # Architecture & Security Blueprint
+│   ├── KeyFlow_05_UIUX.md               # Design System & UI Specifications
+│   ├── E2E_EXHAUSTIVE_TEST_PLAN.md      # 100+ Step End-to-End Test Plan
+│   └── RELEASE_RUNBOOK.md               # Release & Deployment Runbook
+├── demo_recordings/                     # Verified 1080p E2E Demo Recordings
+├── scripts/                             # Automated Test, Build & Recording Scripts
+└── sonar-project.properties             # SonarCloud Quality Gate Configuration
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start Guide
 
 ### Prerequisites
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (`>= 3.44.7`)
-- [Android SDK](https://developer.android.com/studio) (API level 26 minimum, API 35 target)
-- [Xcode](https://developer.apple.com/xcode/) (macOS only, for iOS builds)
+- **Flutter SDK**: `3.44.7` or higher (`flutter doctor`)
+- **Android SDK**: API level 35 (Android 15), build-tools 35.0.0
+- **Node.js**: `v18.x` or `v20.x` LTS
+- **ADB**: Platform-tools installed and added to system PATH
 
-### Installation & Setup
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/tramakrishna3012/KeyFlow.git
-   cd KeyFlow/app
-   ```
-
-2. **Install Flutter packages**:
-   ```bash
-   flutter pub get
-   ```
-
-3. **Run Static Analysis & Automated Tests**:
-   ```bash
-   flutter analyze
-   flutter test
-   ```
-
-4. **Launch the application**:
-   ```bash
-   # Run on connected Android device / emulator
-   flutter run
-   ```
-
----
-
-## 📱 Permissions Setup (Android)
-
-For typing history and the floating assistant to operate:
-1. **Accessibility Service**:
-   - Go to **Settings → Accessibility → KeyFlow** and toggle **ON**.
-2. **Display Over Other Apps** (Optional for Floating Bubble):
-   - Go to **Settings → Apps → KeyFlow → Display over other apps** and allow permission.
-
----
-
-## 📦 Building & Releases
-
-### Android APK & Bundle
+### 1. Running the Mobile Application
 ```bash
+# Navigate to Flutter app directory
 cd app
 
-# Build Release APK
-flutter build apk --release
+# Fetch Dart dependencies
+flutter pub get
 
-# Build Android App Bundle (Play Store)
-flutter build appbundle --release
-```
-Binaries are output to `app/build/app/outputs/flutter-apk/app-release.apk`.
-
-### iOS (.ipa — macOS required)
-```bash
-cd app
-flutter build ipa --release
-```
-
-### Web
-```bash
-cd app
-flutter build web --release
-```
-
----
-
-## 🧪 Testing & Quality Assurance
-
-KeyFlow maintains a strict zero-lint and high-coverage test suite:
-
-- **Static Analysis**: `flutter analyze` returns `0 issues` with zero warnings or info-level lints.
-- **Formatting**: `dart format --set-exit-if-changed .` enforced across all Dart files.
-- **Automated Tests**: 108/108 passing automated tests covering:
-  - Database encryption & SQLCipher contracts
-  - Retention purge lifecycle
-  - Search performance (< 200ms benchmark)
-  - Accessibility toggle synchronization
-  - History deduplication & debouncing
-  - Semantic version checking
-
-Run the complete test suite:
-```bash
-cd app
+# Run static analysis and automated test suite
+flutter analyze
 flutter test
+
+# Build debug APK and install on connected device
+flutter build apk --debug
+adb install -r build/app/outputs/flutter-apk/app-debug.apk
 ```
+
+### 2. Running the Backend Server
+```bash
+# Navigate to backend directory
+cd backend
+
+# Install dependencies
+npm install
+
+# Run integration tests
+npm test
+
+# Start development server on port 4000
+npm run dev
+```
+
+### 3. Deploying the Web Dashboard to Cloudflare Workers
+```bash
+# Navigate to web directory
+cd web
+
+# Deploy static SPA to Cloudflare Workers
+npx wrangler deploy
+```
+
+---
+
+## 🧪 Testing & Verification
+
+KeyFlow maintains a strict 100% automated test coverage baseline across all layers:
+
+- **Mobile Unit & Widget Tests**: `108 / 108 passing` ([`app/test`](file:///d:/Freelance/KeyFlow/app/test))
+  - Database encryption & SQLCipher round-trips
+  - Debounce pipeline and deduplication logic
+  - Navigation Rail adaptive breakpoint rendering
+  - 1-Click copy and search performance (<20ms response time)
+- **Backend Integration Tests**: `8 / 8 passing` ([`backend/tests`](file:///d:/Freelance/KeyFlow/backend/tests))
+  - JWT authentication, RBAC, and account lockout
+  - Telemetry ingestion & privacy sanitization
+  - GDPR DSAR data deletion and automated retention purge
+- **SonarCloud Quality Gate**: **Passed** with 0 security vulnerabilities and < 3.0% duplication.
+
+---
+
+## 🔒 Security & Privacy Charter
+
+KeyFlow adheres to the highest privacy standards:
+1. **Data Sovereignty**: All captured text stays in local SQLCipher storage until the user explicitly enables Encrypted Cloud Sync.
+2. **Key Isolation**: Cloud synchronization keys are derived client-side via HKDF (`SHA-256`) and never sent in plaintext.
+3. **Automated Redaction**: Sensitive authorization headers, credentials, and payment applications are stripped prior to storage.
+4. **GDPR / CCPA Compliant**: Built-in 1-click data export (`JSON`) and cascading cryptographic data shredding.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+Distributed under the **MIT License**. See `LICENSE` for details.

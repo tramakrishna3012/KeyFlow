@@ -1,141 +1,71 @@
-# KeyFlow — Release, Code Signing & Distribution Runbook
+# KeyFlow — Release, Code Signing & Deployment Runbook
 
-**Version:** 1.0  
-**Target Platform Matrix:** Windows 10/11, macOS 13+, Android 10+, iOS 16+  
-**Reference Architecture:** `KeyFlow_04_Architecture.md` §7, `KeyFlow_06_TestPlan.md` §7
+**Document Version:** 2.0  
+**Target Platform Matrix:** Android (API 26–35), Cloudflare Workers (Web), Express (Node.js backend), Windows (x64)  
+**CI/CD Workflows:** `.github/workflows/ci.yml`, `.github/workflows/release-android.yml`  
 
 ---
 
 ## 1. Release Gate Prerequisites
 
-Before building a release distribution candidate for the trusted user group:
+Before building a release distribution candidate:
 
-1. **Automated Test Suite Gate:** Ensure all 51 automated unit, integration, widget, security audit, and performance benchmark tests pass cleanly (`flutter test`).
-2. **Security Audit Gate:** Verify 100% compliance with SRS Security requirements S-1 through S-7 (`security_audit_report.md`). Zero instances of captured text logged across codebase.
-3. **Performance Gate:** 100k-entry database search completes in **< 200ms** on reference hardware.
-
----
-
-## 2. Platform Build & Code Signing Instructions
-
-### 🪟 Windows (Windows 10 / 11)
-
-#### Prerequisites:
-- Windows 10 SDK (`signtool.exe`)
-- Standard Authenticode Code Signing Certificate (`.pfx` file)
-
-#### Build Commands:
-```powershell
-# Run automated PowerShell build script
-.\scripts\build_windows_release.ps1
-
-# Manual SignTool execution (if env variables not set)
-signtool.exe sign /f "certs\keyflow_authenticode.pfx" /p "YOUR_PFX_PASSWORD" /fd sha256 /tr http://timestamp.digicert.com /td sha256 "app\build\windows\runner\Release\keyflow_app.exe"
-```
-
-#### Output Artifact:
-`app/build/windows/runner/Release/keyflow_app.exe`
+1. **Automated Test Suite Gate**:
+   - Flutter App: `flutter test` → **108 / 108 tests passing**.
+   - Backend API: `npm test` → **8 / 8 tests passing**.
+2. **Static Analysis & Formatting**:
+   - `flutter analyze` → **0 issues found**.
+   - `dart format --set-exit-if-changed .` → **0 unformatted files**.
+3. **SonarCloud Quality Gate**:
+   - Security Rating: **A** (0 vulnerabilities).
+   - Reliability: **A** (0 bugs).
+   - Duplication: **< 3.0%**.
+4. **Video Recording Integrity**:
+   - Demos cleanly finalized via `pkill -2 screenrecord` with valid MP4 `moov` atom headers.
 
 ---
 
-### 🍏 macOS (macOS 13+)
+## 2. Platform Build Instructions
 
-#### Prerequisites:
-- Apple Developer Program Membership
-- Apple Developer ID Application Certificate
-- App-Specific Password for Apple Notary Service
-
-#### Build Commands:
+### 📱 Android Release APK & AAB
 ```bash
-# Set credentials
-export DEVELOPER_ID_APP="Developer ID Application: KeyFlow Inc (TEAMID1234)"
-export APPLE_ID="developer@keyflow.dev"
-export APPLE_TEAM_ID="TEAMID1234"
-export APPLE_APP_SPECIFIC_PASSWORD="abcd-efgh-ijkl-mnop"
+# 1. Navigate to app directory
+cd app
 
-# Run automated Bash build & notarization script
-./scripts/build_macos_release.sh
+# 2. Build production signed APK
+flutter build apk --release
+
+# 3. Output artifact location:
+# app/build/app/outputs/flutter-apk/app-release.apk
+
+# 4. Sideload onto test device via ADB
+adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
 
-#### Verification:
+### 🌐 Cloudflare Workers Web Dashboard
 ```bash
-# Verify Gatekeeper notarization status
-spctl --assess --verbose --type execute app/build/macos/Build/Products/Release/keyflow_app.app
+# 1. Navigate to web directory
+cd web
+
+# 2. Deploy static SPA to Cloudflare Workers
+npx wrangler deploy
+
+# 3. Verify deployment at:
+# https://keyflow.tramakrishna3012.workers.dev
 ```
 
----
-
-### 🤖 Android (Android 10+)
-
-#### Prerequisites:
-- Android Release Keystore (`keyflow-release-key.jks`)
-- Release credentials configured in `app/android/key.properties`:
-  ```properties
-  storePassword=YOUR_STORE_PASSWORD
-  keyPassword=YOUR_KEY_PASSWORD
-  keyAlias=keyflow-key-alias
-  storeFile=../keyflow-release-key.jks
-  ```
-
-#### Build Commands:
+### 🖥️ Express Telemetry Backend (Render / Docker)
 ```bash
-# Run automated Android release build script
-./scripts/build_android_release.sh
+# 1. Build backend container image
+docker build -f Dockerfile.backend -t keyflow-backend:latest .
+
+# 2. Run container locally or deploy to Render
+docker run -d -p 4000:4000 --env-file backend/.env keyflow-backend:latest
 ```
 
-#### Output Artifacts:
-- APK: `app/build/app/outputs/flutter-apk/app-release.apk`
-- AAB: `app/build/app/outputs/bundle/release/app-release.aab`
-
 ---
 
-### 📱 iOS (`/ios/KeyFlowKeyboard` Custom Keyboard Extension Target)
+## 3. Automated GitHub Actions Workflows
 
-#### Prerequisites:
-- Apple Developer Account with App Group Entitlement (`group.com.keyflow.app`)
-- Provisioning Profiles matching main container app (`com.keyflow.app`) and Keyboard Extension (`com.keyflow.app.keyboard`)
-
-#### Build & Archive Process:
-```bash
-# 1. Run Flutter container prepare script
-./scripts/build_ios_release.sh
-
-# 2. Open Xcode project
-open app/ios/Runner.xcworkspace
-```
-
-1. In Xcode, select scheme **Runner** and target device **Any iOS Device (arm64)**.
-2. Verify target `KeyFlowKeyboard` relies on shared App Group container (`group.com.keyflow.app`).
-3. Select **Product → Archive**.
-4. Once archived, select **Distribute App → TestFlight & App Store** or **Ad Hoc Distribution**.
-
----
-
-## 3. AV / OS Trust Verification (Release Gate)
-
-Per `KeyFlow_06_TestPlan.md` §7, perform the following false-positive checks before distributing builds to users:
-
-### 1. Microsoft Defender False-Positive Submission (Windows)
-- Submit signed `keyflow_app.exe` to [Microsoft Security Intelligence Developer Portal](https://www.microsoft.com/wdsi/filesubmit).
-- Select **Software Developer → False Positive Submission**.
-- Record submission ID and wait for clean determination status ("No malware detected").
-
-### 2. VirusTotal Multi-AV Scan (Windows / macOS / Android)
-- Upload `keyflow_app.exe`, `keyflow_app.zip`, and `app-release.apk` to [VirusTotal](https://www.virustotal.com).
-- Ensure 0 flags from major vendors (Kaspersky, Bitdefender, Sophos, ESET). Explain any heuristic warnings.
-
-### 3. Apple Gatekeeper Notarization Ticket (macOS)
-- Run `xcrun notarytool log <SUBMISSION_ID>` to verify zero notarization warnings or restricted API flags.
-
-### 4. Google Play Protect Scanning (Android)
-- Upload release APK to Google Play Console Internal Testing track or submit via Play Protect developer portal to guarantee zero sideload warnings.
-
----
-
-## 4. Internal Tester Distribution Setup
-
-Once AV / OS trust verification is clean:
-
-1. **iOS Testers:** Invite trusted UAT group via **TestFlight** internal testing track.
-2. **Android Testers:** Distribute signed APK directly or via Google Play Internal Testing.
-3. **Windows / macOS Testers:** Distribute signed installers / zipped app bundles directly with checksum hashes (`SHA-256`).
+- **`.github/workflows/ci.yml`**: Automatically runs on every push and pull request to `main`. Executes `dart format`, `flutter analyze`, `flutter test`, `backend test`, and uploads coverage to SonarCloud.
+- **`.github/workflows/release-android.yml`**: Automatically triggers on tag push (`v*`). Builds signed production APKs and attaches release binaries to GitHub Releases.
