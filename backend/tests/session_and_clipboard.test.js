@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const http = require('http');
 const app = require('../src/app');
 const { initDB } = require('../src/services/db');
-const { SessionAggregator } = require('../../web/src/services/SessionAggregator.js');
+const { SessionAggregator } = require('./helpers/SessionAggregator');
 
 let server;
 let baseUrl;

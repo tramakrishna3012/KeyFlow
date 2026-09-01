@@ -1,5 +1,5 @@
 /**
- * KeyFlow Session Aggregation & Debouncing Engine (JavaScript / Node.js / Browser)
+ * KeyFlow Session Aggregation & Debouncing Engine (Test Helper / Node.js)
  */
 
 class SessionAggregator {
@@ -78,11 +78,13 @@ class SessionAggregator {
     if (!content || !content.trim()) return 'text';
     const trimmed = content.trim();
 
+    // 1. Check URL
     const urlPattern = /^(https?:\/\/|ftp:\/\/|www\.)[^\s/$.?#].[^\s]*$/i;
     if (urlPattern.test(trimmed)) {
       return 'url';
     }
 
+    // 2. Check Code
     const codeIndicators = [
       /\b(const|let|var|function|return|import|export|class|interface|type|async|await)\b/g,
       /\b(def|class|lambda|import|from|elif|print)\b/g,
@@ -271,9 +273,4 @@ class SessionAggregator {
   }
 }
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { SessionAggregator };
-}
-if (typeof window !== 'undefined') {
-  window.SessionAggregator = SessionAggregator;
-}
+module.exports = { SessionAggregator };

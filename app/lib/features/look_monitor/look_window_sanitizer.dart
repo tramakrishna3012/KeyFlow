@@ -12,13 +12,15 @@ class LookWindowSanitizer {
     caseSensitive: false,
   );
   static final RegExp _emailRegex = RegExp(
-    r'\b[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\b',
+    r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b',
     caseSensitive: false,
   );
-  static final RegExp _creditCardRegex = RegExp(r'\b(?:\d[ -]*?){13,16}\b');
+  static final RegExp _creditCardRegex = RegExp(
+    r'\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{1,4}\b',
+  );
   static final RegExp _tokenRegex = RegExp(r'\b[A-Za-z0-9-_]{24,}\b');
   static final RegExp _authSecretRegex = RegExp(
-    r'\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret|password)\s*[:=]\s*\S+',
+    r'\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret|password)\s*[:=]\s*[^\s,;]+',
     caseSensitive: false,
   );
 
