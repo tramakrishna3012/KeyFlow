@@ -32,7 +32,7 @@ function all(sql, params = []) {
 }
 
 // AES-256-GCM record-level encryption helpers
-const ENCRYPTION_MASTER_KEY = crypto.createHash('sha256').update(JWT_SECRET || 'look_system_secure_key_2026').digest();
+const ENCRYPTION_MASTER_KEY = crypto.createHash('sha256').update(JWT_SECRET).digest();
 
 function encryptRecord(plaintext) {
   if (!plaintext) return { ciphertext: '', iv: '', authTag: '' };

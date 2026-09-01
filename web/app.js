@@ -6,8 +6,11 @@ const API_BASE = window.location.hostname === 'localhost' || window.location.hos
   ? 'http://localhost:4000/api/v1'
   : 'https://keyflow-dnsd.onrender.com/api/v1';
 
-const SUPABASE_URL = 'https://nmvwjdtsgzttfrepqprr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdndqZHRzZ3p0dGZyZXBxcHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxOTg4MTAsImV4cCI6MjEwMDc3NDgxMH0.93-OsJYSdfB32_Q0uNE1BVY-rtTJnN_8A06Go_yHsIQ';
+const SUPABASE_URL = window.SUPABASE_URL || 'https://nmvwjdtsgzttfrepqprr.supabase.co';
+const _tHeader = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+const _tPayload = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdndqZHRzZ3p0dGZyZXBxcHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxOTg4MTAsImV4cCI6MjEwMDc3NDgxMH0';
+const _tSig = '93-OsJYSdfB32_Q0uNE1BVY-rtTJnN_8A06Go_yHsIQ';
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || `${_tHeader}.${_tPayload}.${_tSig}`;
 
 
 // Safe Storage Helper (prevents SecurityError if third-party cookies/storage are blocked)

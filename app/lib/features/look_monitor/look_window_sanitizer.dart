@@ -21,7 +21,6 @@ class LookWindowSanitizer {
     r'\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret|password)\s*[:=]\s*\S+',
     caseSensitive: false,
   );
-  static final RegExp _otpDigitRegex = RegExp(r'\b\d{6,8}\b');
 
   /// Checks if an application or window title matches a privacy exclusion rule.
   bool isApplicationExcluded(String appName) {

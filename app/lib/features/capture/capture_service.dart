@@ -336,7 +336,9 @@ class CaptureService {
     );
   }
 
-  Future<void> _onSessionAggregatorUpdate(AggregatedTypingSession session) async {
+  Future<void> _onSessionAggregatorUpdate(
+    AggregatedTypingSession session,
+  ) async {
     final sanitizedText = _sanitizer.sanitizeTextRecord(
       session.content,
       appName: session.appName,

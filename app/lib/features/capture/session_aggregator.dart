@@ -9,20 +9,20 @@ class DraftSnapshot {
   });
 
   factory DraftSnapshot.fromJson(Map<String, dynamic> json) => DraftSnapshot(
-        timestamp: json['timestamp'] as String? ?? '',
-        text: json['text'] as String? ?? '',
-        charCount: json['charCount'] as int? ?? 0,
-      );
+    timestamp: json['timestamp'] as String? ?? '',
+    text: json['text'] as String? ?? '',
+    charCount: json['charCount'] as int? ?? 0,
+  );
 
   final String timestamp;
   final String text;
   final int charCount;
 
   Map<String, dynamic> toJson() => {
-        'timestamp': timestamp,
-        'text': text,
-        'charCount': charCount,
-      };
+    'timestamp': timestamp,
+    'text': text,
+    'charCount': charCount,
+  };
 }
 
 class AggregatedTypingSession {
@@ -57,20 +57,20 @@ class AggregatedTypingSession {
   bool isFinalized;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'userId': userId,
-        'deviceName': deviceName,
-        'appName': appName,
-        'windowTitle': windowTitle,
-        'content': content,
-        'characterCount': characterCount,
-        'wordCount': wordCount,
-        'startedAt': startedAt,
-        'updatedAt': updatedAt,
-        'isFavorite': isFavorite,
-        'draftHistory': draftHistory.map((s) => s.toJson()).toList(),
-        'isFinalized': isFinalized,
-      };
+    'id': id,
+    'userId': userId,
+    'deviceName': deviceName,
+    'appName': appName,
+    'windowTitle': windowTitle,
+    'content': content,
+    'characterCount': characterCount,
+    'wordCount': wordCount,
+    'startedAt': startedAt,
+    'updatedAt': updatedAt,
+    'isFavorite': isFavorite,
+    'draftHistory': draftHistory.map((s) => s.toJson()).toList(),
+    'isFinalized': isFinalized,
+  };
 }
 
 class DartSessionAggregator {
@@ -81,8 +81,8 @@ class DartSessionAggregator {
     this.onSessionUpdate,
     this.onSessionFinalize,
   }) : blacklistedApps = (blacklistedApps ?? [])
-            .map((e) => e.toLowerCase())
-            .toSet();
+           .map((e) => e.toLowerCase())
+           .toSet();
 
   final int inactivityDebounceMs;
   final int sessionTimeoutMs;
@@ -101,10 +101,18 @@ class DartSessionAggregator {
     return text.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).length;
   }
 
-  String _getSessionKey(String appName, String windowTitle, String deviceName) =>
+  String _getSessionKey(
+    String appName,
+    String windowTitle,
+    String deviceName,
+  ) =>
       '${appName.trim().toLowerCase()}::${windowTitle.trim().toLowerCase()}::${deviceName.trim().toLowerCase()}';
 
-  bool isPrivacySensitive(String appName, String windowTitle, bool isPasswordField) {
+  bool isPrivacySensitive(
+    String appName,
+    String windowTitle,
+    bool isPasswordField,
+  ) {
     if (isPasswordField) return true;
     if (blacklistedApps.contains(appName.toLowerCase())) return true;
 
@@ -170,7 +178,7 @@ class DartSessionAggregator {
         startedAt: nowIso,
         updatedAt: nowIso,
         draftHistory: [
-          DraftSnapshot(timestamp: nowIso, text: text, charCount: text.length)
+          DraftSnapshot(timestamp: nowIso, text: text, charCount: text.length),
         ],
       );
       _activeSessions[sessionKey] = session;
@@ -182,9 +190,15 @@ class DartSessionAggregator {
         ..updatedAt = nowIso;
 
       if (session.draftHistory.isEmpty ||
-          (session.content.length - session.draftHistory.last.charCount).abs() >= 5) {
+          (session.content.length - session.draftHistory.last.charCount)
+                  .abs() >=
+              5) {
         session.draftHistory.add(
-          DraftSnapshot(timestamp: nowIso, text: session.content, charCount: session.content.length),
+          DraftSnapshot(
+            timestamp: nowIso,
+            text: session.content,
+            charCount: session.content.length,
+          ),
         );
         if (session.draftHistory.length > 100) {
           session.draftHistory.removeAt(0);
@@ -196,15 +210,21 @@ class DartSessionAggregator {
 
     // Reset expiry timer
     _expiryTimers[sessionKey]?.cancel();
-    _expiryTimers[sessionKey] = Timer(Duration(milliseconds: sessionTimeoutMs), () {
-      finalizeSession(sessionKey);
-    });
+    _expiryTimers[sessionKey] = Timer(
+      Duration(milliseconds: sessionTimeoutMs),
+      () {
+        finalizeSession(sessionKey);
+      },
+    );
 
     // Reset 2.5s debounce timer
     _debounceTimers[sessionKey]?.cancel();
-    _debounceTimers[sessionKey] = Timer(Duration(milliseconds: inactivityDebounceMs), () {
-      _dispatchDebouncedUpdate(sessionKey);
-    });
+    _debounceTimers[sessionKey] = Timer(
+      Duration(milliseconds: inactivityDebounceMs),
+      () {
+        _dispatchDebouncedUpdate(sessionKey);
+      },
+    );
 
     return session;
   }
