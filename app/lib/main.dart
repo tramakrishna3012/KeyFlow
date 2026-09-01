@@ -31,11 +31,11 @@ void main() async {
     'SUPABASE_URL',
     defaultValue: 'https://nmvwjdtsgzttfrepqprr.supabase.co',
   );
-  const _kHeader = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
-  const _kPayload =
+  const kHeader = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
+  const kPayload =
       'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdndqZHRzZ3p0dGZyZXBxcHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxOTg4MTAsImV4cCI6MjEwMDc3NDgxMH0';
-  const _kSig = '93-OsJYSdfB32_Q0uNE1BVY-rtTJnN_8A06Go_yHsIQ';
-  const defaultAnonKey = '$_kHeader.$_kPayload.$_kSig';
+  const kSig = '93-OsJYSdfB32_Q0uNE1BVY-rtTJnN_8A06Go_yHsIQ';
+  const defaultAnonKey = '$kHeader.$kPayload.$kSig';
 
   const supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',

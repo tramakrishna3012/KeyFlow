@@ -1,205 +1,134 @@
-# KeyFlow Master End-to-End Test Plan: Every Screen, Button & Feature
+# KeyFlow Master End-to-End Test Plan: Mobile, Web & Multi-App Cross-Device Sync
 
-**Document Version:** 3.0  
-**Test Scope:** Mobile App (Flutter Android / iOS / Desktop) & Web Application (Cloudflare Workers SPA & React)  
-**Execution Type:** Exhaustive Manual & Automated Verification  
-
----
-
-## 1. Test Strategy & Acceptance Baseline
-
-### 1.1 Quality Gates
-1. **0 Unhandled Errors / Zero Crashes**: No unhandled exceptions, ANRs, or blank screen renders.
-2. **100% Button & Control Verification**: Every interactive button, switch, tab, modal, and slider must have defined pre-conditions, user input, expected observation, and pass/fail criteria.
-3. **Data Integrity & Cryptography**: All stored text must be encrypted locally via SQLCipher AES-256 and decrypted on the web console via WebCrypto.
-4. **Zero Keystroke Spam**: Inactivity debouncing (2.5s) and session termination (60s) must function cleanly without character-level database flooding.
-5. **Video Playability**: All demo recordings must terminate cleanly with valid MP4 container atom headers (`moov` present).
+**Document Version:** 4.0  
+**Test Objective:** Comprehensive Visual & Functional Verification of KeyFlow Client Mobile App (Android/iOS), Cloudflare Web Console, Real-World Multi-App Typing Capture, Clipboard Synchronization, and Interactive Draft Replay.  
+**Audience:** QA Engineers, Product Managers, Developers, Clients & End-Users.  
 
 ---
 
-## 2. Mobile Application Test Matrix (Flutter / Android)
+## 1. Test Architecture & Verification Standards
 
-### Screen 1: Onboarding & Permissions Carousel
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **MOB-ONB-01** | `Next` Button | Slide 1 (Overview) active | Tap "Next" | Transitions smoothly to Slide 2 (Security) with animated indicator. | PASS |
-| **MOB-ONB-02** | `Skip` Button | Slide 1 or 2 active | Tap "Skip" | Jumps directly to Slide 3 (Permissions). | PASS |
-| **MOB-ONB-03** | `Enable Accessibility` Button | Slide 3 active; A11y disabled | Tap "Enable Accessibility" | Launches Android Accessibility Settings page targeting KeyFlow service. | PASS |
-| **MOB-ONB-04** | `Allow Notifications` Button | Slide 3 active | Tap "Allow Notifications" | Prompts runtime POST_NOTIFICATIONS dialog; persists granted state. | PASS |
-| **MOB-ONB-05** | `Get Started` Button | Permissions granted | Tap "Get Started" | Navigates into Home Dashboard; marks onboarding as completed in secure storage. | PASS |
+### 1.1 Scope & Prerequisites
+* **Physical Device**: Motorola Edge 40 (Android 14 / API 34, $1080\times2400$ display).
+* **Web Dashboard**: Cloudflare Workers Edge Application (`https://keyflow.tramakrishna3012.workers.dev`).
+* **Backend Relay**: Node.js v18 REST API (`http://localhost:4000/api/v1` / Render Cloud Relay) & Supabase PostgreSQL with AES-256-GCM encryption.
+* **Test Applications**:
+  1. Google Chrome (`com.android.chrome`)
+  2. Google Keep Notes (`com.google.android.keep`)
+  3. Google Calculator (`com.google.android.calculator`)
+  4. Native System Clipboard (`ClipboardManager`)
 
----
-
-### Screen 2: Authentication & Profile
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **MOB-AUTH-01** | `Email Input Field` | Auth screen visible | Enter valid email (`test@keyflow.dev`) | Validates RFC email format; clears error helper text. | PASS |
-| **MOB-AUTH-02** | `Password Input Field` | Auth screen visible | Enter password (`Password123!`) | Masks text with bullet characters. | PASS |
-| **MOB-AUTH-03** | `Password Visibility Toggle` | Text entered in password | Tap eye icon | Unmasks cleartext password; icon changes to eye-off. | PASS |
-| **MOB-AUTH-04** | `Sign In` Button | Valid credentials entered | Tap "Sign In" | Authenticates with backend; stores JWT token in Keystore; navigates to Home. | PASS |
-| **MOB-AUTH-05** | `Continue as Guest` Button | Auth screen visible | Tap "Continue as Guest" | Enters offline zero-knowledge mode with local SQLCipher encryption. | PASS |
-
----
-
-### Screen 3: Home Dashboard
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **MOB-HOME-01** | `Profile Avatar Icon` | Home screen visible | Tap profile avatar | Opens user profile bottom sheet with sync state and email. | PASS |
-| **MOB-HOME-02** | `KPI Card 1: Snippets` | Home screen visible | Tap "Snippets Captured" card | Jumps to History tab with all filters reset. | PASS |
-| **MOB-HOME-03** | `KPI Card 2: Characters` | Home screen visible | Inspect count | Displays accurate sum of characters typed today. | PASS |
-| **MOB-HOME-04** | `KPI Card 3: Time Saved`| Home screen visible | Inspect calculation | Computes estimated time saved based on character volume. | PASS |
-| **MOB-HOME-05** | `KPI Card 4: Active Apps`| Home screen visible | Inspect count | Reflects distinct count of applications recorded today. | PASS |
-| **MOB-HOME-06** | `Weekly Histogram Bar` | Activity data exists | Tap individual day bar | Highlights bar and displays tooltip with that day's character total. | PASS |
-| **MOB-HOME-07** | `Recent Snippet Copy` | Snippet card visible in reel| Tap copy icon | Copies decrypted text to clipboard; shows green toast confirmation. | PASS |
-| **MOB-HOME-08** | `Bottom Nav: History` | Home screen visible | Tap "History" in nav bar | Switches to Session Typing Feed screen. | PASS |
-| **MOB-HOME-09** | `Bottom Nav: Assist` | Home screen visible | Tap "Assist" in nav bar | Switches to Emoji & Translation Tools screen. | PASS |
-| **MOB-HOME-10** | `Bottom Nav: Settings`| Home screen visible | Tap "Settings" in nav bar | Switches to Settings & Preferences screen. | PASS |
+### 1.2 Quality & Visual Criteria
+1. **Visual Clarity**: Every screen transition, card render, syntax highlight block, white ball switch knob, floating overlay bot, and draft replay animation must be visually distinct and rendered without layout shifts or overflow errors.
+2. **Functional Integrity**:
+   - Real-time debouncing ($2.5\text{s}$) must group continuous typing into a single paragraph container without single-keystroke database clutter.
+   - Session termination ($60\text{s}$ pause or app switch) must finalize the active session and start a new container.
+   - Clipboard events must capture immediately without debounce delay, auto-classifying into `code`, `url`, or `text`.
+   - Web console must decrypt cloud payloads client-side using WebCrypto and render the exact same text typed on the mobile phone.
+3. **Demo Video Standard**: The full test execution must be recorded into a $100\%$ valid, playable MP4 file with complete `ftyp`, `moov`, and `mdat` atom headers.
 
 ---
 
-### Screen 4: Session Typing Feed & Timeline
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **MOB-HIST-01** | `Search Input Bar` | History screen visible | Type `"25000"` or keyword | Real-time filter isolates matching sessions within < 20ms. | PASS |
-| **MOB-HIST-02** | `Search Clear 'X'` | Query active in search | Tap 'X' clear button | Clears search text and restores complete session stream. | PASS |
-| **MOB-HIST-03** | `App Filter Chip: All` | Specific app selected | Tap "All Apps" chip | Resets filter to show all recorded applications. | PASS |
-| **MOB-HIST-04** | `App Filter Chip: Specific`| History screen visible | Tap "Chrome" or "Calculator" | Isolates session cards belonging exclusively to selected app. | PASS |
-| **MOB-HIST-05** | `Favorite Star Toggle` | Session card visible | Tap Star icon | Toggles favorite status; updates local database and syncs to cloud. | PASS |
-| **MOB-HIST-06** | `Session Copy Button` | Session card visible | Tap Copy icon | Copies full paragraph session content to clipboard with toast alert. | PASS |
-| **MOB-HIST-07** | `Session Card Tap` | Session card visible | Tap card body | Opens full Snippet Detail Modal with word counts and share actions. | PASS |
+## 2. End-to-End Test Execution Flow (Scenario-by-Scenario)
+
+```mermaid
+flowchart TD
+    subgraph "Phase 1: Setup & Onboarding"
+        A1[Launch KeyFlow App] --> A2[Verify Onboarding Slides 1, 2, 3]
+        A2 --> A3[Grant Accessibility & Notification Permissions]
+        A3 --> A4[Sign In / Authenticate User Account]
+    end
+
+    subgraph "Phase 2: Multi-App Real-World Typing"
+        B1[Open Google Keep Notes] --> B2[Type Project Roadmap Paragraph]
+        B3[Open Google Chrome Browser] --> B4[Type Web Dashboard URL]
+        B5[Open Google Calculator] --> B6[Type Mathematical Formula 75000 + 25000]
+    end
+
+    subgraph "Phase 3: Multi-Device Clipboard Capture"
+        C1[Copy Web URL to Clipboard] --> C2[Copy JavaScript Code Snippet]
+        C3[Copy Plain Text Meeting Note]
+    end
+
+    subgraph "Phase 4: Mobile App Visual & Functional Verification"
+        D1[Open KeyFlow Home Dashboard] --> D2[Inspect Real-Time KPI Cards & Histogram]
+        D2 --> D3[Inspect Session Typing Feed & Date Groups]
+        D3 --> D4[Test 1-Click Copy with Toast Alert]
+        D4 --> D5[Test App Filter Chips & Sub-20ms Search]
+        D5 --> D6[Test White Ball Switches & Floating Assistant Bot]
+        D6 --> D7[Test Responsive Landscape Orientation]
+    end
+
+    subgraph "Phase 5: Web Console Verification & Live Sync"
+        E1[Open Web Console on Cloudflare] --> E2[Verify Synced Typing Sessions from Phone]
+        E2 --> E3[Open Replay Draft Modal & Test Scrubber/Playback]
+        E3 --> E4[Inspect Clipboard Feed: Syntax Code, URL Cards & Pinning]
+        E4 --> E5[Verify Search, Analytics & Privacy DSAR Controls]
+    end
+
+    Phase 1 --> Phase 2 --> Phase 3 --> Phase 4 --> Phase 5
+```
 
 ---
 
-### Screen 5: Snippet Detail Modal
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **MOB-DET-01** | `Copy Text Action` | Modal open | Tap "Copy Text" | Copies text to clipboard and shows toast feedback. | PASS |
-| **MOB-DET-02** | `Share Snippet Action` | Modal open | Tap "Share" | Triggers native Android/iOS system share intent. | PASS |
-| **MOB-DET-03** | `Translate Action` | Modal open | Tap "Translate" | Transfers text into Assist Translation tab. | PASS |
-| **MOB-DET-04** | `Delete Snippet Action`| Modal open | Tap "Delete" | Permanently removes record from local SQLite database and closes modal. | PASS |
-| **MOB-DET-05** | `Close Modal 'X'` | Modal open | Tap 'X' or drag down | Dismisses detail modal smoothly. | PASS |
+## 3. Detailed Test Cases Matrix
+
+### Phase 1: Application Setup, Permissions & Onboarding
+| Test ID | Module / Feature | Step-by-Step User Action | Expected Visual & Functional Outcome | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **SET-01** | First Launch & Setup | Launch KeyFlow on Android device. | Renders onboarding Slide 1 with high-contrast graphic explaining automatic text recovery and clipboard synchronization. | **PASS** |
+| **SET-02** | Onboarding Navigation | Tap "Next" on Slide 1 $\rightarrow$ Slide 2 $\rightarrow$ Slide 3. | Carousel transitions smoothly with animated indicator dots; explains zero-knowledge local encryption and permission requirements. | **PASS** |
+| **SET-03** | Permission Gate | Tap "Enable Accessibility" & "Allow Notifications". | Deep-links to Android Accessibility Settings; enables `KeyflowAccessibilityService`; grants `POST_NOTIFICATIONS` runtime permission. | **PASS** |
+| **SET-04** | User Authentication | Enter `tramakrishna3012@gmail.com` / `#TRama1230` $\rightarrow$ Tap "Sign In". | Authenticates with backend; derives local HKDF cryptographic keys; stores master token in Android Keystore; redirects to Home Dashboard. | **PASS** |
 
 ---
 
-### Screen 6: Assist & Tools
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **MOB-AST-01** | `Emoji Category Tab` | Assist screen visible | Tap "Smileys" / "Gestures" | Scrolls grid to selected category. | PASS |
-| **MOB-AST-02** | `Emoji Cell Tap` | Emoji grid visible | Tap any emoji (e.g. `🚀`) | Copies emoji to clipboard; triggers subtle haptic feedback and toast. | PASS |
-| **MOB-AST-03** | `Emoji Search Input` | Assist screen visible | Type `"fire"` | Filters emoji list to matching fire/flame icons. | PASS |
-| **MOB-AST-04** | `Translation Source Lang`| Assist screen visible | Select "English" in dropdown | Sets source language for translation engine. | PASS |
-| **MOB-AST-05** | `Translation Target Lang`| Assist screen visible | Select "Spanish" in dropdown | Sets target output language. | PASS |
-| **MOB-AST-06** | `Translate Now Button` | Text entered in input | Tap "Translate Now" | Generates translated text output in result card. | PASS |
-| **MOB-AST-07** | `Copy Translation Button`| Translated text present | Tap copy icon | Copies translated output to clipboard. | PASS |
+### Phase 2: Multi-App Real-World Typing Capture
+| Test ID | Application Tested | User Typing Action | Expected Aggregation & Privacy Behavior | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **TYP-01** | **Google Keep Notes**<br>(`com.google.android.keep`) | Open Keep $\rightarrow$ Create note $\rightarrow$ Type:<br>`"KeyFlow Project Roadmap: Intelligent paragraph session debouncing and multi-device clipboard synchronization."` | Intercepted by accessibility hook; aggregated with $2.5\text{s}$ debounce; packaged into a single paragraph session card under app name `Google Keep`. | **PASS** |
+| **TYP-02** | **Google Chrome**<br>(`com.android.chrome`) | Open Chrome $\rightarrow$ Tap URL bar $\rightarrow$ Type:<br>`"https://keyflow.tramakrishna3012.workers.dev/dashboard"` | Intercepted; debounced; stored under `Chrome` with window title context. | **PASS** |
+| **TYP-03** | **Google Calculator**<br>(`com.google.android.calculator`) | Open Calculator $\rightarrow$ Type numeric formula:<br>`"75000 + 25000 = 100000"` | **ZERO FALSE REDACTION**: Smart privacy filter recognizes calculator package and permits complete numeric formulas without masking. | **PASS** |
 
 ---
 
-### Screen 7: Settings & Preferences
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **MOB-SET-01** | `Pause Capture Switch` | Capture is active | Toggle switch (White Ball knob)| Pauses accessibility capture; changes state badge to amber "Paused". | PASS |
-| **MOB-SET-02** | `Resume Capture Switch`| Capture is paused | Toggle switch | Resumes capture; changes state badge to emerald "Active". | PASS |
-| **MOB-SET-03** | `Floating Bubble Switch`| Overlay permission granted| Toggle switch | Spawns draggable circular bubble on Android screen overlay. | PASS |
-| **MOB-SET-04** | `Excluded Apps Tile` | Settings screen visible | Tap "Excluded Applications" | Opens package exclusion manager modal with installed app list. | PASS |
-| **MOB-SET-05** | `App Blacklist Checkbox`| Exclusion modal open | Check/uncheck app | Saves package exclusion; accessibility service discards app events. | PASS |
-| **MOB-SET-06** | `Auto-exclude Passwords`| Settings screen visible | Inspect switch | Locked ON by default to enforce privacy compliance. | PASS |
-| **MOB-SET-07** | `Retention Policy Picker`| Settings screen visible | Select "30 Days" from menu | Enforces 30-day auto-purge policy in background scheduler. | PASS |
-| **MOB-SET-08** | `Export JSON Button` | History records exist | Tap "Export JSON" | Generates and shares standard JSON archive file of all records. | PASS |
-| **MOB-SET-09** | `Clear All Data Button` | Settings screen visible | Tap "Clear All Data" | Opens destructive confirmation dialog. | PASS |
-| **MOB-SET-10** | `Confirm Shred Action` | Confirmation dialog open | Tap "Shred & Reset" | Truncates all SQLite tables and clears secure storage credentials. | PASS |
-| **MOB-SET-11** | `Sign Out Button` | User is logged in | Tap "Sign Out" | Clears JWT session, revokes tokens, and returns to Auth screen. | PASS |
+### Phase 3: Multi-Device Clipboard Capture & Classification
+| Test ID | Content Type | Content Copied to Clipboard | Expected Classification & Storage Behavior | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **CLP-01** | **Web URL** | `"https://keyflow.tramakrishna3012.workers.dev"` | Hooked immediately by `ClipboardManager` listener; auto-classified as `url`; stored with domain metadata. | **PASS** |
+| **CLP-02** | **Code Snippet** | `"const aggregator = new SessionAggregator({ debounceMs: 2500 });"` | Hooked instantly; auto-classified as `code`; preserved with indentation and language tokens. | **PASS** |
+| **CLP-03** | **Plain Text** | `"Client Meeting Notes: Cross-platform synchronization verified 100%."` | Hooked instantly; auto-classified as `text`; persisted without debounce delay. | **PASS** |
 
 ---
 
-### Screen 8: Floating Assistant Bot Overlay (Android)
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **MOB-BOT-01** | `Draggable Bubble Icon` | Overlay is active | Drag bubble across screen | Moves smoothly across screen and snaps to left or right margin. | PASS |
-| **MOB-BOT-02** | `Single Tap Expand` | Bubble visible | Tap bubble icon | Expands floating quick menu with status and pause/resume button. | PASS |
-| **MOB-BOT-03** | `Quick Pause Toggle` | Quick menu open | Tap "Pause Capture" | Instantly pauses capture without opening the main app. | PASS |
-| **MOB-BOT-04** | `Open KeyFlow Shortcut`| Quick menu open | Tap "Open KeyFlow" | Brings KeyFlow application to foreground. | PASS |
+### Phase 4: Mobile App Visual & Functional Verification
+| Test ID | Screen / Component | Interactive QA Action | Expected Visual & Functional Verification | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **MOB-01** | **Home Dashboard** | Inspect KPI Cards & Weekly Histogram. | Real-time counters reflect newly typed sessions, character count totals, and time saved estimate; weekly bar chart displays today's volume. | **PASS** |
+| **MOB-02** | **Session Typing Feed** | Switch to History Tab $\rightarrow$ Inspect session list. | Hierarchical layout: Sticky `TODAY` header with total count pill; distinct paragraph cards for `Google Keep`, `Chrome`, and `Calculator` with word/character counts and timestamps. | **PASS** |
+| **MOB-03** | **1-Click Copy** | Tap Copy icon button on any session card. | Copies decrypted paragraph to device clipboard; displays green toast alert: *"Copied to clipboard"*. | **PASS** |
+| **MOB-04** | **Filter Chips** | Tap `All Apps`, `Chrome`, `Calculator`, `Keep` chips. | Real-time filter isolates session cards belonging exclusively to the selected application. | **PASS** |
+| **MOB-05** | **Sub-20ms Search** | Type `"75000"` in search input bar. | Real-time query execution in $<20\text{ms}$; isolates matching Calculator session; tap `X` clears search instantly. | **PASS** |
+| **MOB-06** | **Snippet Details** | Tap on session card body. | Opens Snippet Detail modal showing complete un-truncated text, character/word counters, Share, and Translate actions. | **PASS** |
+| **MOB-07** | **White Ball Switches** | Navigate to Settings $\rightarrow$ Toggle "Pause Typing Capture". | Toggle knob renders a **prominent high-contrast white ball** (`Colors.white`); pauses capture and updates status badge to amber *"Paused"*. | **PASS** |
+| **MOB-08** | **Floating Overlay Bot** | In Settings $\rightarrow$ Toggle "Floating Assistant Bubble". | Spawns a draggable semi-transparent $56\text{dp}$ circular bot on Android screen; dragging snaps smoothly to screen edges; single tap expands quick menu. | **PASS** |
+| **MOB-09** | **Landscape Layout** | Rotate device to landscape orientation ($90^\circ$). | Layout adapts from bottom navigation to a scrollable `NavigationRail` sidebar with zero vertical overflow errors. | **PASS** |
 
 ---
 
-## 3. Web Application Test Matrix (Cloudflare Workers & React)
-
-### Section 1: Public Header & Authentication
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **WEB-AUTH-01** | `Sign In / Register` | Public landing page visible | Click header auth button | Opens Auth Modal with glassmorphic backdrop blur. | PASS |
-| **WEB-AUTH-02** | `Auth Modal: Tab Switch`| Modal open | Click "Sign In" / "Register" | Toggles between login and registration form inputs. | PASS |
-| **WEB-AUTH-03** | `Sign In Submission` | Credentials entered | Click "Sign In" button | Authenticates; stores token; reveals full 7-tab sidebar navigation. | PASS |
-| **WEB-AUTH-04** | `Close Auth Modal 'X'` | Modal open | Click 'X' or outside backdrop| Closes modal cleanly. | PASS |
-
----
-
-### Section 2: Sidebar Navigation
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **WEB-NAV-01** | `Tab 1: Overview` | Authenticated | Click "Executive Overview" | Renders enterprise KPIs, telemetry volume, and hourly charts. | PASS |
-| **WEB-NAV-02** | `Tab 2: Typing Stream` | Authenticated | Click "Typing Stream" | Renders session paragraph feed with Replay Draft affordances. | PASS |
-| **WEB-NAV-03** | `Tab 3: Clipboard Feed`| Authenticated | Click "Clipboard History" | Renders classified clipboard feed (Code, URLs, Plain Text). | PASS |
-| **WEB-NAV-04** | `Tab 4: Search` | Authenticated | Click "Search & Filtering" | Renders advanced query builder and tabular results. | PASS |
-| **WEB-NAV-05** | `Tab 5: App Breakdown` | Authenticated | Click "App Usage Breakdown"| Renders application productivity charts. | PASS |
-| **WEB-NAV-06** | `Tab 6: Admin Controls`| Authenticated as Admin | Click "Admin & Org Controls"| Renders user management, role assignments, and device lists. | PASS |
-| **WEB-NAV-07** | `Tab 7: Privacy & Exclusions`| Authenticated | Click "Privacy & Exclusions"| Renders blacklisted app packages and DSAR deletion controls. | PASS |
-| **WEB-NAV-08** | `Sign Out Button` | Authenticated | Click "Sign Out" in footer | Clears localStorage token; resets state; returns to public landing view. | PASS |
+### Phase 5: Web Console Verification & Real-Time Sync
+| Test ID | Screen / Tab | Interactive QA Action | Expected Visual & Functional Verification | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **WEB-01** | **Public Landing & Auth** | Open `https://keyflow.tramakrishna3012.workers.dev` $\rightarrow$ Click "Sign In / Register". | Opens glassmorphic Auth modal; submit `tramakrishna3012@gmail.com` $\rightarrow$ reveals full 7-tab sidebar navigation. | **PASS** |
+| **WEB-02** | **Executive Overview** | Inspect Tab 1 (Overview). | Renders enterprise KPIs: Active Duration, Log Volumes, Productivity Score, and Authorized Device badge (`📱 Motorola Edge 40`). | **PASS** |
+| **WEB-03** | **Typing Stream Feed** | Switch to Tab 2 (Typing Stream) $\rightarrow$ Click "Refresh Telemetry". | Pulls and decrypts (via WebCrypto) the exact sessions typed on Motorola Edge 40 (`Google Keep`, `Chrome`, `Calculator`). | **PASS** |
+| **WEB-04** | **Replay Draft Modal** | Click "Replay Draft" on Keep session card $\rightarrow$ Drag scrubber slider $\rightarrow$ Click "Play". | Opens interactive modal; dragging scrubber reconstructs drafting steps; animated playback runs at `1x`, `2x`, and `4x` speeds with real-time character count. | **PASS** |
+| **WEB-05** | **Clipboard Feed** | Switch to Tab 3 (Clipboard History). | Classified cards: Code snippet in monospace box with line numbers, URL card with domain badge and "Open Link" button, Plain text card. | **PASS** |
+| **WEB-06** | **Search & Filtering** | Switch to Tab 4 (Search) $\rightarrow$ Execute query. | Returns structured tabular records with timestamps, device names, and copy buttons. | **PASS** |
+| **WEB-07** | **Privacy & DSAR** | Switch to Tab 7 (Privacy & Exclusions). | Displays package blacklist management and 1-Click GDPR DSAR data shredding button. | **PASS** |
 
 ---
 
-### Section 3: Tab 2 — Session Typing Stream Feed
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **WEB-SESS-01** | `Refresh Telemetry` | Stream tab visible | Click "Refresh Telemetry" | Fetches new Supabase entries; decrypts via WebCrypto; renders new cards. | PASS |
-| **WEB-SESS-02** | `Search Filter Field` | Stream tab visible | Type search keyword | Filters session cards dynamically in real time. | PASS |
-| **WEB-SESS-03** | `App Filter Chips` | Stream tab visible | Click "Chrome" / "Calculator"| Isolates session cards belonging exclusively to selected app. | PASS |
-| **WEB-SESS-04** | `Session Copy Button` | Session card visible | Click "Copy" on session card | Copies decrypted paragraph to browser clipboard; shows green toast. | PASS |
-| **WEB-SESS-05** | `Replay Draft Button` | Session card visible | Click "Replay Draft" button | Opens interactive Replay Draft Modal with timeline scrubber. | PASS |
-
----
-
-### Section 4: Replay Draft Modal (Interactive Engine)
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **WEB-RPL-01** | `Timeline Scrubber Slider`| Replay modal open | Drag slider thumb | Updates draft text dynamically to exact keystroke checkpoint. | PASS |
-| **WEB-RPL-02** | `Play / Pause Button` | Replay modal open | Click "Play" button | Starts animated typing progression; icon toggles to "Pause". | PASS |
-| **WEB-RPL-03** | `1x Speed Multiplier` | Animated playback active | Click "1x" button | Plays at standard typing speed (300ms/step). | PASS |
-| **WEB-RPL-04** | `2x Speed Multiplier` | Animated playback active | Click "2x" button | Plays at double speed (150ms/step). | PASS |
-| **WEB-RPL-05** | `4x Speed Multiplier` | Animated playback active | Click "4x" button | Plays at quadruple speed (75ms/step). | PASS |
-| **WEB-RPL-06** | `Step Counters` | Scrubber moving | Inspect character/word counts| Updates character and word counters in real time at each step. | PASS |
-| **WEB-RPL-07** | `Copy Current Step` | Replay modal open | Click "Copy Current Step" | Copies text at current scrubber position to clipboard. | PASS |
-| **WEB-RPL-08** | `Close Replay Modal 'X'`| Replay modal open | Click 'X' or press Escape | Closes modal and stops playback timer. | PASS |
-
----
-
-### Section 5: Tab 3 — Multi-Device Clipboard Feed
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **WEB-CLIP-01** | `Filter Tab: All` | Clipboard tab visible | Click "All" tab | Displays all clipboard entries regardless of classification. | PASS |
-| **WEB-CLIP-02** | `Filter Tab: Code` | Clipboard tab visible | Click "Code" tab | Filters view strictly to syntax-classified code snippets. | PASS |
-| **WEB-CLIP-03** | `Filter Tab: URLs` | Clipboard tab visible | Click "URLs" tab | Filters view strictly to URL link cards. | PASS |
-| **WEB-CLIP-04** | `Filter Tab: Text` | Clipboard tab visible | Click "Plain Text" tab | Filters view strictly to plain text snippets. | PASS |
-| **WEB-CLIP-05** | `Code Card: Copy Action`| Code card visible | Click "Copy" button | Copies exact code block to clipboard with toast confirmation. | PASS |
-| **WEB-CLIP-06** | `URL Card: Open Link` | URL card visible | Click "Open Link" button | Opens URL in a new browser tab (`target="_blank"`). | PASS |
-| **WEB-CLIP-07** | `Pin Star Toggle` | Any clipboard card visible| Click Pin star icon | Pins entry to top of feed; persists pinned state in cloud DB. | PASS |
-
----
-
-### Section 6: Tab 4 — Search & Filtering
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **WEB-SRCH-01** | `Keyword Query Field` | Search tab visible | Enter `"calculation"` | Populates search parameter. | PASS |
-| **WEB-SRCH-02** | `App Filter Select` | Search tab visible | Select "Calculator" dropdown | Scopes search query to Calculator records. | PASS |
-| **WEB-SRCH-03** | `Execute Search Button` | Parameters configured | Click "Search" button | Queries database and populates results table with matching rows. | PASS |
-| **WEB-SRCH-04** | `Table Row Copy Action`| Results table rendered | Click "Copy" on row | Copies decrypted row snippet to clipboard. | PASS |
-
----
-
-### Section 7: Tab 7 — Privacy & DSAR Compliance Controls
-| Test ID | Control Name | Pre-Condition | Action / Input | Expected Result | Pass/Fail |
-| :--- | :--- | :--- | :--- | :--- | :---: |
-| **WEB-PRIV-01** | `Package Name Field` | Privacy tab visible | Enter `"com.example.secure"` | Validates package identifier input. | PASS |
-| **WEB-PRIV-02** | `Add Exclusion Button` | Package entered | Click "Add Exclusion" | Adds package to global blacklist; persists rule in database. | PASS |
-| **WEB-PRIV-03** | `Delete Exclusion Action`| Exclusion row exists | Click "Remove" icon | Deletes rule; permits subsequent logging for that package. | PASS |
-| **WEB-PRIV-04** | `GDPR Shred All Data` | Privacy tab visible | Click "Shred All Records" | Opens destructive confirmation modal. | PASS |
-| **WEB-PRIV-05** | `Confirm Shred Action` | Modal open | Click "Confirm Purge" | Executes cryptographic purge across all tenant tables. | PASS |
+## 4. Verification & Recording Artifacts
+* **Master Demo Video**: `demo_recordings/master_e2e_sync_demo.mp4` (100% Playable, H.264 MP4, valid `moov` atom header).
+* **Manual QA Audit Report**: `MANUAL_TESTING_REPORT.md` (Detailed step-by-step logs and observations).
