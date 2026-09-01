@@ -53,3 +53,5 @@ backend/*.db
 demo_recordings/
 backup_*.json
 *.json.bak
+dist/
+web/dist/

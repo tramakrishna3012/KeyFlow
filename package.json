@@ -1,0 +1,13 @@
+{
+  "name": "keyflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "KeyFlow: Cross-Platform Session Recovery & Synchronized Multi-Device Clipboard",
+  "scripts": {
+    "build": "echo 'Build ready for Cloudflare Workers'",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.100.0"
+  }
+}
