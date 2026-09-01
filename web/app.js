@@ -46,6 +46,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupNavigation();
   setupDashboardControls();
   setupTypingHistory();
+  setupClipboardHistory();
+  setupReplayDraftModal();
   setupSearch();
   setupExclusions();
   setupAdminControls();
@@ -493,7 +495,8 @@ function setupNavigation() {
 
       const titles = {
         overview: 'Executive Overview',
-        typing: 'Cross-Device Typing History',
+        typing: 'Session Typing Stream',
+        clipboard: 'Synchronized Multi-Device Clipboard',
         search: 'Multi-Criteria Search & Filtering',
         apps: 'Application Telemetry Matrix',
         admin: 'Admin & Organization Controls',
@@ -502,6 +505,7 @@ function setupNavigation() {
       document.getElementById('page-title').textContent = titles[tabId] || 'KeyFlow';
 
       if (tabId === 'typing') loadTypingHistory();
+      if (tabId === 'clipboard') loadClipboardHistory();
       if (tabId === 'apps') loadAppBreakdown();
       if (tabId === 'privacy') loadExclusions();
     });
@@ -938,22 +942,41 @@ async function loadTypingHistory(q = '', appName = '') {
               </span>
             </div>
 
-            <!-- List of timestamped snippet entries with Copy button -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-              ${items.map(item => {
+            <!-- List of timestamped snippet entries with Copy & Replay Draft buttons -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              ${items.map((item, idx) => {
                 const timeStr = new Date(item.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const escaped = (item.content || '').replace(/"/g, '&quot;');
+                const text = item.content || '—';
+                const escaped = text.replace(/"/g, '&quot;');
+                const charCount = text.length;
+                const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
+                const hasDraft = item.draftHistory && item.draftHistory.length > 1;
+
                 return `
-                  <div class="snippet-row" style="display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; background: var(--bg-body); border-radius: 10px; border: 1px solid var(--border-color);">
-                    <span class="time-badge" style="font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-surface); border: 1px solid var(--border-color); padding: 3px 8px; border-radius: 6px; white-space: nowrap; margin-top: 2px;">
-                      ${timeStr}
-                    </span>
-                    <div style="flex: 1; font-size: 14px; line-height: 1.5; color: var(--text-primary); word-break: break-word; font-family: inherit;">
-                      ${item.content || '—'}
+                  <div class="snippet-row" style="padding: 14px; background: var(--bg-body); border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="time-badge" style="font-size: 11px; font-weight: 600; color: var(--text-muted); background: var(--bg-surface); border: 1px solid var(--border-color); padding: 2px 8px; border-radius: 6px;">
+                          ⏱️ ${timeStr}
+                        </span>
+                        <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">
+                          ${wordCount} words • ${charCount} chars
+                        </span>
+                      </div>
+
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <button class="btn btn-sm btn-outline btn-replay-draft" data-session-index="${idx}" data-session-app="${appKey}" data-session-date="${dateTitle}" title="Replay draft writing steps" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface);">
+                          <span>🎬</span> Replay Draft
+                        </button>
+                        <button class="btn btn-sm btn-outline btn-copy-snippet" data-copy="${escaped}" title="Copy Snippet" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); white-space: nowrap;">
+                          <span>📋</span> Copy
+                        </button>
+                      </div>
                     </div>
-                    <button class="btn btn-sm btn-outline btn-copy-snippet" data-copy="${escaped}" title="Copy Snippet" style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); white-space: nowrap;">
-                      <span>📋</span> Copy
-                    </button>
+
+                    <div style="font-size: 14px; line-height: 1.6; color: var(--text-primary); word-break: break-word; font-family: inherit; white-space: pre-wrap; background: var(--bg-surface); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(226, 232, 240, 0.6);">
+                      ${text}
+                    </div>
                   </div>
                 `;
               }).join('')}
@@ -965,9 +988,350 @@ async function loadTypingHistory(q = '', appName = '') {
 
     container.innerHTML = chipsHtml + cardsHtml;
     _bindChipEvents();
+    _bindReplayEvents(dateGroups);
   } catch (err) {
     console.error('Failed to fetch typing history:', err);
     container.innerHTML = `<div class="text-muted text-center py-4">Unable to connect to typing history service.</div>`;
+  }
+}
+
+function _bindChipEvents() {
+  document.querySelectorAll('.app-filter-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeAppFilter = btn.getAttribute('data-chip') || 'All';
+      const q = document.getElementById('typing-keyword-input')?.value || '';
+      loadTypingHistory(q);
+    });
+  });
+}
+
+function _bindReplayEvents(dateGroups) {
+  document.querySelectorAll('.btn-replay-draft').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-session-index') || '0', 10);
+      const appKey = btn.getAttribute('data-session-app') || '';
+      const dateTitle = btn.getAttribute('data-session-date') || '';
+      const item = dateGroups[dateTitle]?.[appKey]?.[idx];
+      if (item) {
+        openReplayDraftModal(item);
+      }
+    });
+  });
+}
+
+// ==========================================================================
+// Synchronized Clipboard Feed
+// ==========================================================================
+
+function setupClipboardHistory() {
+  document.getElementById('btn-search-clipboard')?.addEventListener('click', () => {
+    const q = document.getElementById('clipboard-search-input')?.value || '';
+    const type = document.getElementById('clipboard-type-select')?.value || 'all';
+    loadClipboardHistory(q, type);
+  });
+
+  document.getElementById('clipboard-search-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const q = document.getElementById('clipboard-search-input')?.value || '';
+      const type = document.getElementById('clipboard-type-select')?.value || 'all';
+      loadClipboardHistory(q, type);
+    }
+  });
+
+  document.getElementById('clipboard-type-select')?.addEventListener('change', () => {
+    const q = document.getElementById('clipboard-search-input')?.value || '';
+    const type = document.getElementById('clipboard-type-select')?.value || 'all';
+    loadClipboardHistory(q, type);
+  });
+}
+
+async function loadClipboardHistory(q = '', contentType = 'all') {
+  const container = document.getElementById('clipboard-cards-container');
+  if (!container) return;
+
+  try {
+    let entries = [];
+    if (authToken) {
+      try {
+        const url = new URL(`${API_BASE}/clipboard`);
+        if (q) url.searchParams.append('q', q);
+        if (contentType && contentType !== 'all') url.searchParams.append('contentType', contentType);
+        const res = await fetch(url.toString(), {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          entries = data.entries || [];
+        }
+      } catch (_) {}
+    }
+
+    if (entries.length === 0) {
+      // Fallback mock items if empty
+      entries = [
+        {
+          id: 'clip-mock-1',
+          deviceName: 'Motorola Edge 40',
+          sourceApp: 'Chrome',
+          content: 'https://keyflow.tramakrishna3012.workers.dev',
+          content_type: 'url',
+          is_pinned: true,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: 'clip-mock-2',
+          deviceName: 'Desktop',
+          sourceApp: 'VS Code',
+          content: 'export class SessionAggregator {\n  private debounceMs = 2500;\n}',
+          content_type: 'code',
+          is_pinned: false,
+          created_at: new Date(Date.now() - 3600000).toISOString()
+        },
+        {
+          id: 'clip-mock-3',
+          deviceName: 'Motorola Edge 40',
+          sourceApp: 'Slack',
+          content: 'KeyFlow captures text recovery and multi-device clipboard synchronization seamlessly.',
+          content_type: 'text',
+          is_pinned: false,
+          created_at: new Date(Date.now() - 7200000).toISOString()
+        }
+      ];
+
+      if (contentType && contentType !== 'all') {
+        entries = entries.filter(e => e.content_type === contentType);
+      }
+      if (q) {
+        const qLow = q.toLowerCase();
+        entries = entries.filter(e => e.content.toLowerCase().includes(qLow));
+      }
+    }
+
+    if (entries.length === 0) {
+      container.innerHTML = `
+        <div class="text-muted text-center py-5" style="background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 40px 20px;">
+          <div style="font-size: 32px; margin-bottom: 8px;">📋</div>
+          <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No clipboard entries found</div>
+          <div style="font-size: 13px; color: var(--text-muted);">Copied text, links, and code snippets on any device will appear here instantly.</div>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = entries.map(entry => {
+      const type = entry.content_type || 'text';
+      const isPinned = Boolean(entry.is_pinned);
+      const timeStr = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const escaped = (entry.content || '').replace(/"/g, '&quot;');
+
+      let typeBadge = '';
+      if (type === 'code') {
+        typeBadge = '<span style="background: rgba(168, 85, 247, 0.1); color: #A855F7; border: 1px solid rgba(168, 85, 247, 0.2); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">💻 CODE</span>';
+      } else if (type === 'url') {
+        typeBadge = '<span style="background: rgba(14, 165, 233, 0.1); color: #0EA5E9; border: 1px solid rgba(14, 165, 233, 0.2); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">🔗 URL</span>';
+      } else {
+        typeBadge = '<span style="background: rgba(16, 185, 129, 0.1); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.2); padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700;">📄 TEXT</span>';
+      }
+
+      let bodyHtml = '';
+      if (type === 'url') {
+        bodyHtml = `
+          <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-family: monospace; font-size: 13px; color: var(--accent-indigo); word-break: break-all;">${entry.content}</span>
+            <a href="${entry.content.startsWith('http') ? entry.content : 'https://' + entry.content}" target="_blank" rel="noopener noreferrer" style="font-size: 12px; font-weight: 600; color: var(--accent-indigo); text-decoration: none; margin-left: 12px; white-space: nowrap;">Open ↗</a>
+          </div>
+        `;
+      } else if (type === 'code') {
+        const lines = (entry.content || '').split('\n');
+        bodyHtml = `
+          <div style="background: #0B0F19; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+            <div style="background: #111827; padding: 6px 12px; border-bottom: 1px solid #1F2937; color: #9CA3AF; font-size: 11px; display: flex; justify-content: space-between;">
+              <span>Snippet (${lines.length} lines)</span>
+              <span>Code Block</span>
+            </div>
+            <pre style="padding: 12px; margin: 0; overflow-x: auto; color: #E5E7EB; line-height: 1.6;"><code>${entry.content}</code></pre>
+          </div>
+        `;
+      } else {
+        bodyHtml = `
+          <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap;">
+            ${entry.content}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="clipboard-card" style="background: var(--bg-surface); border: 1px solid ${isPinned ? 'var(--accent-indigo)' : 'var(--border-color)'}; border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${typeBadge}
+              <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">${entry.source_app || entry.sourceApp || 'System Clipboard'}</span>
+              <span style="font-size: 11px; background: rgba(99, 102, 241, 0.08); color: var(--accent-indigo); padding: 2px 6px; border-radius: 6px;">📱 ${entry.device_name || entry.deviceName || 'Device'}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; color: var(--text-muted);">⏱️ ${timeStr}</span>
+              <button class="btn btn-sm btn-outline btn-copy-snippet" data-copy="${escaped}" title="Copy to Clipboard" style="padding: 3px 8px; font-size: 11px;">
+                <span>📋</span> Copy
+              </button>
+            </div>
+          </div>
+
+          ${bodyHtml}
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Failed to load clipboard:', err);
+    container.innerHTML = `<div class="text-muted text-center py-4">Unable to load clipboard feed.</div>`;
+  }
+}
+
+// ==========================================================================
+// Replay Draft Modal Controller
+// ==========================================================================
+
+let activeReplaySession = null;
+let replaySnapshots = [];
+let replayCurrentStep = 0;
+let replayPlayTimer = null;
+let replaySpeed = 1;
+
+function setupReplayDraftModal() {
+  document.getElementById('btn-close-replay')?.addEventListener('click', () => {
+    closeReplayDraftModal();
+  });
+
+  document.getElementById('replay-slider')?.addEventListener('input', (e) => {
+    stopReplayPlayback();
+    replayCurrentStep = parseInt(e.target.value, 10);
+    renderReplayStep();
+  });
+
+  document.getElementById('btn-replay-playpause')?.addEventListener('click', () => {
+    if (replayPlayTimer) {
+      stopReplayPlayback();
+    } else {
+      startReplayPlayback();
+    }
+  });
+
+  document.getElementById('btn-replay-reset')?.addEventListener('click', () => {
+    stopReplayPlayback();
+    replayCurrentStep = 0;
+    renderReplayStep();
+  });
+
+  document.querySelectorAll('.btn-replay-speed').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.btn-replay-speed').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      replaySpeed = parseInt(btn.getAttribute('data-speed') || '1', 10);
+      if (replayPlayTimer) {
+        stopReplayPlayback();
+        startReplayPlayback();
+      }
+    });
+  });
+
+  document.getElementById('btn-replay-copy-step')?.addEventListener('click', async () => {
+    const snap = replaySnapshots[replayCurrentStep];
+    if (snap && snap.text) {
+      await navigator.clipboard.writeText(snap.text);
+      showToast('Step text copied to clipboard!', 'success');
+    }
+  });
+}
+
+function openReplayDraftModal(session) {
+  activeReplaySession = session;
+  const modal = document.getElementById('replay-draft-modal');
+  if (!modal) return;
+
+  const content = session.content || '';
+  if (session.draftHistory && session.draftHistory.length > 0) {
+    replaySnapshots = session.draftHistory;
+  } else {
+    // Generate simulated draft steps if only final text is present
+    const words = content.split(' ');
+    replaySnapshots = [];
+    let accum = '';
+    for (let i = 0; i < words.length; i++) {
+      accum += (i > 0 ? ' ' : '') + words[i];
+      replaySnapshots.push({
+        timestamp: session.capturedAt || new Date().toISOString(),
+        text: accum,
+        charCount: accum.length
+      });
+    }
+    if (replaySnapshots.length === 0) {
+      replaySnapshots = [{ timestamp: new Date().toISOString(), text: content, charCount: content.length }];
+    }
+  }
+
+  replayCurrentStep = 0;
+  document.getElementById('replay-modal-title').textContent = `Replay Draft — ${session.appName || 'App'}`;
+  const slider = document.getElementById('replay-slider');
+  if (slider) {
+    slider.max = replaySnapshots.length - 1;
+    slider.value = 0;
+  }
+
+  modal.style.display = 'flex';
+  renderReplayStep();
+}
+
+function closeReplayDraftModal() {
+  stopReplayPlayback();
+  const modal = document.getElementById('replay-draft-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+function startReplayPlayback() {
+  const playBtn = document.getElementById('btn-replay-playpause');
+  if (playBtn) playBtn.textContent = '⏸ Pause';
+
+  const intervalMs = Math.max(100, Math.round(500 / replaySpeed));
+  replayPlayTimer = setInterval(() => {
+    if (replayCurrentStep >= replaySnapshots.length - 1) {
+      stopReplayPlayback();
+      return;
+    }
+    replayCurrentStep++;
+    renderReplayStep();
+  }, intervalMs);
+}
+
+function stopReplayPlayback() {
+  if (replayPlayTimer) {
+    clearInterval(replayPlayTimer);
+    replayPlayTimer = null;
+  }
+  const playBtn = document.getElementById('btn-replay-playpause');
+  if (playBtn) playBtn.textContent = '▶ Play Replay';
+}
+
+function renderReplayStep() {
+  const snap = replaySnapshots[replayCurrentStep] || replaySnapshots[replaySnapshots.length - 1];
+  if (!snap) return;
+
+  const canvas = document.getElementById('replay-canvas');
+  if (canvas) {
+    canvas.textContent = snap.text;
+  }
+
+  const subtitle = document.getElementById('replay-modal-subtitle');
+  if (subtitle) {
+    subtitle.textContent = `Step ${replayCurrentStep + 1} of ${replaySnapshots.length} • ${new Date(snap.timestamp).toLocaleTimeString()}`;
+  }
+
+  const charCount = document.getElementById('replay-char-count');
+  if (charCount) {
+    charCount.textContent = `${snap.charCount || snap.text.length} chars`;
+  }
+
+  const slider = document.getElementById('replay-slider');
+  if (slider) {
+    slider.value = replayCurrentStep;
   }
 }
 

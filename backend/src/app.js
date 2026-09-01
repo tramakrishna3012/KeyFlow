@@ -9,6 +9,8 @@ const activityRoutes = require('./routes/activityRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const complianceRoutes = require('./routes/complianceRoutes');
 const appRoutes = require('./routes/appRoutes');
+const sessionRoutes = require('./routes/sessionRoutes');
+const clipboardRoutes = require('./routes/clipboardRoutes');
 
 const app = express();
 
@@ -59,6 +61,12 @@ app.use('/api/v1/activity', activityRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/compliance', complianceRoutes);
 app.use('/api/v1/app', appRoutes);
+app.use('/api/v1/sessions', sessionRoutes);
+app.use('/api/v1/clipboard', clipboardRoutes);
+
+// Compatibility Aliases
+app.use('/api/sessions', sessionRoutes);
+app.use('/api/clipboard', clipboardRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

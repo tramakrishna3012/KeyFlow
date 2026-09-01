@@ -504,7 +504,8 @@
 
         <nav style="display: flex; flex-direction: column; gap: 6px;">
           <button class="f-tab-btn active w-100" data-tab="overview" id="nav-overview" style="justify-content: flex-start;">Executive Overview</button>
-          <button class="f-tab-btn w-100" data-tab="typing" id="nav-typing" style="justify-content: flex-start;">Typing History</button>
+          <button class="f-tab-btn w-100" data-tab="typing" id="nav-typing" style="justify-content: flex-start;">Typing Stream</button>
+          <button class="f-tab-btn w-100" data-tab="clipboard" id="nav-clipboard" style="justify-content: flex-start;">Clipboard History</button>
           <button class="f-tab-btn w-100" data-tab="search" id="nav-search" style="justify-content: flex-start;">Search & Filtering</button>
           <button class="f-tab-btn w-100" data-tab="apps" id="nav-apps" style="justify-content: flex-start;">App Usage Breakdown</button>
           <button class="f-tab-btn w-100" data-tab="admin" id="nav-admin" style="justify-content: flex-start;">Admin & Org Controls</button>
@@ -583,6 +584,27 @@
         </div>
       </section>
 
+      <!-- Tab: Clipboard History -->
+      <section class="tab-content" id="tab-clipboard">
+        <div class="form-card">
+          <div class="search-toolbar mb-3" style="margin-bottom: 16px;">
+            <div class="form-row" style="display: flex; gap: 12px;">
+              <input type="text" id="clipboard-search-input" class="input-control" placeholder="Search copied snippets, URLs, or code..." aria-label="Search clipboard">
+              <select id="clipboard-type-select" class="input-control" style="max-width: 180px;">
+                <option value="all">All Content Types</option>
+                <option value="text">Plain Text</option>
+                <option value="url">URLs & Links</option>
+                <option value="code">Code Snippets</option>
+              </select>
+              <button class="btn btn-primary" id="btn-search-clipboard">Filter</button>
+            </div>
+          </div>
+          <div id="clipboard-cards-container" class="clipboard-list space-y-3">
+            <div class="text-muted text-center py-4">Loading your synchronized clipboard feed...</div>
+          </div>
+        </div>
+      </section>
+
       <!-- Tab: Search & Filtering -->
       <section class="tab-content" id="tab-search">
         <div class="form-card">
@@ -637,6 +659,55 @@
           <div id="exclusion-chips-container" class="text-muted">No custom exclusions configured.</div>
         </div>
       </section>
+    </main>
+  </div>
+
+  <!-- =========================================================================
+       REPLAY DRAFT MODAL
+       ========================================================================= -->
+  <div class="modal-overlay" id="replay-draft-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 680px; width: 95%;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 22px;">🎬</span>
+          <div>
+            <h3 id="replay-modal-title" style="font-size: 16px; font-weight: 700; margin: 0;">Replay Draft History</h3>
+            <p id="replay-modal-subtitle" style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0 0;">Step 1 of 1</p>
+          </div>
+        </div>
+        <button class="btn-close" id="btn-close-replay" style="background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer;">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 0;">
+        <div id="replay-canvas" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; min-height: 160px; font-family: var(--font-sans); font-size: 14px; line-height: 1.7; color: var(--text-primary); white-space: pre-wrap; word-break: break-word;">
+          Loading draft snapshot...
+        </div>
+
+        <div style="margin-top: 18px;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">
+            <span id="replay-time-start">Start</span>
+            <span id="replay-char-count">0 chars</span>
+            <span id="replay-time-end">End</span>
+          </div>
+          <input type="range" id="replay-slider" min="0" max="0" value="0" style="width: 100%; accent-color: var(--accent-indigo); cursor: pointer;">
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; flex-wrap: gap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="btn btn-sm btn-primary" id="btn-replay-playpause">▶ Play Replay</button>
+            <button class="btn btn-sm btn-outline" id="btn-replay-reset">↺ Reset</button>
+            <div style="display: flex; gap: 4px; background: var(--bg-surface); padding: 2px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <button class="btn btn-sm btn-replay-speed active" data-speed="1" style="padding: 2px 8px; font-size: 11px;">1x</button>
+              <button class="btn btn-sm btn-replay-speed" data-speed="2" style="padding: 2px 8px; font-size: 11px;">2x</button>
+              <button class="btn btn-sm btn-replay-speed" data-speed="4" style="padding: 2px 8px; font-size: 11px;">4x</button>
+            </div>
+          </div>
+
+          <button class="btn btn-sm btn-outline" id="btn-replay-copy-step">📋 Copy Step</button>
+        </div>
+      </div>
+    </div>
+  </div>
     </main>
   </div>
 

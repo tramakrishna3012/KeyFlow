@@ -228,6 +228,37 @@ async function initDB() {
     );
   `);
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS typing_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      device_name TEXT NOT NULL,
+      app_name TEXT NOT NULL,
+      window_title TEXT,
+      content TEXT NOT NULL,
+      character_count INTEGER NOT NULL DEFAULT 0,
+      word_count INTEGER NOT NULL DEFAULT 0,
+      started_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      is_favorite INTEGER NOT NULL DEFAULT 0,
+      draft_history TEXT DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS clipboard_entries (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      device_name TEXT NOT NULL,
+      source_app TEXT,
+      content TEXT NOT NULL,
+      content_type TEXT NOT NULL DEFAULT 'text',
+      is_pinned INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
   // Create Indices
   await run(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id, started_at);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_applications_session ON applications(session_id, app_name);`);
@@ -237,6 +268,9 @@ async function initDB() {
   await run(`CREATE INDEX IF NOT EXISTS idx_activity_logs_user ON activity_logs(user_id, started_at);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_activity_logs_app ON activity_logs(app_name, app_category);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_audit_logs_org ON audit_logs(organization_id, created_at);`);
+  await run(`CREATE INDEX IF NOT EXISTS idx_typing_sessions_user ON typing_sessions(user_id, updated_at DESC);`);
+  await run(`CREATE INDEX IF NOT EXISTS idx_typing_sessions_app ON typing_sessions(user_id, app_name);`);
+  await run(`CREATE INDEX IF NOT EXISTS idx_clipboard_entries_user ON clipboard_entries(user_id, is_pinned DESC, created_at DESC);`);
 }
 
 module.exports = {

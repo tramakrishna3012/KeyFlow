@@ -6,6 +6,7 @@ import '../../data/models/history_entry.dart';
 import '../../data/sync_service.dart';
 import '../look_monitor/look_window_sanitizer.dart';
 import '../settings/models/installed_app_info.dart';
+import 'session_aggregator.dart';
 
 class CaptureService {
   CaptureService(
@@ -16,6 +17,10 @@ class CaptureService {
     this.onEntryCaptured,
   }) : _sanitizer = sanitizer ?? const LookWindowSanitizer() {
     _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
+    _sessionAggregator = DartSessionAggregator(
+      onSessionUpdate: _onSessionAggregatorUpdate,
+      onSessionFinalize: _onSessionAggregatorUpdate,
+    );
   }
 
   static const MethodChannel _methodChannel = MethodChannel('keyflow/capture');
@@ -28,6 +33,7 @@ class CaptureService {
   final SyncService? Function()? syncServiceGetter;
   final LookWindowSanitizer _sanitizer;
   final void Function(HistoryEntry entry)? onEntryCaptured;
+  late final DartSessionAggregator _sessionAggregator;
   StreamSubscription<dynamic>? _subscription;
 
   SyncService? get activeSyncService =>
@@ -39,8 +45,6 @@ class CaptureService {
   bool _isPaused = false;
   bool get isPaused => _isPaused;
 
-  final Map<String, String> _inputBuffers = {};
-  final Map<String, Timer> _debounceTimers = {};
   final Map<String, String> _lastSavedTextPerApp = {};
   final Map<String, int> _lastSavedTimePerApp = {};
 
@@ -121,10 +125,6 @@ class CaptureService {
   Future<bool> stopCapture() async {
     if (!_isCapturing) return true;
     try {
-      for (final timer in _debounceTimers.values) {
-        timer.cancel();
-      }
-      _debounceTimers.clear();
       final result = await _methodChannel.invokeMethod('stopCapture');
       await _subscription?.cancel();
       _subscription = null;
@@ -301,10 +301,7 @@ class CaptureService {
 
   void dispose() {
     stopCapture();
-    for (final timer in _debounceTimers.values) {
-      timer.cancel();
-    }
-    _debounceTimers.clear();
+    _sessionAggregator.dispose();
     _subscription?.cancel();
     _subscription = null;
   }
@@ -319,23 +316,52 @@ class CaptureService {
     final timestamp =
         (event['timestamp'] as int?) ?? DateTime.now().millisecondsSinceEpoch;
     final isCopied = (event['isCopied'] as bool?) ?? (appName == 'Clipboard');
+    final isPasswordField = (event['isPasswordField'] as bool?) ?? false;
 
     if (text.trim().isEmpty) return;
 
-    // For clipboard copied events, save immediately without debounce
+    // For clipboard copied events, save immediately
     if (isCopied) {
       _saveDirectEntry(appName, text.trim(), timestamp);
       return;
     }
 
-    // Buffer incoming text for this application
-    _inputBuffers[appName] = text;
+    // Pass to DartSessionAggregator with 2.5s debouncing & 60s termination timeout
+    _sessionAggregator.handleTypingInput(
+      appName: appName,
+      windowTitle: windowTitle,
+      deviceName: 'Motorola Edge 40',
+      text: text,
+      isPasswordField: isPasswordField,
+    );
+  }
 
-    // Debounce timer: wait 800ms for user typing burst before writing to database
-    _debounceTimers[appName]?.cancel();
-    _debounceTimers[appName] = Timer(const Duration(milliseconds: 800), () {
-      _flushBufferForApp(appName, windowTitle, timestamp);
-    });
+  Future<void> _onSessionAggregatorUpdate(AggregatedTypingSession session) async {
+    final sanitizedText = _sanitizer.sanitizeTextRecord(
+      session.content,
+      appName: session.appName,
+    );
+
+    if (sanitizedText.isEmpty ||
+        sanitizedText == '[Excluded Content]' ||
+        sanitizedText == '[Redacted Sensitive Record]') {
+      return;
+    }
+
+    final entry = HistoryEntry(
+      id: session.id,
+      text: sanitizedText,
+      sourceApp: session.appName,
+      capturedAt: DateTime.tryParse(session.updatedAt) ?? DateTime.now(),
+      deviceId: session.deviceName,
+    );
+
+    await _repository.addEntry(entry);
+    onEntryCaptured?.call(entry);
+    debugPrint(
+      '[CaptureService] Session ${session.id} updated (${session.characterCount} chars), triggering debounced cloud sync',
+    );
+    unawaited(activeSyncService?.syncEntry(entry));
   }
 
   Future<void> _saveDirectEntry(
@@ -369,7 +395,7 @@ class CaptureService {
       text: sanitizedText,
       sourceApp: appName,
       capturedAt: DateTime.fromMillisecondsSinceEpoch(timestamp),
-      deviceId: 'mobile_native',
+      deviceId: 'Motorola Edge 40',
     );
     await _repository.addEntry(entry);
     onEntryCaptured?.call(entry);
@@ -377,60 +403,6 @@ class CaptureService {
       '[CaptureService] Copied entry ${entry.id} added locally, triggering cloud sync',
     );
     unawaited(activeSyncService?.syncEntry(entry));
-  }
-
-  Future<void> _flushBufferForApp(
-    String appName,
-    String windowTitle,
-    int timestamp,
-  ) async {
-    _debounceTimers[appName]?.cancel();
-    _debounceTimers.remove(appName);
-
-    final rawText = _inputBuffers[appName]?.trim();
-    _inputBuffers.remove(appName);
-
-    if (rawText != null && rawText.isNotEmpty) {
-      final sanitizedText = _sanitizer.sanitizeTextRecord(
-        rawText,
-        appName: appName,
-      );
-
-      // Do not store excluded or redacted sensitive records (passwords, OTPs, cards)
-      if (sanitizedText.isEmpty ||
-          sanitizedText == '[Excluded Content]' ||
-          sanitizedText == '[Redacted Sensitive Record]') {
-        return;
-      }
-
-      // Deduplication check: Do not save if identical text was saved for this app in last 10s
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final lastSaved = _lastSavedTextPerApp[appName];
-      final lastSavedTime = _lastSavedTimePerApp[appName] ?? 0;
-      if (lastSaved == sanitizedText && (now - lastSavedTime) < 10000) {
-        debugPrint(
-          '[CaptureService] Skipping duplicate entry for $appName: $sanitizedText',
-        );
-        return;
-      }
-
-      _lastSavedTextPerApp[appName] = sanitizedText;
-      _lastSavedTimePerApp[appName] = now;
-
-      final entry = HistoryEntry(
-        id: '${timestamp}_${appName.hashCode}',
-        text: sanitizedText,
-        sourceApp: appName,
-        capturedAt: DateTime.fromMillisecondsSinceEpoch(timestamp),
-        deviceId: 'mobile_native',
-      );
-      await _repository.addEntry(entry);
-      onEntryCaptured?.call(entry);
-      debugPrint(
-        '[CaptureService] Entry ${entry.id} added locally, triggering cloud sync (activeSyncService != null: ${activeSyncService != null})',
-      );
-      unawaited(activeSyncService?.syncEntry(entry));
-    }
   }
 
   Future<dynamic> _handleNativeMethodCall(MethodCall call) async {
