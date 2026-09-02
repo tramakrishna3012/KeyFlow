@@ -298,6 +298,7 @@ async function ingestBatchActivity({ userId, deviceId, sessionId, entries }) {
       appName,
       windowTitle,
       textRecord,
+      textRecords,
       durationSeconds = 0,
       idleSeconds = 0,
       isIdle = false,
@@ -357,12 +358,29 @@ async function ingestBatchActivity({ userId, deviceId, sessionId, entries }) {
       ]
     );
 
-    // If text record is included and not excluded/sensitive, encrypt at rest
-    if (textRecord && typeof textRecord === 'string' && textRecord.trim().length > 0) {
-      const isSensitive = isSensitiveFieldOrText(appName, textRecord);
+    // Extract text strings to record
+    const textsToProcess = [];
+    if (typeof textRecord === 'string' && textRecord.trim().length > 0) {
+      textsToProcess.push(textRecord);
+    } else if (textRecord && typeof textRecord === 'object' && textRecord.content) {
+      textsToProcess.push(String(textRecord.content));
+    }
+    if (Array.isArray(textRecords)) {
+      for (const tr of textRecords) {
+        if (typeof tr === 'string' && tr.trim().length > 0) {
+          textsToProcess.push(tr);
+        } else if (tr && typeof tr === 'object' && (tr.text || tr.content)) {
+          textsToProcess.push(String(tr.text || tr.content));
+        }
+      }
+    }
+
+    // If text records are included and not excluded/sensitive, encrypt at rest
+    for (const rawText of textsToProcess) {
+      const isSensitive = isSensitiveFieldOrText(appName, rawText);
       const markExcluded = isExcluded || isSensitive;
-      const sanitizedPreview = markExcluded ? '[Redacted Privacy Record]' : sanitizeWindowTitle(textRecord.substring(0, 60));
-      const encrypted = encryptRecord(markExcluded ? '[Redacted Content]' : textRecord);
+      const sanitizedPreview = markExcluded ? '[Redacted Privacy Record]' : sanitizeWindowTitle(rawText.substring(0, 60));
+      const encrypted = encryptRecord(markExcluded ? '[Redacted Content]' : rawText);
 
       await run(
         `INSERT INTO text_records (id, session_id, application_id, encrypted_content, iv, auth_tag, sanitized_preview, captured_at, is_excluded, created_at)

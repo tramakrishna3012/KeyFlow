@@ -62,6 +62,8 @@ router.get('/export', async (req, res, next) => {
     const consentHistory = await all('SELECT * FROM consent_records WHERE user_id = ? ORDER BY consented_at DESC', [req.user.id]);
     const activityLogs = await all('SELECT * FROM activity_logs WHERE user_id = ? ORDER BY started_at DESC', [req.user.id]);
     const sessions = await all('SELECT * FROM sessions WHERE user_id = ? ORDER BY started_at DESC', [req.user.id]);
+    const typingSessions = await all('SELECT * FROM typing_sessions WHERE user_id = ? ORDER BY updated_at DESC', [req.user.id]);
+    const clipboardEntries = await all('SELECT id, device_name, source_app, content_type, is_pinned, created_at FROM clipboard_entries WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
 
     await logAudit({
       organizationId: req.user.organization_id,
@@ -69,7 +71,7 @@ router.get('/export', async (req, res, next) => {
       action: 'DATA_EXPORT_DOWNLOADED',
       resourceType: 'user_data',
       resourceId: req.user.id,
-      metadata: { recordCount: activityLogs.length, format }
+      metadata: { recordCount: activityLogs.length + typingSessions.length + clipboardEntries.length, format }
     });
 
     const exportPayload = {
@@ -77,7 +79,9 @@ router.get('/export', async (req, res, next) => {
       user: userProfile,
       consentHistory,
       sessions,
-      activityLogs
+      activityLogs,
+      typingSessions,
+      clipboardEntries
     };
 
     if (format === 'csv') {
@@ -103,6 +107,9 @@ router.post('/delete-my-data', async (req, res, next) => {
   try {
     const deletedActivity = await run('DELETE FROM activity_logs WHERE user_id = ?', [req.user.id]);
     const deletedSessions = await run('DELETE FROM sessions WHERE user_id = ?', [req.user.id]);
+    const deletedTyping = await run('DELETE FROM typing_sessions WHERE user_id = ?', [req.user.id]);
+    const deletedClipboard = await run('DELETE FROM clipboard_entries WHERE user_id = ?', [req.user.id]);
+    const deletedExclusions = await run('DELETE FROM privacy_exclusions WHERE user_id = ?', [req.user.id]);
 
     await logAudit({
       organizationId: req.user.organization_id,
@@ -112,15 +119,21 @@ router.post('/delete-my-data', async (req, res, next) => {
       resourceId: req.user.id,
       metadata: {
         deletedActivityCount: deletedActivity.changes,
-        deletedSessionsCount: deletedSessions.changes
+        deletedSessionsCount: deletedSessions.changes,
+        deletedTypingCount: deletedTyping.changes,
+        deletedClipboardCount: deletedClipboard.changes,
+        deletedExclusionsCount: deletedExclusions.changes
       }
     });
 
     res.json({
       success: true,
-      message: 'All your personal activity records have been permanently erased.',
+      message: 'All your personal activity and typing records have been permanently erased.',
       deletedActivityCount: deletedActivity.changes,
-      deletedSessionsCount: deletedSessions.changes
+      deletedSessionsCount: deletedSessions.changes,
+      deletedTypingCount: deletedTyping.changes,
+      deletedClipboardCount: deletedClipboard.changes,
+      deletedExclusionsCount: deletedExclusions.changes
     });
   } catch (err) {
     next(err);

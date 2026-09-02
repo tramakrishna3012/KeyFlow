@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const testUser = urlParams.get('test_user');
   const autoAuth = urlParams.get('auto_auth') === 'true';
 
-  if (autoAuth || urlParams.get('view') === 'dashboard' || window.location.hash === '#dashboard' || window.location.pathname === '/dashboard') {
+  if (autoAuth) {
     const userEmail = testUser || 'user@keyflow.dev';
     const cleanName = userEmail.split('@')[0];
     currentUser = {
@@ -86,6 +86,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (tabBtn) tabBtn.click();
     }
   } else if (currentUser) {
+    if (urlParams.get('view') === 'dashboard' || window.location.hash === '#dashboard' || window.location.pathname === '/dashboard') {
+      document.body.classList.add('dashboard-mode');
+      const tabParam = urlParams.get('tab');
+      if (tabParam) {
+        const tabBtn = document.querySelector(`[data-tab="${tabParam}"]`);
+        if (tabBtn) tabBtn.click();
+      }
+    }
     await refreshAllDashboardData();
   }
 
@@ -658,80 +666,6 @@ function setupTypingHistory() {
   });
 }
 
-
-// Legacy function disabled for security - use backend API instead
-async function fetchSupabaseEntries() {
-  // DEPRECATED: Direct Supabase access removed for security
-  // All data should be fetched through authenticated backend API endpoints
-  return [];
-}
-
-async function decryptSupabasePayload(ciphertextB64, ivB64, userId) {
-  // DEPRECATED: No longer needed as direct Supabase access is disabled
-  return '';
-}
-  if (!ciphertextB64) return '';
-  try {
-    // 1. Try decoding if base64 utf8 plaintext
-    try {
-      const decoded = atob(ciphertextB64);
-      if (/^[\x20-\x7E\r\n\t]+$/.test(decoded) && !decoded.includes('\x00')) {
-        return decoded;
-      }
-    } catch (_) {}
-
-    // 2. Try AES-GCM decryption with WebCrypto
-    if (window.crypto && window.crypto.subtle && userId && ivB64) {
-      try {
-        const enc = new TextEncoder();
-        const rawKeyMaterial = enc.encode(userId);
-        const salt = enc.encode('kf_' + userId);
-        const info = enc.encode('keyflow-history-encryption');
-
-        const baseKey = await window.crypto.subtle.importKey(
-          'raw',
-          rawKeyMaterial,
-          'HKDF',
-          false,
-          ['deriveKey']
-        );
-
-        const derivedKey = await window.crypto.subtle.deriveKey(
-          {
-            name: 'HKDF',
-            hash: 'SHA-256',
-            salt: salt,
-            info: info
-          },
-          baseKey,
-          { name: 'AES-GCM', length: 256 },
-          false,
-          ['decrypt']
-        );
-
-        let ivB64Standard = ivB64.replace(/-/g, '+').replace(/_/g, '/');
-        while (ivB64Standard.length % 4) ivB64Standard += '=';
-        const ivBytes = Uint8Array.from(atob(ivB64Standard), c => c.charCodeAt(0));
-
-        let cipherStandard = ciphertextB64.replace(/-/g, '+').replace(/_/g, '/');
-        while (cipherStandard.length % 4) cipherStandard += '=';
-        const cipherBytes = Uint8Array.from(atob(cipherStandard), c => c.charCodeAt(0));
-
-        const decryptedBuffer = await window.crypto.subtle.decrypt(
-          { name: 'AES-GCM', iv: ivBytes },
-          derivedKey,
-          cipherBytes
-        );
-
-        return new TextDecoder().decode(decryptedBuffer);
-      } catch (_) {}
-    }
-  } catch (err) {
-    console.warn('Decryption helper error:', err);
-  }
-  return '';
-}
-
 let activeAppFilter = 'All';
 
 function getAppVisualMeta(rawPackageOrName) {
@@ -833,14 +767,39 @@ async function loadTypingHistory(q = '', appName = '') {
         });
         if (res.ok) {
           const data = await res.json();
-          backendHistory = (data.history || []).map(item => ({
-            id: item.id || `hist_${item.capturedAt}`,
-            appName: item.appName || item.sourceApp || 'Google Chrome',
-            content: item.content || item.textRecord || item.text || '',
-            capturedAt: item.capturedAt ? new Date(item.capturedAt).toISOString() : new Date().toISOString(),
-            deviceName: item.deviceName || 'Motorola Edge 40',
-            isExcluded: Boolean(item.isExcluded)
-          }));
+          for (const item of (data.history || [])) {
+            backendHistory.push({
+              id: item.id || `hist_${item.capturedAt}`,
+              appName: item.appName || item.sourceApp || 'Google Chrome',
+              content: item.content || item.textRecord || item.text || '',
+              capturedAt: item.capturedAt ? new Date(item.capturedAt).toISOString() : new Date().toISOString(),
+              deviceName: item.deviceName || 'Motorola Edge 40',
+              isExcluded: Boolean(item.isExcluded)
+            });
+          }
+        }
+      } catch (_) {}
+
+      try {
+        const sessUrl = new URL(`${API_BASE}/sessions`);
+        if (q) sessUrl.searchParams.append('q', q);
+        if (appName) sessUrl.searchParams.append('appName', appName);
+        const sessRes = await fetch(sessUrl.toString(), {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        if (sessRes.ok) {
+          const sessData = await sessRes.json();
+          for (const s of (sessData.sessions || [])) {
+            backendHistory.push({
+              id: s.id,
+              appName: s.app_name || s.appName || 'Desktop',
+              content: s.content || '',
+              capturedAt: s.updated_at || s.started_at || new Date().toISOString(),
+              deviceName: s.device_name || s.deviceName || 'Desktop Workstation',
+              isExcluded: false,
+              isFavorite: Boolean(s.is_favorite)
+            });
+          }
         }
       } catch (_) {}
     }
@@ -1407,18 +1366,6 @@ function renderReplayStep() {
     slider.value = replayCurrentStep;
   }
 }
-
-function _bindChipEvents() {
-  document.querySelectorAll('.app-filter-chip').forEach(btn => {
-    btn.addEventListener('click', () => {
-      activeAppFilter = btn.getAttribute('data-chip') || 'All';
-      const q = document.getElementById('typing-keyword-input')?.value || '';
-      loadTypingHistory(q);
-    });
-  });
-}
-
-
 
 // ==========================================================================
 // Dashboard Overview, Sessions, Breakdown, Exclusions

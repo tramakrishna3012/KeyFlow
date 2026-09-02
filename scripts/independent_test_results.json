@@ -1,0 +1,266 @@
+[
+  {
+    "area": "Authentication",
+    "test": "Reject weak password 'ShortPass1!'",
+    "expected": "400 Bad Request",
+    "actual": "400 Password must be at least 12 characters long",
+    "status": "PASS",
+    "evidence": "{\"error\":\"Password must be at least 12 characters long\"}"
+  },
+  {
+    "area": "Authentication",
+    "test": "Reject weak password 'alllowercasewith123!'",
+    "expected": "400 Bad Request",
+    "actual": "400 Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+    "status": "PASS",
+    "evidence": "{\"error\":\"Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character\"}"
+  },
+  {
+    "area": "Authentication",
+    "test": "Reject weak password 'ALLUPPERCASEWITH123!'",
+    "expected": "400 Bad Request",
+    "actual": "400 Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+    "status": "PASS",
+    "evidence": "{\"error\":\"Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character\"}"
+  },
+  {
+    "area": "Authentication",
+    "test": "Reject weak password 'NoNumberSpecialLetters!'",
+    "expected": "400 Bad Request",
+    "actual": "400 Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+    "status": "PASS",
+    "evidence": "{\"error\":\"Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character\"}"
+  },
+  {
+    "area": "Authentication",
+    "test": "Reject weak password 'NoSpecialChars12345'",
+    "expected": "400 Bad Request",
+    "actual": "400 Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+    "status": "PASS",
+    "evidence": "{\"error\":\"Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character\"}"
+  },
+  {
+    "area": "Authentication",
+    "test": "User A Registration",
+    "expected": "201 Created with JWT",
+    "actual": "201 Created (ID: 7950d6e0-f7c2-49f0-bba6-a62323aa0b48)",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authentication",
+    "test": "Duplicate Email Registration Rejection",
+    "expected": "409 Conflict",
+    "actual": "409 Email already registered",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authentication",
+    "test": "User B Registration",
+    "expected": "201 Created with JWT",
+    "actual": "201 Created (ID: d963c884-0ef0-4895-b710-44cef950afa2)",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authentication",
+    "test": "User A Valid Login",
+    "expected": "200 OK with JWT",
+    "actual": "200 OK (Token length: 332)",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authentication",
+    "test": "Invalid Password Login",
+    "expected": "401 Unauthorized",
+    "actual": "401 Invalid email or password",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authentication",
+    "test": "Account Lockout Enforcement (5 attempts)",
+    "expected": "423 Locked",
+    "actual": "423 Account temporarily locked due to failed attempts. Try again in 15 minute(s).",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authentication",
+    "test": "Password Storage Verification (Bcrypt salt rounds 12, no plaintext)",
+    "expected": "All passwords stored as bcrypt hashes",
+    "actual": "Verified 3 user records with $2a$/$2b$ hashes",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authentication",
+    "test": "Protected Route Access with Valid Token (/auth/me)",
+    "expected": "200 OK with profile",
+    "actual": "200 OK for usera_test@keyflow.dev",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authentication",
+    "test": "Protected Route Rejection (Missing Token)",
+    "expected": "401 Unauthorized",
+    "actual": "401 Authentication token required",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authentication",
+    "test": "Protected Route Rejection (Tampered JWT)",
+    "expected": "403 Forbidden",
+    "actual": "403 Invalid or expired authentication token",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authorization & IDOR",
+    "test": "Cross-User Session List Isolation",
+    "expected": "User A cannot see User B sessions",
+    "actual": "User A list has only User A items, User B list has only User B items",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authorization & IDOR",
+    "test": "IDOR Prevention: Cross-User Session Upsert",
+    "expected": "403 Forbidden",
+    "actual": "403 Access denied to this session",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authorization & IDOR",
+    "test": "IDOR Prevention: Cross-User Favorite Toggle",
+    "expected": "404 Not Found",
+    "actual": "404 Session not found",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authorization & IDOR",
+    "test": "IDOR Prevention: Cross-User Session Deletion",
+    "expected": "404 Not Found",
+    "actual": "404 Session not found",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authorization & IDOR",
+    "test": "Cross-User Clipboard List Isolation",
+    "expected": "User A cannot see User B clipboard",
+    "actual": "Clean isolation verified",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authorization & IDOR",
+    "test": "IDOR Prevention: Cross-User Clipboard Pin Toggle",
+    "expected": "404 Not Found",
+    "actual": "404 Clipboard entry not found",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Authorization & IDOR",
+    "test": "IDOR Prevention: Cross-User Clipboard Deletion",
+    "expected": "404 Not Found",
+    "actual": "404 Clipboard entry not found",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Clipboard Encryption & Storage",
+    "test": "AES-256-GCM Ciphertext Generation in DB",
+    "expected": "Encrypted ciphertext, 12-byte IV, 16-byte AuthTag stored",
+    "actual": "Ciphertext length: 76, IV: 6f7fb0a77830b07898f5f2b5, Tag: 3145bd1c4ee866cf9714c621236d774c",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Clipboard Encryption & Storage",
+    "test": "Database Plaintext Leakage in 'content' Column",
+    "expected": "Plaintext should NOT be stored in unencrypted column",
+    "actual": "No plaintext found in content column",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Clipboard Encryption & Storage",
+    "test": "Authorized Decryption Retrieval",
+    "expected": "Authenticated User A retrieves original plaintext",
+    "actual": "Successfully decrypted: 'KEYFLOW_CLIPBOARD_USER_A_API_KEY_12345'",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Activity Telemetry & Privacy",
+    "test": "Batch Telemetry Ingestion",
+    "expected": "200 OK with ingestedCount",
+    "actual": "200 OK (Count: 3)",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Activity Telemetry & Privacy",
+    "test": "Window Title Sanitization (Token/Secret Redaction)",
+    "expected": "Strip query parameters and secret tokens",
+    "actual": "Sanitized title: 'https://company.internal/secret'",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Activity Telemetry & Privacy",
+    "test": "Automated Sensitive Data & Banking Exclusion",
+    "expected": "Exclude credit card and banking app text from plaintext capture",
+    "actual": "Excluded records: 2/3",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Activity Telemetry & Privacy",
+    "test": "Custom Privacy Exclusion Creation",
+    "expected": "201 Created",
+    "actual": "Exclusion added for 1Password",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Activity Telemetry & Privacy",
+    "test": "Custom Privacy Exclusion Retrieval",
+    "expected": "200 OK with list",
+    "actual": "1Password listed in user exclusions",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Data Deletion & Compliance",
+    "test": "Individual Typing Session Deletion",
+    "expected": "200 OK and removed from DB",
+    "actual": "Permanently deleted",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Data Deletion & Compliance",
+    "test": "Individual Clipboard Entry Deletion",
+    "expected": "200 OK and removed from DB",
+    "actual": "Permanently deleted",
+    "status": "PASS",
+    "evidence": ""
+  },
+  {
+    "area": "Data Deletion & Compliance",
+    "test": "Right to be Forgotten (/delete-my-data) Scope",
+    "expected": "Erase all user data",
+    "actual": "All user records erased",
+    "status": "PASS",
+    "evidence": ""
+  }
+]

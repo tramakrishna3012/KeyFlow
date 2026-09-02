@@ -65,7 +65,7 @@ router.post('/insert', authenticateToken, async (req, res, next) => {
     await run(
       `INSERT INTO clipboard_entries (id, user_id, device_name, source_app, content, encrypted_content, iv, auth_tag, content_type, is_pinned, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, userId, deviceName, sourceApp, content.substring(0, 100) + (content.length > 100 ? '...' : ''), encrypted.ciphertext, encrypted.iv, encrypted.authTag, contentType, pinnedInt, nowIso]
+      [id, userId, deviceName, sourceApp, '[Encrypted Clipboard Data]', encrypted.ciphertext, encrypted.iv, encrypted.authTag, contentType, pinnedInt, nowIso]
     );
 
     const saved = await get(
@@ -121,19 +121,12 @@ router.get('/', authenticateToken, async (req, res, next) => {
       query += ` AND is_pinned = 1`;
     }
 
-    if (q && q.trim()) {
-      query += ` AND (content LIKE ? OR source_app LIKE ?)`;
-      const term = `%${q.trim()}%`;
-      params.push(term, term);
-    }
-
-    query += ` ORDER BY is_pinned DESC, created_at DESC LIMIT ? OFFSET ?`;
-    params.push(parseInt(limit, 10) || 50, parseInt(offset, 10) || 0);
+    query += ` ORDER BY is_pinned DESC, created_at DESC`;
 
     const rows = await all(query, params);
     
     // Decrypt content for each entry
-    const entries = rows.map((r) => {
+    let entries = rows.map((r) => {
       const decryptedContent = decryptRecord(r.encrypted_content, r.iv, r.auth_tag);
       return {
         id: r.id,
@@ -147,15 +140,21 @@ router.get('/', authenticateToken, async (req, res, next) => {
       };
     });
 
-    const countRow = await get(
-      `SELECT COUNT(*) as total FROM clipboard_entries WHERE user_id = ?`,
-      [userId]
-    );
+    if (q && q.trim()) {
+      const term = q.trim().toLowerCase();
+      entries = entries.filter((e) => 
+        (e.content && e.content.toLowerCase().includes(term)) ||
+        (e.source_app && e.source_app.toLowerCase().includes(term))
+      );
+    }
+
+    const total = entries.length;
+    const paginated = entries.slice(parseInt(offset, 10) || 0, (parseInt(offset, 10) || 0) + (parseInt(limit, 10) || 50));
 
     res.status(200).json({
       success: true,
-      total: countRow ? countRow.total : 0,
-      entries
+      total,
+      entries: paginated
     });
   } catch (err) {
     next(err);

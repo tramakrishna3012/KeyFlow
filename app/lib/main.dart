@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router/app_router.dart';
 import 'core/services/cache_cleanup_service.dart';
@@ -10,7 +9,6 @@ import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'data/auth_service.dart';
 import 'data/providers.dart';
-import 'data/secure_auth_storage.dart';
 import 'features/history/history_providers.dart';
 
 void main() async {
