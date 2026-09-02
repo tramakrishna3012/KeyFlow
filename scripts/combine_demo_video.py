@@ -1,172 +1,206 @@
-import os, sys, cv2, numpy as np
+import os
+import sys
+import time
+import cv2
+import numpy as np
 
-def create_title_card(scene_num, title, subtitle, duration_sec=2.5, fps=30, w=1080, h=2400):
-    total_frames = int(duration_sec * fps)
-    
-    # Create base canvas with modern dark background
-    canvas = np.zeros((h, w, 3), dtype=np.uint8)
+def create_header(w=1920, h=60, title="KEYFLOW LIVE CROSS-DEVICE E2E VERIFICATION DEMO"):
+    header = np.zeros((h, w, 3), dtype=np.uint8)
     for y in range(h):
-        # Vertical dark gradient from deep navy to charcoal
-        r = int(13 + (y / h) * 12)
-        g = int(17 + (y / h) * 15)
-        b = int(28 + (y / h) * 20)
-        canvas[y, :] = [b, g, r] # BGR
+        r = int(15 + (y / h) * 10)
+        g = int(18 + (y / h) * 12)
+        b = int(32 + (y / h) * 18)
+        header[y, :] = [b, g, r] # BGR
     
-    # Decorative accent card in center
-    card_top = 800
-    card_bot = 1600
-    card_left = 80
-    card_right = 1000
+    # Bottom border line (Indigo/Purple)
+    cv2.line(header, (0, h - 2), (w, h - 2), (241, 102, 99), 2)
     
-    # Draw semi-transparent rounded card
-    sub_img = canvas[card_top:card_bot, card_left:card_right]
-    card_overlay = np.full(sub_img.shape, (42, 28, 30), dtype=np.uint8) # Dark purple tint
-    cv2.addWeighted(card_overlay, 0.85, sub_img, 0.15, 0, sub_img)
-    canvas[card_top:card_bot, card_left:card_right] = sub_img
+    # Left Badge
+    cv2.circle(header, (32, h // 2), 16, (241, 102, 99), -1)
+    cv2.putText(header, "KF", (23, h // 2 + 5), cv2.FONT_HERSHEY_DUPLEX, 0.45, (255, 255, 255), 1, cv2.LINE_AA)
     
-    # Card outline border (Vibrant Purple BGR: 237, 58, 124 -> RGB: 124, 58, 237)
-    cv2.rectangle(canvas, (card_left, card_top), (card_right, card_bot), (237, 98, 144), 4)
+    # Main Title
+    cv2.putText(header, title, (58, h // 2 + 6), cv2.FONT_HERSHEY_DUPLEX, 0.65, (255, 255, 255), 1, cv2.LINE_AA)
     
-    # KeyFlow App Logo / Icon representation
-    cv2.circle(canvas, (w // 2, card_top + 140), 60, (237, 98, 144), -1)
-    cv2.putText(canvas, "KF", (w // 2 - 38, card_top + 160), cv2.FONT_HERSHEY_DUPLEX, 1.6, (255, 255, 255), 3, cv2.LINE_AA)
+    # Left / Right Column Labels
+    left_label = "Android Physical (Motorola Edge 40)"
+    right_label = "KeyFlow Web Console (Real-Time Cloud Sync)"
     
-    # Scene Badge Text
-    badge_text = f"KEYFLOW FEATURE DEMO - SCENE {scene_num:02d} OF 11"
-    text_size = cv2.getTextSize(badge_text, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 2)[0]
-    badge_x = (w - text_size[0]) // 2
-    cv2.putText(canvas, badge_text, (badge_x, card_top + 280), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (120, 200, 255), 2, cv2.LINE_AA)
+    cv2.putText(header, left_label, (230, h // 2 + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (180, 200, 240), 1, cv2.LINE_AA)
+    cv2.putText(header, "<->", (705, h // 2 + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 240, 150), 1, cv2.LINE_AA)
+    cv2.putText(header, right_label, (1130, h // 2 + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.40, (180, 200, 240), 1, cv2.LINE_AA)
     
-    # Main Scene Title
-    title_lines = [title]
-    if len(title) > 28:
-        # Split title into two lines
-        words = title.split()
-        mid = len(words) // 2
-        title_lines = [" ".join(words[:mid]), " ".join(words[mid:])]
+    # Live Status Dot
+    cv2.circle(header, (w - 140, h // 2), 6, (60, 220, 100), -1)
+    cv2.putText(header, "LIVE SYNCED", (w - 125, h // 2 + 5), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (60, 220, 100), 1, cv2.LINE_AA)
     
-    curr_y = card_top + 420
-    for line in title_lines:
-        t_size = cv2.getTextSize(line, cv2.FONT_HERSHEY_DUPLEX, 1.5, 3)[0]
-        cv2.putText(canvas, line, ((w - t_size[0]) // 2, curr_y), cv2.FONT_HERSHEY_DUPLEX, 1.5, (255, 255, 255), 3, cv2.LINE_AA)
-        curr_y += 70
-        
-    # Subtitle
-    sub_size = cv2.getTextSize(subtitle, cv2.FONT_HERSHEY_SIMPLEX, 0.85, 2)[0]
-    cv2.putText(canvas, subtitle, ((w - sub_size[0]) // 2, card_bot - 100), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (180, 180, 190), 2, cv2.LINE_AA)
-    
-    return [canvas.copy() for _ in range(total_frames)]
+    return header
 
-def overlay_caption(frame, scene_num, caption_text, w=1080, h=2400):
-    # Overlay floating pill banner at bottom
-    bar_y1 = h - 220
-    bar_y2 = h - 110
-    bar_x1 = 60
-    bar_x2 = w - 60
+def composite_side_by_side(mobile_video_path, web_video_path, output_path, fps=30.0, step_captions=None, mobile_trim_sec=0.0, web_trim_sec=0.0):
+    """
+    Composites mobile recording on left (720x1020) and web recording on right (1200x1020)
+    under a 1920x60 header bar, creating a full 1920x1080 @ 30 FPS MP4 video.
+    Supports initial stream timestamp offset trimming for frame-accurate synchronization.
+    """
+    out_w, out_h = 1920, 1080
+    header_h = 60
+    pane_h = out_h - header_h # 1020
+    left_w = 720
+    right_w = 1200
     
-    # Semi-transparent dark overlay box
-    sub = frame[bar_y1:bar_y2, bar_x1:bar_x2]
-    overlay = np.zeros(sub.shape, dtype=np.uint8)
-    for y in range(sub.shape[0]):
-        overlay[y, :] = [30, 20, 25] # BGR
-    cv2.addWeighted(overlay, 0.88, sub, 0.12, 0, sub)
-    frame[bar_y1:bar_y2, bar_x1:bar_x2] = sub
+    print(f"[Compositor] Loading mobile video: {mobile_video_path}")
+    print(f"[Compositor] Loading web video:    {web_video_path}")
     
-    # Border
-    cv2.rectangle(frame, (bar_x1, bar_y1), (bar_x2, bar_y2), (237, 98, 144), 3)
+    cap_m = cv2.VideoCapture(mobile_video_path) if os.path.exists(mobile_video_path) else None
+    cap_w = cv2.VideoCapture(web_video_path) if os.path.exists(web_video_path) else None
     
-    # Text
-    badge = f"[ SCENE {scene_num}/11 ] "
-    cv2.putText(frame, badge, (bar_x1 + 30, bar_y1 + 65), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (120, 220, 255), 2, cv2.LINE_AA)
-    badge_w = cv2.getTextSize(badge, cv2.FONT_HERSHEY_SIMPLEX, 0.85, 2)[0][0]
-    
-    cv2.putText(frame, caption_text, (bar_x1 + 30 + badge_w, bar_y1 + 65), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (255, 255, 255), 2, cv2.LINE_AA)
-    return frame
-
-def main():
-    recordings_dir = "d:/Freelance/KeyFlow/demo_recordings"
-    output_path = "d:/Freelance/KeyFlow/demo_recordings/KeyFlow_Complete_Demo.mp4"
-    
-    scenes = [
-        (1, "scene_01_welcome.mp4", "Welcome & App Launch", "First-time launch & onboarding experience"),
-        (2, "scene_02_signup.mp4", "Account Creation (Sign Up)", "Registration with email & password"),
-        (3, "scene_03_signin_home.mp4", "Sign In & Live Dashboard", "Authentication & real-time typing analytics"),
-        (4, "scene_04_permissions.mp4", "Accessibility & System Setup", "In-app deep link to Android settings"),
-        (5, "scene_05_background_capture.mp4", "Background Typing Capture", "Instant keystroke capture in Chrome"),
-        (6, "scene_06_sensitive_exclusion.mp4", "Privacy & Sensitive Redaction", "Automatic password field exclusion"),
-        (7, "scene_07_floating_bot.mp4", "Floating Assistant Bot", "System overlay bubble & quick capture toggles"),
-        (8, "scene_08_history_search.mp4", "Smart History & Search", "Grouped history timeline & copy snippet"),
-        (9, "scene_09_excluded_apps.mp4", "Excluded Applications Manager", "Blacklisting apps from background tracking"),
-        (10, "scene_10_translate_emoji.mp4", "Translate & Emoji Utilities", "Multi-language neural translation & emojis"),
-        (11, "scene_11_profile_signout.mp4", "Security, 2FA & Sign Out", "Account profile & secure cloud sign-out"),
-    ]
-    
-    w, h = 1080, 2400
-    fps = 30.0
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (w, h))
-    
-    print("=" * 60)
-    print(" Combining All 11 Scenes into Master KeyFlow Demo Video")
-    print("=" * 60)
-    
-    total_written_frames = 0
-    
-    for scene_num, filename, title, subtitle in scenes:
-        filepath = os.path.join(recordings_dir, filename)
-        if not os.path.exists(filepath):
-            print(f"[-] Missing: {filename}")
-            continue
-            
-        print(f"\n[+] Processing Scene {scene_num:02d}: {title}")
+    fps_m = cap_m.get(cv2.CAP_PROP_FPS) if cap_m else 30.0
+    if not fps_m or fps_m <= 0 or fps_m > 120:
+        fps_m = 30.0
         
-        # 1. Write Title Card (2.5 seconds = 75 frames)
-        title_frames = create_title_card(scene_num, title, subtitle, duration_sec=2.5, fps=fps, w=w, h=h)
-        for tf in title_frames:
-            out.write(tf)
-            total_written_frames += 1
-            
-        # 2. Read and overlay scene video frames
-        cap = cv2.VideoCapture(filepath)
-        orig_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-        frame_list = []
+    fps_w = cap_w.get(cv2.CAP_PROP_FPS) if cap_w else 30.0
+    if not fps_w or fps_w <= 0 or fps_w > 120:
+        fps_w = 30.0
+    
+    frames_m = []
+    if cap_m:
         while True:
-            ret, frame = cap.read()
+            ret, frame = cap_m.read()
             if not ret:
                 break
-            if frame.shape[0] != h or frame.shape[1] != w:
-                frame = cv2.resize(frame, (w, h))
-            frame_list.append(frame)
-        cap.release()
-        
-        if not frame_list:
-            print(f"    Warning: No frames read for {filename}")
-            continue
-            
-        print(f"    Source: {len(frame_list)} raw frames (~{len(frame_list)/orig_fps:.2f}s)")
-        
-        # Resample to 30 FPS timeline
-        target_frames = max(len(frame_list), int(len(frame_list) * (fps / orig_fps)))
-        # Target minimum 8 seconds per scene for thorough presentation
-        target_frames = max(target_frames, int(8.0 * fps))
-        
-        for i in range(target_frames):
-            src_idx = min(int(i * (len(frame_list) / target_frames)), len(frame_list) - 1)
-            frame_copy = frame_list[src_idx].copy()
-            frame_with_hud = overlay_caption(frame_copy, scene_num, subtitle, w=w, h=h)
-            out.write(frame_with_hud)
-            total_written_frames += 1
-            
-    out.release()
+            frames_m.append(frame)
+        cap_m.release()
     
-    total_sec = total_written_frames / fps
-    size_mb = os.path.getsize(output_path) / (1024 * 1024)
-    print("\n" + "=" * 60)
-    print(f" MASTER DEMO CREATED: {output_path}")
-    print(f" Total Duration: {int(total_sec // 60)}m {int(total_sec % 60):02d}s ({total_sec:.2f} seconds)")
-    print(f" File Size: {size_mb:.2f} MB")
-    print(f" Total Frames: {total_written_frames} @ 30.0 FPS")
-    print("=" * 60)
+    frames_w = []
+    if cap_w:
+        while True:
+            ret, frame = cap_w.read()
+            if not ret:
+                break
+            frames_w.append(frame)
+        cap_w.release()
+        
+    # Apply initial timestamp trimming for alignment
+    skip_m = int(mobile_trim_sec * fps_m)
+    if skip_m > 0 and len(frames_m) > skip_m + 10:
+        frames_m = frames_m[skip_m:]
+        print(f"[Compositor] Trimmed {skip_m} leading mobile frames ({mobile_trim_sec:.2f}s offset).")
+        
+    skip_w = int(web_trim_sec * fps_w)
+    if skip_w > 0 and len(frames_w) > skip_w + 10:
+        frames_w = frames_w[skip_w:]
+        print(f"[Compositor] Trimmed {skip_w} leading web frames ({web_trim_sec:.2f}s offset).")
+        
+    count_m = len(frames_m)
+    count_w = len(frames_w)
+    print(f"[Compositor] Usable frames: {count_m} mobile frames, {count_w} web frames.")
+    
+    if count_m == 0 and count_w == 0:
+        print("[Compositor] Error: No frames found in input videos!")
+        return False
+        
+    duration_m = count_m / fps_m if count_m > 0 else 0.0
+    duration_w = count_w / fps_w if count_w > 0 else 0.0
+    max_duration = max(duration_m, duration_w, 20.0)
+    total_frames = int(max_duration * fps)
+    
+    # Initialize VideoWriter
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_path, fourcc, fps, (out_w, out_h))
+    
+    header = create_header(w=out_w, h=header_h)
+    
+    # Background for left pane (Dark sleek gradient)
+    left_bg = np.zeros((pane_h, left_w, 3), dtype=np.uint8)
+    for y in range(pane_h):
+        r = int(10 + (y / pane_h) * 8)
+        g = int(12 + (y / pane_h) * 10)
+        b = int(20 + (y / pane_h) * 15)
+        left_bg[y, :] = [b, g, r]
+        
+    # Vertical separator line
+    cv2.line(left_bg, (left_w - 1, 0), (left_w - 1, pane_h), (50, 55, 75), 1)
+
+    print(f"[Compositor] Rendering {total_frames} composite frames ({total_frames/fps:.1f}s) @ 1:1 realtime speed...")
+    
+    for i in range(total_frames):
+        canvas = np.zeros((out_h, out_w, 3), dtype=np.uint8)
+        curr_time = i / fps
+        
+        # 1. Header
+        canvas[0:header_h, 0:out_w] = header
+        
+        # 2. Left Pane (Mobile)
+        left_pane = left_bg.copy()
+        if count_m > 0:
+            idx_m = min(int(curr_time * fps_m), count_m - 1)
+            raw_m = frames_m[idx_m]
+            
+            # Scale mobile frame (preserve aspect ratio)
+            mh, mw = raw_m.shape[:2]
+            scale = min((pane_h - 20) / mh, (left_w - 40) / mw)
+            target_mw = int(mw * scale)
+            target_mh = int(mh * scale)
+            
+            scaled_m = cv2.resize(raw_m, (target_mw, target_mh), interpolation=cv2.INTER_AREA)
+            
+            # Center inside left pane
+            ox = (left_w - target_mw) // 2
+            oy = (pane_h - target_mh) // 2
+            
+            # Phone border / bezel glow
+            cv2.rectangle(left_pane, (ox - 3, oy - 3), (ox + target_mw + 3, oy + target_mh + 3), (80, 90, 120), 2)
+            left_pane[oy:oy+target_mh, ox:ox+target_mw] = scaled_m
+            
+        canvas[header_h:out_h, 0:left_w] = left_pane
+        
+        # 3. Right Pane (Web Dashboard)
+        if count_w > 0:
+            idx_w = min(int(curr_time * fps_w), count_w - 1)
+            raw_w = frames_w[idx_w]
+            scaled_w = cv2.resize(raw_w, (right_w, pane_h), interpolation=cv2.INTER_AREA)
+            canvas[header_h:out_h, left_w:out_w] = scaled_w
+        else:
+            canvas[header_h:out_h, left_w:out_w] = 20 # dark placeholder
+            
+        # 4. Step caption HUD overlay
+        if step_captions:
+            progress = i / total_frames
+            active_caption = step_captions[-1][1]
+            for frac, cap in step_captions:
+                if progress <= frac:
+                    active_caption = cap
+                    break
+            
+            hud_w, hud_h = 760, 44
+            hud_x = left_w + 30
+            hud_y = out_h - 60
+            
+            sub = canvas[hud_y:hud_y+hud_h, hud_x:hud_x+hud_w]
+            overlay = np.zeros(sub.shape, dtype=np.uint8)
+            for y_sub in range(sub.shape[0]):
+                overlay[y_sub, :] = [25, 20, 30]
+            cv2.addWeighted(overlay, 0.85, sub, 0.15, 0, sub)
+            canvas[hud_y:hud_y+hud_h, hud_x:hud_x+hud_w] = sub
+            
+            cv2.rectangle(canvas, (hud_x, hud_y), (hud_x + hud_w, hud_y + hud_h), (241, 102, 99), 2)
+            cv2.putText(canvas, active_caption, (hud_x + 16, hud_y + 28), cv2.FONT_HERSHEY_DUPLEX, 0.52, (255, 255, 255), 1, cv2.LINE_AA)
+
+        out.write(canvas)
+        
+    out.release()
+    print(f"[Compositor] Successfully wrote {output_path} ({os.path.getsize(output_path)/(1024*1024):.2f} MB)")
+    return True
 
 if __name__ == "__main__":
-    main()
+    m_path = "d:/Freelance/KeyFlow/demo_recordings/raw_mobile_demo.mp4"
+    w_path = "d:/Freelance/KeyFlow/demo_recordings/raw_web_demo.mp4"
+    out_path = "d:/Freelance/KeyFlow/demo_recordings/master_e2e_sync_demo.mp4"
+    
+    if len(sys.argv) > 3:
+        m_path = sys.argv[1]
+        w_path = sys.argv[2]
+        out_path = sys.argv[3]
+        
+    composite_side_by_side(m_path, w_path, out_path)

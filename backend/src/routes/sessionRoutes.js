@@ -72,8 +72,8 @@ router.post('/upsert', authenticateToken, async (req, res, next) => {
 
     const saved = await get(
       `SELECT id, user_id, device_name, app_name, window_title, content, character_count, word_count, started_at, updated_at, is_favorite, draft_history, created_at
-       FROM typing_sessions WHERE id = ?`,
-      [id]
+       FROM typing_sessions WHERE id = ? AND user_id = ?`,
+      [id, userId]
     );
 
     res.status(200).json({

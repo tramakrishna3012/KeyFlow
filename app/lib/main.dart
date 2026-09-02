@@ -26,37 +26,14 @@ void main() async {
     } on Object catch (_) {}
   }
 
-  // Load configuration from environment defines (--dart-define) with fallback
-  const supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://nmvwjdtsgzttfrepqprr.supabase.co',
-  );
-  const kHeader = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
-  const kPayload =
-      'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5tdndqZHRzZ3p0dGZyZXBxcHJyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUxOTg4MTAsImV4cCI6MjEwMDc3NDgxMH0';
-  const kSig = '93-OsJYSdfB32_Q0uNE1BVY-rtTJnN_8A06Go_yHsIQ';
-  const defaultAnonKey = '$kHeader.$kPayload.$kSig';
+  // SECURITY FIX: Removed direct Supabase configuration
+  // All data should flow through the KeyFlow backend API with proper authentication
+  // Direct client-side database access bypasses authorization and audit logging
+  
+  // Supabase initialization disabled - using backend API only
+  debugPrint('Supabase direct access disabled for security. Using backend API.');
 
-  const supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: defaultAnonKey,
-  );
-
-  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
-    try {
-      await Supabase.initialize(
-        url: supabaseUrl,
-        publishableKey: supabaseAnonKey,
-        authOptions: FlutterAuthClientOptions(
-          localStorage: SecureAuthStorage(),
-        ),
-      );
-    } on Object catch (e) {
-      debugPrint('Supabase init skipped/error: $e');
-    }
-  }
-
-  // Initialize unified authentication service AFTER Supabase is initialized
+  // Initialize unified authentication service
   await AuthService.instance.initialize();
 
   // Setup app lifecycle listener to purge temp cache on exit

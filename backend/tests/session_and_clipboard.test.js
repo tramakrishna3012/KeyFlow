@@ -3,13 +3,14 @@ const assert = require('node:assert/strict');
 const http = require('http');
 const app = require('../src/app');
 const { initDB } = require('../src/services/db');
+const { runMigrations } = require('../src/services/migrations');
 const { SessionAggregator } = require('./helpers/SessionAggregator');
 
 let server;
 let baseUrl;
 let userToken = '';
 const testEmail = `session_user_${Date.now()}@keyflow.dev`;
-const testPassword = 'Password123!';
+const testPassword = 'TestPassword123!';
 
 function request(path, options = {}) {
   return new Promise((resolve, reject) => {
@@ -45,6 +46,7 @@ function request(path, options = {}) {
 
 test.before(async () => {
   await initDB();
+  await runMigrations();
   server = http.createServer(app);
   await new Promise((resolve) => {
     server.listen(0, () => {

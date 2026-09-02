@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('node:crypto');
 const { authenticateToken } = require('../middleware/auth');
-const { run, get, all } = require('../services/db');
+const { run, get, all, encryptRecord, decryptRecord } = require('../services/db');
 
 function classifyContentType(content) {
   if (!content || !content.trim()) return 'text';
@@ -41,7 +41,7 @@ function classifyContentType(content) {
 
 // ----------------------------------------------------------------------------
 // POST /api/v1/clipboard/insert
-// Ingests copied item with automatic content-type classification
+// Ingests copied item with automatic content-type classification and encryption
 // ----------------------------------------------------------------------------
 router.post('/insert', authenticateToken, async (req, res, next) => {
   try {
@@ -59,23 +59,39 @@ router.post('/insert', authenticateToken, async (req, res, next) => {
     const pinnedInt = isPinned ? 1 : 0;
     const nowIso = new Date().toISOString();
 
+    // Encrypt clipboard content for security (may contain passwords, tokens, etc.)
+    const encrypted = encryptRecord(content);
+
     await run(
-      `INSERT INTO clipboard_entries (id, user_id, device_name, source_app, content, content_type, is_pinned, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, userId, deviceName, sourceApp, content, contentType, pinnedInt, nowIso]
+      `INSERT INTO clipboard_entries (id, user_id, device_name, source_app, content, encrypted_content, iv, auth_tag, content_type, is_pinned, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, userId, deviceName, sourceApp, content.substring(0, 100) + (content.length > 100 ? '...' : ''), encrypted.ciphertext, encrypted.iv, encrypted.authTag, contentType, pinnedInt, nowIso]
     );
 
     const saved = await get(
-      `SELECT id, user_id, device_name, source_app, content, content_type, is_pinned, created_at
-       FROM clipboard_entries WHERE id = ?`,
-      [id]
+      `SELECT id, user_id, device_name, source_app, encrypted_content, iv, auth_tag, content_type, is_pinned, created_at
+       FROM clipboard_entries WHERE id = ? AND user_id = ?`,
+      [id, userId]
     );
+
+    if (!saved) {
+      return res.status(404).json({ error: 'Failed to save clipboard entry' });
+    }
+
+    // Decrypt for response
+    const decryptedContent = decryptRecord(saved.encrypted_content, saved.iv, saved.auth_tag);
 
     res.status(201).json({
       success: true,
       entry: {
-        ...saved,
-        is_pinned: Boolean(saved.is_pinned)
+        id: saved.id,
+        user_id: saved.user_id,
+        device_name: saved.device_name,
+        source_app: saved.source_app,
+        content: decryptedContent,
+        content_type: saved.content_type,
+        is_pinned: Boolean(saved.is_pinned),
+        created_at: saved.created_at
       }
     });
   } catch (err) {
@@ -85,14 +101,14 @@ router.post('/insert', authenticateToken, async (req, res, next) => {
 
 // ----------------------------------------------------------------------------
 // GET /api/v1/clipboard
-// List clipboard entries with pinned items first
+// List clipboard entries with pinned items first (decrypted)
 // ----------------------------------------------------------------------------
 router.get('/', authenticateToken, async (req, res, next) => {
   try {
     const userId = req.user.id;
     const { q, contentType, isPinned, limit = 50, offset = 0 } = req.query;
 
-    let query = `SELECT id, user_id, device_name, source_app, content, content_type, is_pinned, created_at
+    let query = `SELECT id, user_id, device_name, source_app, encrypted_content, iv, auth_tag, content_type, is_pinned, created_at
                  FROM clipboard_entries WHERE user_id = ?`;
     const params = [userId];
 
@@ -115,10 +131,21 @@ router.get('/', authenticateToken, async (req, res, next) => {
     params.push(parseInt(limit, 10) || 50, parseInt(offset, 10) || 0);
 
     const rows = await all(query, params);
-    const entries = rows.map((r) => ({
-      ...r,
-      is_pinned: Boolean(r.is_pinned)
-    }));
+    
+    // Decrypt content for each entry
+    const entries = rows.map((r) => {
+      const decryptedContent = decryptRecord(r.encrypted_content, r.iv, r.auth_tag);
+      return {
+        id: r.id,
+        user_id: r.user_id,
+        device_name: r.device_name,
+        source_app: r.source_app,
+        content: decryptedContent,
+        content_type: r.content_type,
+        is_pinned: Boolean(r.is_pinned),
+        created_at: r.created_at
+      };
+    });
 
     const countRow = await get(
       `SELECT COUNT(*) as total FROM clipboard_entries WHERE user_id = ?`,

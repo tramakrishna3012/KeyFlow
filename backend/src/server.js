@@ -1,12 +1,17 @@
 const app = require('./app');
 const { PORT } = require('./config/env');
 const { initDB } = require('./services/db');
+const { runMigrations } = require('./services/migrations');
 const { runRetentionPurgeJob } = require('./services/retentionService');
 
 async function startServer() {
   try {
     await initDB();
     console.log('[Look System DB] Database tables & indices initialized.');
+
+    // Run database migrations
+    await runMigrations();
+    console.log('[Look System DB] Migrations completed.');
 
     // Schedule daily retention purge
     setInterval(async () => {

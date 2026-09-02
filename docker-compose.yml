@@ -12,7 +12,7 @@ services:
     environment:
       - PORT=4000
       - NODE_ENV=production
-      - JWT_SECRET=look_system_production_secure_secret_key_32_chars
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET environment variable is required}
       - DB_PATH=/app/data/look_system.db
     volumes:
       - look_db_data:/app/data

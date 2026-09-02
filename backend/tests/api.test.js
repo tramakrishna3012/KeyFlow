@@ -129,7 +129,7 @@ test('3. Account Lockout on Consecutive Failed Logins', async () => {
   for (let i = 0; i < 5; i++) {
     const failedRes = await request('/api/v1/auth/login', {
       method: 'POST',
-      body: { email: victimEmail, password: 'WrongPassword!' }
+      body: { email: victimEmail, password: 'WrongPassword123!' }
     });
     assert.strictEqual(failedRes.status, 401);
   }
@@ -137,7 +137,7 @@ test('3. Account Lockout on Consecutive Failed Logins', async () => {
   // 6th attempt should return 423 Locked
   const lockedRes = await request('/api/v1/auth/login', {
     method: 'POST',
-    body: { email: victimEmail, password: 'WrongPassword!' }
+    body: { email: victimEmail, password: 'WrongPassword123!' }
   });
   assert.strictEqual(lockedRes.status, 423);
   assert.match(lockedRes.body.error, /Account temporarily locked/i);
@@ -233,13 +233,13 @@ test('5. Role-Based Access Control (RBAC) Enforcement', async () => {
   // Member token
   const member = await request('/api/v1/auth/register', {
     method: 'POST',
-    body: { email: `member_${Date.now()}@test.com`, password: 'Password123!', fullName: 'Regular User', role: 'member' }
+    body: { email: `member_${Date.now()}@test.com`, password: 'TestPassword123!', fullName: 'Regular User', role: 'member' }
   });
 
   // Admin token
   const admin = await request('/api/v1/auth/register', {
     method: 'POST',
-    body: { email: `admin_${Date.now()}@test.com`, password: 'Password123!', fullName: 'Super Admin', role: 'admin' }
+    body: { email: `admin_${Date.now()}@test.com`, password: 'AdminPassword123!', fullName: 'Super Admin', role: 'admin' }
   });
 
   // Member hitting admin users list -> 403 Forbidden
@@ -259,7 +259,7 @@ test('5. Role-Based Access Control (RBAC) Enforcement', async () => {
 test('6. Privacy, Consent & GDPR Data Subject Rights (DSAR)', async () => {
   const user = await request('/api/v1/auth/register', {
     method: 'POST',
-    body: { email: `privacy_${Date.now()}@test.com`, password: 'Password123!', fullName: 'Privacy User' }
+    body: { email: `privacy_${Date.now()}@test.com`, password: 'PrivacyTest123!', fullName: 'Privacy User' }
   });
   const token = user.body.token;
 
