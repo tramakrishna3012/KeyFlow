@@ -45,6 +45,24 @@ class KeyflowOverlayService : Service() {
             instance?.updateOverlayViews()
         }
 
+        fun hideOverlay() {
+            instance?.let { s ->
+                s.rootContainer?.post {
+                    s.rootContainer?.visibility = View.GONE
+                }
+            }
+        }
+
+        fun restoreOverlay() {
+            instance?.let { s ->
+                s.rootContainer?.post {
+                    if (s.rootContainer?.visibility != View.VISIBLE) {
+                        s.rootContainer?.visibility = View.VISIBLE
+                    }
+                }
+            }
+        }
+
         fun isAccessibilityServiceEnabled(context: Context): Boolean {
             val expectedService = "${context.packageName}/${KeyflowAccessibilityService::class.java.canonicalName}"
             val enabledServices = Settings.Secure.getString(

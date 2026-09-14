@@ -152,6 +152,14 @@ class DartSessionAggregator {
 
     if (text.isEmpty && !isReplacement) return null;
 
+    // Seal active sessions for any other app when switching apps (TC-03)
+    final otherKeys = _activeSessions.keys
+        .where((k) => !k.startsWith('${appName.trim().toLowerCase()}::'))
+        .toList();
+    for (final otherKey in otherKeys) {
+      finalizeSession(otherKey);
+    }
+
     final sessionKey = _getSessionKey(appName, windowTitle, deviceName);
     final now = DateTime.now().millisecondsSinceEpoch;
     final nowIso = DateTime.now().toUtc().toIso8601String();
@@ -159,7 +167,7 @@ class DartSessionAggregator {
     var session = _activeSessions[sessionKey];
     final lastActivity = _lastActivityTimes[sessionKey] ?? 0;
 
-    // 60s termination boundary
+    // 60s termination boundary (TC-02)
     if (session != null && now - lastActivity > sessionTimeoutMs) {
       finalizeSession(sessionKey);
       session = null;

@@ -82,5 +82,55 @@ void main() {
         aggregator.dispose();
       },
     );
+
+    test('TC-03: Session boundary on app switch seals previous app session', () {
+      AggregatedTypingSession? finalizedSession;
+      final aggregator = DartSessionAggregator(
+        onSessionFinalize: (s) => finalizedSession = s,
+      );
+
+      final session1 = aggregator.handleTypingInput(
+        appName: 'Keep Notes',
+        text: 'Notes paragraph content',
+      );
+      expect(session1, isNotNull);
+
+      // Switch to Slack -> Notes session must be sealed
+      final session2 = aggregator.handleTypingInput(
+        appName: 'Slack',
+        text: 'Slack message content',
+      );
+      expect(session2, isNotNull);
+      expect(session2!.appName, equals('Slack'));
+      expect(session2.id, isNot(equals(session1!.id)));
+
+      expect(finalizedSession, isNotNull);
+      expect(finalizedSession!.appName, equals('Keep Notes'));
+      expect(finalizedSession!.isFinalized, isTrue);
+
+      aggregator.dispose();
+    });
+
+    test('TC-02: Inactivity timeout seals session into finalized block', () async {
+      AggregatedTypingSession? finalizedSession;
+      final aggregator = DartSessionAggregator(
+        sessionTimeoutMs: 150,
+        onSessionFinalize: (s) => finalizedSession = s,
+      );
+
+      final session1 = aggregator.handleTypingInput(
+        appName: 'Keep Notes',
+        text: 'Initial block before pause',
+      );
+      expect(session1, isNotNull);
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(finalizedSession, isNotNull);
+      expect(finalizedSession!.id, equals(session1!.id));
+      expect(finalizedSession!.isFinalized, isTrue);
+
+      aggregator.dispose();
+    });
   });
 }

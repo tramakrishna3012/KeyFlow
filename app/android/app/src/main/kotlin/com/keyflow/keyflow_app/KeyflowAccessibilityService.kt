@@ -23,6 +23,27 @@ class KeyflowAccessibilityService : AccessibilityService() {
         private var lastDispatchedPackage: String = ""
         private var lastDispatchedTime: Long = 0L
 
+        private val knownFinancialPackages = setOf(
+            "com.google.android.apps.nbu.paisa.user",
+            "com.phonepe.app",
+            "net.one97.paytm",
+            "in.org.npci.upiapp",
+            "com.sbi.upi",
+            "com.icicibank.imobile",
+            "com.hdfcbank.corebanking",
+            "com.axis.mobile",
+            "com.kotak.imb"
+        )
+        private val financialRegex = Regex(".*(bank|upi|payment|wallet|creditcard|authenticator).*", RegexOption.IGNORE_CASE)
+
+        fun isFinancialOrExcluded(pkg: String): Boolean {
+            val lower = pkg.lowercase()
+            if (knownFinancialPackages.contains(lower)) return true
+            if (exclusionSet.contains(pkg) || exclusionSet.contains(lower)) return true
+            if (financialRegex.matches(lower)) return true
+            return false
+        }
+
         fun updateExclusions(exclusions: List<String>) {
             exclusionSet.clear()
             exclusionSet.addAll(exclusions)
@@ -155,16 +176,34 @@ class KeyflowAccessibilityService : AccessibilityService() {
             return
         }
 
-        if (exclusionSet.contains(packageName)) return
+        // 2. Strict Financial App Exclusions (Zero-Interference Filter)
+        if (isFinancialOrExcluded(packageName)) {
+            // Immediately hide overlay to prevent Android filterTouchesWhenObscured tapjacking protections
+            try {
+                KeyflowOverlayService.hideOverlay()
+            } catch (_: Exception) {}
+            return
+        } else {
+            // Restore overlay when outside financial apps
+            try {
+                KeyflowOverlayService.restoreOverlay()
+            } catch (_: Exception) {}
+        }
 
-        // 2. Ignore pure focus events when no text has been typed
+        // 3. Ignore pure focus events when no text has been typed
         if (event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
             return
         }
 
         val source = try { event.source } catch (_: Exception) { null }
 
-        if (isSensitiveNodeOrEvent(event, source)) return
+        // 4. Hardware Password Protection
+        if (isSensitiveNodeOrEvent(event, source)) {
+            try {
+                source?.recycle()
+            } catch (_: Exception) {}
+            return
+        }
 
         // 3. Extract actual typed text only (NEVER contentDescription or hintText)
         val text = extractText(event, source)
@@ -265,6 +304,21 @@ class KeyflowAccessibilityService : AccessibilityService() {
                         variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
 
                 if (isPasswordVariation) {
+                    android.util.Log.i("KeyflowA11y", "Sensitive: inputType variation password/PIN ($inputType)")
+                    return true
+                }
+            }
+
+            val viewId = source.viewIdResourceName?.lowercase() ?: ""
+            if (viewId.contains("password") || viewId.contains("pin") || viewId.contains("otp") || viewId.contains("cvv")) {
+                android.util.Log.i("KeyflowA11y", "Sensitive: viewId matches credential pattern ($viewId)")
+                return true
+            }
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val hint = source.hintText?.toString()?.lowercase() ?: ""
+                if (hint.contains("password") || hint.contains("pin") || hint.contains("otp") || hint.contains("cvv")) {
+                    android.util.Log.i("KeyflowA11y", "Sensitive: hintText matches credential pattern ($hint)")
                     return true
                 }
             }

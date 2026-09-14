@@ -43,7 +43,7 @@
     "area": "Authentication",
     "test": "User A Registration",
     "expected": "201 Created with JWT",
-    "actual": "201 Created (ID: 7950d6e0-f7c2-49f0-bba6-a62323aa0b48)",
+    "actual": "201 Created (ID: 0406fd2b-9694-481d-8ffe-6bd2df7da0f2)",
     "status": "PASS",
     "evidence": ""
   },
@@ -59,7 +59,7 @@
     "area": "Authentication",
     "test": "User B Registration",
     "expected": "201 Created with JWT",
-    "actual": "201 Created (ID: d963c884-0ef0-4895-b710-44cef950afa2)",
+    "actual": "201 Created (ID: 57038849-2b9f-422f-a248-08e580122c86)",
     "status": "PASS",
     "evidence": ""
   },
@@ -179,7 +179,7 @@
     "area": "Clipboard Encryption & Storage",
     "test": "AES-256-GCM Ciphertext Generation in DB",
     "expected": "Encrypted ciphertext, 12-byte IV, 16-byte AuthTag stored",
-    "actual": "Ciphertext length: 76, IV: 6f7fb0a77830b07898f5f2b5, Tag: 3145bd1c4ee866cf9714c621236d774c",
+    "actual": "Ciphertext length: 76, IV: 9e46b0ed3eca39f8e0a774f8, Tag: 2c336a0332fc0525486bbc3dc4021c92",
     "status": "PASS",
     "evidence": ""
   },

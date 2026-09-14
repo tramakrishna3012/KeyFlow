@@ -8,9 +8,10 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class TestKeyStorage implements SecureKeyStorage {
   @override
-  Future<String> getOrCreateDatabaseKey() async => 'test_performance_key_12345';
+  Future<String> getOrCreateDatabaseKey([String? userEntropy]) async =>
+      'test_performance_key_12345';
   @override
-  Future<void> deleteDatabaseKey() async {}
+  Future<void> deleteDatabaseKey([String? userEntropy]) async {}
 }
 
 void main() {
