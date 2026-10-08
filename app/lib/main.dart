@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
 import 'core/services/cache_cleanup_service.dart';
+import 'core/services/deep_link_service.dart';
 import 'core/services/permission_helper.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
@@ -33,6 +34,9 @@ void main() async {
 
   // Initialize unified authentication service
   await AuthService.instance.initialize();
+
+  // Initialize deep link listener for pairing & quick open
+  await DeepLinkService.instance.initialize();
 
   // Setup app lifecycle listener to purge temp cache on exit
   AppLifecycleListener(

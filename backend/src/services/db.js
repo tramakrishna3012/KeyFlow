@@ -262,6 +262,17 @@ async function initDB() {
     );
   `);
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS pairing_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token TEXT UNIQUE NOT NULL,
+      expires_at TEXT NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
+
   // Create Indices
   await run(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id, started_at);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_applications_session ON applications(session_id, app_name);`);
@@ -274,6 +285,7 @@ async function initDB() {
   await run(`CREATE INDEX IF NOT EXISTS idx_typing_sessions_user ON typing_sessions(user_id, updated_at DESC);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_typing_sessions_app ON typing_sessions(user_id, app_name);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_clipboard_entries_user ON clipboard_entries(user_id, is_pinned DESC, created_at DESC);`);
+  await run(`CREATE INDEX IF NOT EXISTS idx_pairing_tokens ON pairing_tokens(token);`);
 }
 
 module.exports = {

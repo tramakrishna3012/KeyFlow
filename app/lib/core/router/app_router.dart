@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/providers.dart';
 import '../../features/auth/auth_modal.dart';
 import '../../features/auth/auth_screen.dart';
+import '../../features/auth/pairing_screen.dart';
 import '../../features/emoji/emoji_screen.dart';
 import '../../features/history/history_screen.dart';
 import '../../features/home/home_screen.dart';
@@ -25,7 +26,13 @@ final GoRouter appRouter = GoRouter(
   refreshListenable: _authNotifier,
   redirect: (BuildContext context, GoRouterState state) {
     final isLoggingIn = state.matchedLocation == '/login';
+    final isPairing = state.matchedLocation.startsWith('/pair');
     final isAuthenticated = _authNotifier.isAuthenticated;
+
+    // Pairing flow is accessible without prior authentication
+    if (isPairing) {
+      return null;
+    }
 
     // Unauthenticated users attempting to access protected routes -> redirect to /login
     if (!isAuthenticated && !isLoggingIn) {
@@ -41,6 +48,16 @@ final GoRouter appRouter = GoRouter(
   },
   routes: [
     GoRoute(path: '/login', builder: (context, state) => const AuthScreen()),
+    GoRoute(
+      path: '/pair',
+      builder: (context, state) {
+        final token =
+            state.uri.queryParameters['token'] ??
+            state.uri.queryParameters['pairing_token'] ??
+            '';
+        return PairingScreen(token: token);
+      },
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) =>
           _ScaffoldWithNavBar(navigationShell: navigationShell),

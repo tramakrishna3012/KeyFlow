@@ -65,6 +65,7 @@ app.use('/api/v1/sessions', sessionRoutes);
 app.use('/api/v1/clipboard', clipboardRoutes);
 
 // Compatibility Aliases
+app.use('/api/auth', authRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/clipboard', clipboardRoutes);
 

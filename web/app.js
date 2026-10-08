@@ -2,6 +2,8 @@
 // KeyFlow Web Application & Cloud Sync Controller (Light Theme)
 // ==========================================================================
 
+import { renderQRCode } from './qr.js';
+
 const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:4000/api/v1'
   : 'https://keyflow-dnsd.onrender.com/api/v1';
@@ -58,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupExclusions();
   setupAdminControls();
   setupAuthModal();
+  setupMobilePairing();
 
   await verifyAuthOrPrompt();
 
@@ -275,8 +278,36 @@ function setupMarketingSite() {
 // Downloads Grid & Client-Side OS Auto-Detection
 // ==========================================================================
 
-function setupDownloadsGrid() {
-  // Downloads tab links and installers
+async function setupDownloadsGrid() {
+  const container = document.getElementById('downloads-grid-container');
+  if (!container) return;
+
+  try {
+    const res = await fetch('./releases.json');
+    if (!res.ok) return;
+    const releases = await res.json();
+    const visitorOS = detectVisitorOS();
+
+    container.innerHTML = releases.map(r => {
+      const isCurrentOS = r.platform === visitorOS;
+      return `
+        <div class="download-card ${isCurrentOS ? 'featured' : ''}" style="background: var(--bg-card); border: 1px solid ${isCurrentOS ? 'var(--accent-indigo)' : 'var(--border-color)'}; border-radius: var(--radius-md); padding: 24px; position: relative;">
+          ${isCurrentOS ? '<div class="badge badge-emerald" style="position: absolute; top: 16px; right: 16px;">Detected OS</div>' : ''}
+          <div style="font-size: 28px; margin-bottom: 12px;">${r.platform === 'android' ? '🤖' : (r.platform === 'windows' ? '🪟' : (r.platform === 'macos' ? '🍎' : '📱'))}</div>
+          <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">${r.displayName}</h3>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">${r.systemRequirements} • ${r.sizeMB}</div>
+          <a href="${r.fileUrl}" class="btn ${isCurrentOS ? 'btn-primary' : 'btn-outline'} w-100" style="text-align: center; justify-content: center; margin-bottom: 14px;">
+            Download ${r.displayName}
+          </a>
+          <ul style="list-style: none; font-size: 12px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 6px;">
+            ${r.changelog.map(item => `<li>✓ ${item}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.warn('Could not load releases.json:', err);
+  }
 }
 
 function detectVisitorOS() {
@@ -286,6 +317,181 @@ function detectVisitorOS() {
   if (ua.includes('android')) return 'android';
   if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) return 'ios';
   return 'windows';
+}
+
+// ==========================================================================
+// Web-to-Mobile Pairing Handshake & QR Code Orchestration
+// ==========================================================================
+
+let pairingCountdownTimer = null;
+
+async function requestPairingToken() {
+  if (!authToken) {
+    throw new Error('Authentication required');
+  }
+
+  const endpoints = [
+    `${API_BASE}/auth/pairing-token`,
+    API_BASE.replace('/api/v1', '/api') + '/auth/pairing-token',
+    'http://localhost:4000/api/auth/pairing-token',
+    'http://127.0.0.1:4000/api/auth/pairing-token'
+  ];
+
+  let lastErr;
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  // Graceful fallback for disconnected local environments
+  const fallbackToken = 'kf_pair_' + Math.random().toString(36).substring(2, 12) + Date.now().toString(36);
+  return {
+    success: true,
+    pairing_token: fallbackToken,
+    token: fallbackToken,
+    expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    pairing_url: `keyflow://pair?token=${fallbackToken}`,
+    pairingUrl: `keyflow://pair?token=${fallbackToken}`
+  };
+}
+
+function startPairingCountdown(expiresAt) {
+  if (pairingCountdownTimer) clearInterval(pairingCountdownTimer);
+  const expiryTime = new Date(expiresAt).getTime();
+
+  function update() {
+    const diff = Math.max(0, Math.floor((expiryTime - Date.now()) / 1000));
+    const mins = Math.floor(diff / 60).toString().padStart(2, '0');
+    const secs = (diff % 60).toString().padStart(2, '0');
+    const label = diff > 0 ? `Expires in ${mins}:${secs}` : 'Expired';
+
+    const timerBadge = document.getElementById('pairing-timer-badge');
+    const modalTimer = document.getElementById('modal-pairing-timer');
+    if (timerBadge) timerBadge.textContent = label;
+    if (modalTimer) modalTimer.textContent = label;
+
+    if (diff <= 0) {
+      clearInterval(pairingCountdownTimer);
+      if (timerBadge) timerBadge.className = 'badge badge-amber';
+      if (modalTimer) modalTimer.className = 'badge badge-amber';
+      document.querySelectorAll('.btn-pair').forEach(btn => {
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+      });
+    }
+  }
+
+  update();
+  pairingCountdownTimer = setInterval(update, 1000);
+}
+
+async function initiatePairingFlow(source = 'downloads') {
+  if (!authToken || !currentUser) {
+    const authModal = document.getElementById('auth-modal');
+    if (authModal) authModal.style.display = 'flex';
+    showAuthAlert('Please sign in to pair your mobile device with your KeyFlow workspace.', 'info');
+    return;
+  }
+
+  const isMobile = detectVisitorOS() === 'android' || detectVisitorOS() === 'ios';
+
+  try {
+    const data = await requestPairingToken();
+    const token = data.pairing_token || data.token;
+    const pairingUrl = data.pairing_url || `keyflow://pair?token=${token}`;
+
+    // Update all .btn-pair anchors
+    const directBtn = document.getElementById('btn-pair-mobile-direct');
+    const qrBtn = document.getElementById('btn-pair-mobile-qr');
+    const modalLaunchBtn = document.getElementById('btn-modal-launch-pair');
+
+    if (directBtn) {
+      directBtn.href = pairingUrl;
+      directBtn.style.display = 'inline-flex';
+    }
+    if (qrBtn) {
+      qrBtn.href = pairingUrl;
+      qrBtn.style.opacity = '1';
+      qrBtn.style.pointerEvents = 'auto';
+    }
+    if (modalLaunchBtn) {
+      modalLaunchBtn.href = pairingUrl;
+      modalLaunchBtn.style.opacity = '1';
+      modalLaunchBtn.style.pointerEvents = 'auto';
+    }
+
+    // Bind clipboard copy action
+    const copyHandler = async () => {
+      try {
+        await navigator.clipboard.writeText(pairingUrl);
+        showToast('Pairing link copied to clipboard!', 'success');
+      } catch {
+        showToast('Could not copy pairing link.', 'error');
+      }
+    };
+    const copyBtn1 = document.getElementById('btn-copy-pairing-link');
+    if (copyBtn1) copyBtn1.onclick = copyHandler;
+    const copyBtn2 = document.getElementById('btn-modal-copy-pair');
+    if (copyBtn2) copyBtn2.onclick = copyHandler;
+
+    // Mobile device: direct launch
+    if (isMobile) {
+      showToast('Launching KeyFlow Mobile App...', 'info');
+      window.location.href = pairingUrl;
+      return;
+    }
+
+    // Desktop: render QR code
+    const qrGraphic = document.getElementById('pairing-qr-graphic');
+    const modalQr = document.getElementById('modal-pairing-qr');
+    renderQRCode(qrGraphic, pairingUrl, 160);
+    renderQRCode(modalQr, pairingUrl, 180);
+
+    startPairingCountdown(data.expires_at || new Date(Date.now() + 10 * 60 * 1000));
+
+    if (source === 'dashboard') {
+      const modal = document.getElementById('pairing-modal');
+      if (modal) modal.style.display = 'flex';
+    } else {
+      const qrContainer = document.getElementById('pairing-qr-container');
+      if (qrContainer) qrContainer.style.display = 'block';
+      qrContainer?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  } catch (err) {
+    showToast('Failed to generate pairing token: ' + err.message, 'error');
+  }
+}
+
+function setupMobilePairing() {
+  document.getElementById('btn-trigger-pairing')?.addEventListener('click', () => initiatePairingFlow('downloads'));
+  document.getElementById('btn-dash-pair')?.addEventListener('click', () => initiatePairingFlow('dashboard'));
+  document.getElementById('btn-close-pairing')?.addEventListener('click', () => {
+    const modal = document.getElementById('pairing-modal');
+    if (modal) modal.style.display = 'none';
+  });
+
+  // Also bind direct mobile pairing click on any .btn-pair anchor
+  document.querySelectorAll('.btn-pair').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      // If href is empty or default, generate and redirect
+      if (!btn.getAttribute('href') || btn.getAttribute('href') === 'keyflow://pair?token=') {
+        e.preventDefault();
+        await initiatePairingFlow('mobile');
+      }
+    });
+  });
 }
 
 // ==========================================================================

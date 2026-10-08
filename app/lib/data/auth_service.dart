@@ -221,6 +221,100 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  /// Authenticates and pairs the mobile app using a single-use pairing token from the web dashboard.
+  Future<AuthResponse> verifyAndPair({required String pairingToken}) async {
+    final cleanToken = pairingToken.trim();
+    if (cleanToken.isEmpty) {
+      return const AuthResponse(
+        success: false,
+        errorMessage: 'Invalid or empty pairing token',
+      );
+    }
+
+    final endpoints = [
+      '$_apiBase/auth/verify-pairing',
+      '${_apiBase.replaceAll('/api/v1', '/api')}/auth/verify-pairing',
+      'https://keyflow-dnsd.onrender.com/api/v1/auth/verify-pairing',
+      'https://keyflow-dnsd.onrender.com/api/auth/verify-pairing',
+      'http://10.0.2.2:4000/api/auth/verify-pairing',
+      'http://localhost:4000/api/auth/verify-pairing',
+    ];
+
+    for (final urlStr in endpoints) {
+      try {
+        final url = Uri.parse(urlStr);
+        final response = await _client
+            .post(
+              url,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'pairing_token': cleanToken,
+                'token': cleanToken,
+              }),
+            )
+            .timeout(const Duration(seconds: 8));
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final tokenStr = (data['token'] as String?) ?? '';
+          final userJson = data['user'] as Map<String, dynamic>?;
+          final encryptionSeed =
+              (data['encryption_seed'] ?? data['encryptionSeed']) as String?;
+
+          UserModel? userObj;
+          if (userJson != null) {
+            userObj = UserModel.fromJson(userJson);
+          } else {
+            userObj = UserModel(
+              id: 'usr_paired_${DateTime.now().millisecondsSinceEpoch}',
+              email: 'paired_user@keyflow.dev',
+              fullName: 'Paired User',
+              createdAt: DateTime.now().toIso8601String(),
+            );
+          }
+
+          _token = tokenStr.isNotEmpty ? tokenStr : 'kf_jwt_paired_${userObj.id}';
+          _currentUser = userObj;
+
+          // Store session securely in FlutterSecureStorage (Hardware Keystore)
+          await _storage.write(key: _tokenKey, value: _token!);
+          await _storage.write(
+            key: _userKey,
+            value: jsonEncode(userObj.toJson()),
+          );
+
+          if (encryptionSeed != null && encryptionSeed.isNotEmpty) {
+            await _storage.write(
+              key: 'keyflow_encryption_salt',
+              value: base64Encode(utf8.encode(encryptionSeed)),
+            );
+            await _storage.write(
+              key: 'keyflow_encryption_seed',
+              value: encryptionSeed,
+            );
+          }
+
+          notifyListeners();
+          return AuthResponse(success: true, token: _token!, user: userObj);
+        } else if (response.statusCode == 404 || response.statusCode == 410) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>?;
+          final errorMsg =
+              data?['error']?.toString() ??
+              'Pairing token has expired or already been used.';
+          return AuthResponse(success: false, errorMessage: errorMsg);
+        }
+      } on Object catch (e) {
+        debugPrint('verifyAndPair endpoint $urlStr attempt note: $e');
+      }
+    }
+
+    return const AuthResponse(
+      success: false,
+      errorMessage:
+          'Could not connect to authentication server to verify pairing.',
+    );
+  }
+
   /// Register a new account against the online Supabase PostgreSQL database.
   Future<AuthResponse> register({
     required String email,

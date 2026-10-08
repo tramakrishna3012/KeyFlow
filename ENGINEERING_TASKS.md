@@ -1,17 +1,41 @@
-# Comprehensive Engineering & Testing Specification: KeyFlow Enterprise System
+# Technical Specification & Verification Plan: KeyFlow Multi-Platform Ecosystem
 
-Act as an Autonomous Principal Mobile Security Architect, Full-Stack Systems Engineer, and QA Automation Lead. Execute the complete refactor, code fixes, and automated E2E test loop on the connected Motorola Edge 40 (`ZD222GYVTF`).
+Act as a Principal Software Engineer, Mobile Architect, and QA Automation Lead. Execute the web platform audit, resolve the mobile App Info launchability issue without altering core synchronization or privacy logic, run end-to-end device verification on Motorola Edge 40 (Device: ZD222GYVTF), and generate dual demonstration video artifacts.
 
----
+STRICT CONSTRAINT: Do NOT alter or remove any existing encryption (SQLCipher), session aggregation debounce timers, privacy field masking, or background service persistence. Retain all existing core business logic intact.
 
-## 1. IDENTITY & LAUNCHER CONFIGURATION (HEADLESS UTILITY MODE)
+================================================================================
+PHASE 1: WEB APPLICATION PLATFORM AUDIT & RESOLUTION (FIRST PRIORITY)
+================================================================================
+Perform a complete diagnostic audit on the Web Application (/web and backend at keyflow.tramakrishna3012.workers.dev / local server):
 
-1. **Manifest Configuration (`app/android/app/src/main/AndroidManifest.xml`)**:
-   - Update application label to: `android:label="System_Key"`
-   - Configure default native OS utility icon (`@mipmap/ic_launcher`).
-   - Remove `<category android:name="android.intent.category.LAUNCHER" />` from `MainActivity` so the app is omitted from the main application drawer.
-   - Retain `<action android:name="android.intent.action.MAIN" />` to allow launching directly via **Android Settings -> Apps -> System_Key -> "Open"**.
-   - Add custom deep-link scheme:
+1. Platform Health & Network Connectivity:
+   - Test GET /api/health and verify HTTP 200 response with valid JSON payload.
+   - Confirm CORS headers permit requests from web dashboard origins.
+2. Authentication & Account Routing:
+   - Audit web/app.js authentication flows. Verify new user registration (Sign Up) and user login (Sign In) function reliably without 404s, unhandled promise rejections, or infinite loaders.
+   - Verify JWT session token persistence in localStorage across page refreshes.
+   - Ensure UI cards and navigation headers are free of any legacy prototype branding or mislabeled backend references.
+3. Real-Time Data Streams:
+   - Inspect TypingStreamFeed and ClipboardHistoryFeed components. Confirm dynamic polling (1.5s interval) or WebSocket updates render incoming data records promptly.
+   - Audit light-theme contrast ratios and resolve any layout clipping or responsive flex overflows.
+
+================================================================================
+PHASE 2: MOBILE "APP INFO OPEN" BUTTON & DIRECT LAUNCH INTEGRATION
+================================================================================
+Resolve the issue where Android Settings -> App Info has the "Open" button disabled or greyed out:
+
+1. AndroidManifest.xml (app/android/app/src/main/AndroidManifest.xml):
+   - Verify MainActivity declares android:exported="true".
+   - Add category.INFO inside MainActivity intent-filter under action.MAIN:
+     ```xml
+     <intent-filter>
+         <action android:name="android.intent.action.MAIN" />
+         <category android:name="android.intent.category.INFO" />
+     </intent-filter>
+     ```
+     (Note: category.INFO instructs the Android Package Manager that the application can be launched directly from OS Settings without requiring a default home-screen launcher icon).
+   - Register the deep-link intent filter:
      ```xml
      <intent-filter>
          <action android:name="android.intent.action.VIEW" />
@@ -20,108 +44,58 @@ Act as an Autonomous Principal Mobile Security Architect, Full-Stack Systems Eng
          <data android:scheme="keyflow" android:host="open" />
      </intent-filter>
      ```
-2. **Quick Settings Tile (`KeyflowTileService.kt`)**:
-   - Implement an Android `TileService` labeled "System Key" with system utility toggle icon to allow single-tap opening of the credential unlock screen from the notification shade.
+   - Keep existing KeyflowTileService (Quick Settings Tile) intact.
+2. Web Portal Launch Bridge (web/index.html or download page):
+   - Add a direct launch action for mobile browsers:
+     `<a href="keyflow://open" class="btn-open-app">Open Installed App</a>`
+   - Enables users to launch directly into the registration view immediately after APK installation.
 
----
+================================================================================
+PHASE 3: VERIFICATION RUNBOOK ON MOTOROLA EDGE 40 (ZD222GYVTF)
+================================================================================
+Execute automated verification on the connected device:
 
-## 2. DATABASE CIPHER / DECIPHER ENGINE (SQLCIPHER)
+1. Build & Deploy:
+   - Compile debug APK: cd app && flutter build apk --debug
+   - Install to device: adb -s ZD222GYVTF install -r build/app/outputs/flutter-apk/app-debug.apk
+2. Launch Verification:
+   - Test launch via deep link: adb -s ZD222GYVTF shell am start -a android.intent.action.VIEW -d "keyflow://open"
+   - Confirm MainActivity gains foreground focus via dumpsys window displays.
+3. Functional Acceptance Criteria:
+   - [PASS/FAIL] Mobile App launches into Sign Up view via App Info and deep link.
+   - [PASS/FAIL] Complete account registration with test credentials (client.test@keyflow.io / Password#2026).
+   - [PASS/FAIL] Enable accessibility helper service in Android Settings; confirm status changes to Active.
+   - [PASS/FAIL] Input sample sentence in Keep Notes; confirm 1 consolidated paragraph card is created.
+   - [PASS/FAIL] Log in to Web Dashboard using identical credentials; confirm the synchronized card renders in real time.
 
-1. **Local Storage Encryption (`app/lib/core/services/database_helper.dart`)**:
-   - Integrate and configure `sqflite_sqlcipher`.
-   - On account login/signup, derive a high-entropy encryption key via `flutter_secure_storage` backed by the **Android Hardware Keystore** and user credentials.
-   - Initialize database with `openDatabase(path, password: derivedKey)`.
-   - Verify on-disk SQLite file is 100% encrypted ciphertext (`file is encrypted or is not a database`).
-   - All read/write operations must require an authenticated session; no data is decipherable without valid user credentials.
+================================================================================
+PHASE 4: DUAL INDEPENDENT DEMONSTRATION VIDEOS
+================================================================================
+Produce TWO separate, fully playable, high-definition (1080p @ 30fps) videos in demo_recordings/:
 
----
+VIDEO 1: Mobile Client Onboarding & Launch Tutorial
+- Artifact: demo_recordings/01_mobile_install_and_signup.mp4
+- Content:
+  1. Demonstration of APK installation completion.
+  2. Launching the application via:
+     - Method A: Android Settings -> Apps -> KeyFlow -> Tapping the active "Open" button.
+     - Method B: Tapping the "Open Installed App" browser bridge.
+  3. Client Registration: Filling the Sign Up form (Email, Password) and submitting.
+  4. Permissions Onboarding: Navigating to Android Accessibility settings, enabling the helper service, and returning to the active dashboard.
 
-## 3. ZERO-INTERFERENCE FILTER FOR FINANCIAL APPS & CREDENTIALS
+VIDEO 2: Web Console Credential Access & Cross-Device Sync
+- Artifact: demo_recordings/02_web_cross_device_sync.mp4
+- Content:
+  1. Opening keyflow.tramakrishna3012.workers.dev in the browser.
+  2. Signing in to the web console using the exact same mobile test credentials.
+  3. Live Cross-Device Sync:
+     - Mobile user inputs a note block in Google Keep.
+     - Web Dashboard Typing Stream receives and renders the aggregated card after the 2.5s debounce.
+     - Mobile copies a URL -> Web Clipboard tab displays the URL card with 1-click copy.
+  4. Privacy Safeguards: Demonstrating that secure password fields are strictly omitted from sync streams.
 
-1. **Financial App Exclusions (`KeyflowAccessibilityService.kt`)**:
-   - Before evaluating window node hierarchies, inspect `event.packageName`.
-   - Exclude the following packages immediately with early return (`return`):
-     * `com.google.android.apps.nbu.paisa.user` (Google Pay)
-     * `com.phonepe.app` (PhonePe)
-     * `net.one97.paytm` (Paytm)
-     * `in.org.npci.upiapp` (BHIM)
-     * `com.sbi.upi`, `com.icicibank.imobile`, `com.hdfcbank.corebanking`, `com.axis.mobile`, `com.kotak.imb`
-     * Regex check: `.*(bank|upi|payment|wallet|creditcard|authenticator).*`
-   - If a floating overlay is present, immediately set `visibility = View.GONE` to prevent Android `filterTouchesWhenObscured` tapjacking protections.
-2. **Hardware Password Protection**:
-   - If `sourceNode.isPassword == true` or input type matches `TYPE_TEXT_VARIATION_PASSWORD`, `TYPE_NUMBER_VARIATION_PASSWORD`, or numeric PIN/OTP fields:
-     * Immediately call `sourceNode.recycle()` and drop the event.
-     * Never log, buffer, or sync any credential data.
-
----
-
-## 4. SESSION AGGREGATION & DEBOUNCE ENGINE
-
-1. **Consolidated Paragraph Aggregation**:
-   - Structure text data as:
-     `Session (Date) -> Application Name -> Consolidated Paragraph Text`
-   - Implement a **2.5-second inactivity debounce timer** in memory.
-   - Do NOT record individual keystroke rows. Push an update/upsert only after 2.5s of typing silence.
-2. **Session Boundaries**:
-   - Seal the active session into a finalized paragraph card when:
-     * Active package name changes.
-     * Inactivity exceeds 60 seconds.
-     * The input field loses focus or is submitted.
-
----
-
-## 5. SCREEN RECORDING COMPATIBILITY FOR QA
-
-1. **Bypass FLAG_SECURE in Debug (`MainActivity.kt`)**:
-   - Wrap `FLAG_SECURE` configuration inside `if (!kDebugMode)`.
-   - Ensure `adb screenrecord`, `scrcpy`, and automated recording scripts display all views without black frames during testing.
-
----
-
-## 6. AUTONOMOUS E2E TEST & REPAIR LOOP (MOTOROLA EDGE 40)
-
-Target Device: `ZD222GYVTF`
-
-1. **Pre-flight Device Configuration**:
-   ```bash
-   adb -s ZD222GYVTF shell input keyevent 224
-   adb -s ZD222GYVTF shell input swipe 540 2000 540 500 150
-   adb -s ZD222GYVTF shell input keyevent 82
-   adb -s ZD222GYVTF shell settings put secure enabled_accessibility_services com.keyflow.keyflow_app/com.keyflow.keyflow_app.KeyflowAccessibilityService
-   adb -s ZD222GYVTF shell settings put secure accessibility_enabled 1
-   adb -s ZD222GYVTF shell dumpsys deviceidle whitelist +com.keyflow.keyflow_app
-Execution Runner:
-
-Run python scripts/motorola_authenticated_manual_e2e.py.
-
-Verify Mobile App authentication with test account (user@keyflow.dev / SecurePassword123!).
-
-Launch Web Dashboard (port 3000/5173) with matching credentials.
-
-Test Sequence:
-
-TC-01: Type multi-line sentence in Notes -> confirm 1 consolidated paragraph card appears on Web dashboard after 2.5s.
-
-TC-02: Open Payment/Banking App -> confirm 0 bytes logged, zero interference or warning popups.
-
-TC-03: Type in Password field -> confirm 0 characters logged.
-
-TC-04: Copy URL -> confirm clipboard card syncs to Web.
-
-Dual-Pane Video Compositing & Self-Inspection:
-
-Composite mobile recording (left) and web dashboard (right) into demo_recordings/master_e2e_sync_demo.mp4 via FFmpeg:
--c:v libx264 -pix_fmt yuv420p -movflags +faststart -r 30
-
-Validate video: ensure duration >= 35s, dimensions 1920x1080, and zero blank/black frames.
-
-If any test or frame check fails, resolve code issues and repeat the run.
-
-7. FINAL DELIVERABLES
-Updated and clean codebase passing flutter analyze.
-
-Verified composite demonstration video: demo_recordings/master_e2e_sync_demo.mp4.
-
-High-resolution client tutorial video: demo_recordings/client_setup_tutorial.mp4 demonstrating app launch via App Info, credential login, paragraph history, and sync.
-
-Comprehensive deployment manual: CLIENT_SETUP_GUIDE.md detailing step-by-step setup and verification instructions.
+================================================================================
+PHASE 5: DELIVERABLE INTEGRITY
+================================================================================
+1. Verify both MP4 files are valid, playable containers with proper moov atom placement (libx264, yuv420p, +faststart).
+2. Update CLIENT_SETUP_GUIDE.md detailing exact launch steps and web verification for client review.
