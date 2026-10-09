@@ -812,6 +812,16 @@ function setupDashboardControls() {
     await refreshAllDashboardData();
     showToast('Telemetry refreshed.', 'success');
   });
+
+  document.getElementById('btn-launch-device')?.addEventListener('click', (e) => {
+    showToast('Launching KeyFlow Companion (keyflow://open)...', 'info');
+    const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (!isMobile) {
+      setTimeout(() => {
+        showToast('Tip: Use "Pair Mobile App" to scan QR code from your mobile device.', 'info');
+      }, 1500);
+    }
+  });
 }
 
 // ==========================================================================

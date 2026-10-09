@@ -232,13 +232,17 @@ class AuthService extends ChangeNotifier {
     }
 
     final endpoints = [
+      'http://localhost:4000/api/v1/auth/verify-pairing',
+      'http://localhost:4000/api/auth/verify-pairing',
       '$_apiBase/auth/verify-pairing',
       '${_apiBase.replaceAll('/api/v1', '/api')}/auth/verify-pairing',
       'https://keyflow-dnsd.onrender.com/api/v1/auth/verify-pairing',
       'https://keyflow-dnsd.onrender.com/api/auth/verify-pairing',
+      'http://10.0.2.2:4000/api/v1/auth/verify-pairing',
       'http://10.0.2.2:4000/api/auth/verify-pairing',
-      'http://localhost:4000/api/auth/verify-pairing',
     ];
+
+    String? lastErrorMsg;
 
     for (final urlStr in endpoints) {
       try {
@@ -252,7 +256,7 @@ class AuthService extends ChangeNotifier {
                 'token': cleanToken,
               }),
             )
-            .timeout(const Duration(seconds: 8));
+            .timeout(const Duration(seconds: 4));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
           final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -297,20 +301,23 @@ class AuthService extends ChangeNotifier {
           notifyListeners();
           return AuthResponse(success: true, token: _token!, user: userObj);
         } else if (response.statusCode == 404 || response.statusCode == 410) {
-          final data = jsonDecode(response.body) as Map<String, dynamic>?;
-          final errorMsg =
-              data?['error']?.toString() ??
-              'Pairing token has expired or already been used.';
-          return AuthResponse(success: false, errorMessage: errorMsg);
+          try {
+            final data = jsonDecode(response.body) as Map<String, dynamic>?;
+            if (data != null && data.containsKey('error')) {
+              lastErrorMsg = data['error']?.toString();
+            }
+          } on Object catch (_) {
+            // Non-JSON response, continue trying remaining endpoints
+          }
         }
       } on Object catch (e) {
         debugPrint('verifyAndPair endpoint $urlStr attempt note: $e');
       }
     }
 
-    return const AuthResponse(
+    return AuthResponse(
       success: false,
-      errorMessage:
+      errorMessage: lastErrorMsg ??
           'Could not connect to authentication server to verify pairing.',
     );
   }

@@ -37,14 +37,14 @@
     "icon": "android",
     "version": "v1.0.0",
     "releaseDate": "2026-08-22",
-    "fileUrl": "https://github.com/tramakrishna3012/KeyFlow/releases/download/v1.0.0/app-arm64-v8a-release.apk",
-    "sizeMB": "67.0 MB",
+    "fileUrl": "https://github.com/tramakrishna3012/KeyFlow/releases/download/v1.0.0/KeyFlow.apk",
+    "sizeMB": "68.7 MB",
     "systemRequirements": "Android 8.0 (API 26) or higher",
     "changelog": [
+      "Headless system companion with zero launcher clutter",
+      "Web-to-mobile cryptographic pairing handshake",
       "Accessibility Service background text assist",
-      "Automatic midnight daily session rollover",
-      "Sensitive OTP and credit card redactor",
-      "Encrypted cross-device cloud synchronization"
+      "Sensitive OTP and credit card redactor"
     ]
   },
   {

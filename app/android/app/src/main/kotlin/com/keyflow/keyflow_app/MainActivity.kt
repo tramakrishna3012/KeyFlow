@@ -37,6 +37,10 @@ class MainActivity : FlutterActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        val isDemoIntent = intent.getBooleanExtra("DEMO_MODE", false)
+        if (isDemoIntent) {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
         val link = intent.dataString
         if (link != null) {
             deepLinkChannel?.invokeMethod("onDeepLink", link)

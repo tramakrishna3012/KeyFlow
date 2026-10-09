@@ -46,7 +46,7 @@ app.use(express.json({ limit: '5mb' }));
 app.use(rateLimiter({ windowMs: 60 * 1000, maxRequests: 200 }));
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get(['/health', '/api/health', '/api/v1/health'], (req, res) => {
   res.json({
     status: 'healthy',
     service: 'Look System API',

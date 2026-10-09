@@ -55,16 +55,9 @@ class DeepLinkService {
     if (uri.host == 'pair' || uri.path.contains('pair')) {
       final token = uri.queryParameters['token'] ?? uri.queryParameters['pairing_token'];
       if (token != null && token.isNotEmpty) {
-        debugPrint('[DeepLinkService] Verifying pairing token: $token');
-        final response = await _authService.verifyAndPair(pairingToken: token);
-        if (response.success) {
-          debugPrint('[DeepLinkService] Mobile pairing successful! Navigating to /home');
-          appRouter.go('/home');
-          return true;
-        } else {
-          debugPrint('[DeepLinkService] Mobile pairing failed: ${response.errorMessage}');
-          return false;
-        }
+        debugPrint('[DeepLinkService] Navigating to /pair with token: $token');
+        appRouter.go('/pair?token=$token');
+        return true;
       }
     }
 
