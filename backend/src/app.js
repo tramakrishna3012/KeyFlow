@@ -46,14 +46,17 @@ app.use(express.json({ limit: '5mb' }));
 app.use(rateLimiter({ windowMs: 60 * 1000, maxRequests: 200 }));
 
 // Health check endpoint
-app.get(['/health', '/api/health', '/api/v1/health'], (req, res) => {
+const healthHandler = (req, res) => {
   res.json({
     status: 'healthy',
     service: 'Look System API',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.0.0',
   });
-});
+};
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
+app.get('/api/v1/health', healthHandler);
 
 // API Routes
 app.use('/api/v1/auth', authRoutes);

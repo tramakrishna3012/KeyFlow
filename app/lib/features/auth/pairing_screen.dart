@@ -113,8 +113,8 @@ class _PairingScreenState extends State<PairingScreen> {
               _isLoading
                   ? 'Verifying cryptographic pairing token...'
                   : (_errorMessage != null
-                      ? 'Pairing could not be completed'
-                      : 'Authenticated! Loading your workspace...'),
+                        ? 'Pairing could not be completed'
+                        : 'Authenticated! Loading your workspace...'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,

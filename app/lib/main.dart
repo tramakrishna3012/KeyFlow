@@ -28,9 +28,11 @@ void main() async {
   // SECURITY FIX: Removed direct Supabase configuration
   // All data should flow through the KeyFlow backend API with proper authentication
   // Direct client-side database access bypasses authorization and audit logging
-  
+
   // Supabase initialization disabled - using backend API only
-  debugPrint('Supabase direct access disabled for security. Using backend API.');
+  debugPrint(
+    'Supabase direct access disabled for security. Using backend API.',
+  );
 
   // Initialize unified authentication service
   await AuthService.instance.initialize();

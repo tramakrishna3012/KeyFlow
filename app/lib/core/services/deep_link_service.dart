@@ -10,7 +10,9 @@ class DeepLinkService {
     : _authService = authService ?? AuthService.instance;
 
   static final DeepLinkService instance = DeepLinkService();
-  static const MethodChannel _channel = MethodChannel('com.keyflow.app/deeplink');
+  static const MethodChannel _channel = MethodChannel(
+    'com.keyflow.app/deeplink',
+  );
 
   final AuthService _authService;
   bool _initialized = false;
@@ -32,11 +34,15 @@ class DeepLinkService {
     try {
       final initialLink = await _channel.invokeMethod<String>('getInitialLink');
       if (initialLink != null && initialLink.isNotEmpty) {
-        debugPrint('[DeepLinkService] Initial deep link detected: $initialLink');
+        debugPrint(
+          '[DeepLinkService] Initial deep link detected: $initialLink',
+        );
         await handleLink(initialLink);
       }
     } on PlatformException catch (e) {
-      debugPrint('[DeepLinkService] PlatformException getting initial link: $e');
+      debugPrint(
+        '[DeepLinkService] PlatformException getting initial link: $e',
+      );
     } on Object catch (e) {
       debugPrint('[DeepLinkService] Error getting initial link: $e');
     }
@@ -49,11 +55,14 @@ class DeepLinkService {
       return false;
     }
 
-    debugPrint('[DeepLinkService] Handling link: scheme=${uri.scheme}, host=${uri.host}, path=${uri.path}');
+    debugPrint(
+      '[DeepLinkService] Handling link: scheme=${uri.scheme}, host=${uri.host}, path=${uri.path}',
+    );
 
     // 1. Mobile pairing handshake: keyflow://pair?token=<TOKEN>
     if (uri.host == 'pair' || uri.path.contains('pair')) {
-      final token = uri.queryParameters['token'] ?? uri.queryParameters['pairing_token'];
+      final token =
+          uri.queryParameters['token'] ?? uri.queryParameters['pairing_token'];
       if (token != null && token.isNotEmpty) {
         debugPrint('[DeepLinkService] Navigating to /pair with token: $token');
         appRouter.go('/pair?token=$token');

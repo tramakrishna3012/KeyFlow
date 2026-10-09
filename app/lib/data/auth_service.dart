@@ -231,15 +231,15 @@ class AuthService extends ChangeNotifier {
       );
     }
 
-    final endpoints = [
-      'http://localhost:4000/api/v1/auth/verify-pairing',
-      'http://localhost:4000/api/auth/verify-pairing',
+    final endpoints = <String>[
+      if (kDebugMode) ...[
+        'http://localhost:4000/api/v1/auth/verify-pairing',
+        'http://localhost:4000/api/auth/verify-pairing',
+      ],
       '$_apiBase/auth/verify-pairing',
       '${_apiBase.replaceAll('/api/v1', '/api')}/auth/verify-pairing',
       'https://keyflow-dnsd.onrender.com/api/v1/auth/verify-pairing',
       'https://keyflow-dnsd.onrender.com/api/auth/verify-pairing',
-      'http://10.0.2.2:4000/api/v1/auth/verify-pairing',
-      'http://10.0.2.2:4000/api/auth/verify-pairing',
     ];
 
     String? lastErrorMsg;
@@ -277,7 +277,9 @@ class AuthService extends ChangeNotifier {
             );
           }
 
-          _token = tokenStr.isNotEmpty ? tokenStr : 'kf_jwt_paired_${userObj.id}';
+          _token = tokenStr.isNotEmpty
+              ? tokenStr
+              : 'kf_jwt_paired_${userObj.id}';
           _currentUser = userObj;
 
           // Store session securely in FlutterSecureStorage (Hardware Keystore)
@@ -317,7 +319,8 @@ class AuthService extends ChangeNotifier {
 
     return AuthResponse(
       success: false,
-      errorMessage: lastErrorMsg ??
+      errorMessage:
+          lastErrorMsg ??
           'Could not connect to authentication server to verify pairing.',
     );
   }
