@@ -813,7 +813,7 @@ function setupDashboardControls() {
     showToast('Telemetry refreshed.', 'success');
   });
 
-  document.getElementById('btn-launch-device')?.addEventListener('click', (e) => {
+  document.getElementById('btn-launch-device')?.addEventListener('click', () => {
     showToast('Launching KeyFlow Companion (keyflow://open)...', 'info');
     const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
     if (!isMobile) {
