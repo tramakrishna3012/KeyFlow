@@ -34,7 +34,7 @@ app.use(cors({ //NOSONAR
     if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error('Cross-Origin Request blocked by CORS policy'));
+      callback(null, false);
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

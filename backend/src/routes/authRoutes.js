@@ -126,7 +126,8 @@ router.post('/pairing-token', authenticateToken, async (req, res, next) => {
 
 router.post('/verify-pairing', async (req, res, next) => {
   try {
-    const pairingToken = req.body?.pairing_token || req.body?.token;
+    const rawToken = req.body?.pairing_token || req.body?.token;
+    const pairingToken = typeof rawToken === 'string' ? rawToken.trim() : null;
     if (!pairingToken) {
       return res.status(400).json({ error: 'pairing_token is required' });
     }
@@ -141,7 +142,7 @@ router.post('/verify-pairing', async (req, res, next) => {
     }
 
     const expiresAtTime = new Date(record.expires_at).getTime();
-    if (Date.now() > expiresAtTime) {
+    if (Number.isNaN(expiresAtTime) || Date.now() > expiresAtTime) {
       return res.status(410).json({ error: 'Pairing token has expired' });
     }
 
