@@ -21,9 +21,13 @@ class ExclusionListNotifier extends AsyncNotifier<List<String>> {
   Future<void> _pending = Future<void>.value();
   int _outstandingWrites = 0;
   bool _hadWriteFailure = false;
+  int _reconcileAttempts = 0;
+  static const int _maxReconcileAttempts = 5;
+  Timer? _retryTimer;
 
   @override
   Future<List<String>> build() {
+    ref.onDispose(() => _retryTimer?.cancel());
     final repo = ref.watch(historyRepositoryProvider);
     return repo.getExclusionList();
   }
@@ -49,6 +53,7 @@ class ExclusionListNotifier extends AsyncNotifier<List<String>> {
     // 2. Persist; writes are chained so rapid taps are applied in order.
     final repo = ref.read(historyRepositoryProvider);
     _outstandingWrites++;
+    _reconcileAttempts = 0; // fresh retry budget for each user action
     final op = _pending.then((_) async {
       try {
         if (excluded) {
@@ -63,24 +68,46 @@ class ExclusionListNotifier extends AsyncNotifier<List<String>> {
         // Reconcile only once the queue has drained, so a failed write never
         // discards later toggles that are still queued (or that succeeded).
         if (_outstandingWrites == 0 && _hadWriteFailure) {
-          _hadWriteFailure = false;
-          try {
-            final persisted = await repo.getExclusionList();
-            if (_outstandingWrites == 0) {
-              state = AsyncData(persisted);
-              await captureService.syncExclusionList(persisted);
-            } else {
-              // User toggled again while we were reading: reconcile after that drains.
-              _hadWriteFailure = true;
-            }
-          } on Object catch (_) {
-            // Keep the optimistic state; the next toggle or reload reconciles.
-          }
+          await _reconcileWithDatabase();
         }
       }
     });
     _pending = op;
     return op;
+  }
+
+  /// Replaces the optimistic list with what the database actually holds, and
+  /// pushes it to the capture engine. Retries with backoff if the read fails, so
+  /// the UI and native engine never stay out of sync with storage.
+  Future<void> _reconcileWithDatabase() async {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _hadWriteFailure = false;
+    final repo = ref.read(historyRepositoryProvider);
+    final captureService = ref.read(captureServiceProvider);
+    try {
+      final persisted = await repo.getExclusionList();
+      if (_outstandingWrites == 0) {
+        state = AsyncData(persisted);
+        _reconcileAttempts = 0;
+        await captureService.syncExclusionList(persisted);
+      } else {
+        // User toggled again while we were reading: reconcile after that drains.
+        _hadWriteFailure = true;
+      }
+    } on Object catch (_) {
+      _hadWriteFailure = true;
+      if (_reconcileAttempts < _maxReconcileAttempts) {
+        final delay = Duration(milliseconds: 500 * (1 << _reconcileAttempts));
+        _reconcileAttempts++;
+        _retryTimer = Timer(delay, () {
+          if (_outstandingWrites == 0 && _hadWriteFailure) {
+            unawaited(_reconcileWithDatabase());
+          }
+        });
+      }
+      // After max attempts the flag stays set, so the next toggle reconciles.
+    }
   }
 }
 

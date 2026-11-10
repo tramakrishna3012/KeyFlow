@@ -133,8 +133,35 @@ class KeyflowAccessibilityService : AccessibilityService() {
     // when the state actually changes instead of on every keystroke.
     private var overlayHiddenForExcludedApp = false
 
+    // Packages of every keyboard (IME) enabled on the device, read from the system
+    // rather than guessed from package names. Refreshed at most every 10s so a
+    // newly enabled keyboard is picked up without querying on every event.
+    @Volatile
+    private var imePackages: Set<String> = emptySet()
+    private var imePackagesLoadedAt = 0L
+
+    private fun enabledImePackages(): Set<String> {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (imePackagesLoadedAt == 0L || now - imePackagesLoadedAt > 10_000L) {
+            imePackagesLoadedAt = now
+            try {
+                val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                    as? android.view.inputmethod.InputMethodManager
+                val list = imm?.enabledInputMethodList
+                if (list != null) {
+                    imePackages = list.mapNotNull { it.packageName?.lowercase() }.toSet()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("KeyflowA11y", "Failed to read enabled keyboards: $e")
+            }
+        }
+        return imePackages
+    }
+
     private fun isInputMethodPackage(pkg: String): Boolean {
         val lower = pkg.lowercase()
+        if (enabledImePackages().contains(lower)) return true
+        // Fallback if the system list is unavailable.
         return lower.contains("inputmethod") || lower.contains("keyboard") ||
             lower == "com.touchtype.swiftkey" || lower.startsWith("com.samsung.android.honeyboard")
     }

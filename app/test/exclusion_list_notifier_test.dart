@@ -11,6 +11,20 @@ import 'history_repository_test.dart';
 class FlakyExclusionRepository extends InMemoryHistoryRepository {
   int failuresRemaining = 1;
 
+  /// Number of getExclusionList calls to fail after the initial load.
+  int readFailuresRemaining = 0;
+  bool _initialLoadDone = false;
+
+  @override
+  Future<List<String>> getExclusionList() async {
+    if (_initialLoadDone && readFailuresRemaining > 0) {
+      readFailuresRemaining--;
+      throw Exception('db locked');
+    }
+    _initialLoadDone = true;
+    return super.getExclusionList();
+  }
+
   @override
   Future<void> addExclusion(String appIdentifier) async {
     await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -92,6 +106,26 @@ void main() {
       expect(await repo.getExclusionList(), ['com.second']);
       expect(container.read(exclusionListProvider).value, ['com.second']);
       expect(nativeSyncs.last, ['com.second']);
+    },
+  );
+
+  test(
+    'a failed reconciliation read is retried until state matches storage',
+    () async {
+      final repo = FlakyExclusionRepository()..readFailuresRemaining = 1;
+      final container = makeContainer(repo);
+      await container.read(exclusionListProvider.future);
+      final notifier = container.read(exclusionListProvider.notifier);
+
+      // Write fails, then the first reconcile read fails too.
+      await notifier.setExcluded('com.first', excluded: true);
+      // Optimistic value is still shown while the retry is pending.
+      expect(container.read(exclusionListProvider).value, ['com.first']);
+
+      // Retry fires after the 500ms backoff and fixes the state.
+      await Future<void>.delayed(const Duration(milliseconds: 700));
+      expect(container.read(exclusionListProvider).value, isEmpty);
+      expect(nativeSyncs.last, isEmpty);
     },
   );
 }
