@@ -3,6 +3,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const { rateLimiter } = require('./middleware/rateLimiter');
 const { errorHandler } = require('./middleware/errorHandler');
+const { pingDatabase } = require('./services/db');
 
 const authRoutes = require('./routes/authRoutes');
 const activityRoutes = require('./routes/activityRoutes');
@@ -45,13 +46,18 @@ app.use(cors({ //NOSONAR
 app.use(express.json({ limit: '5mb' }));
 app.use(rateLimiter({ windowMs: 60 * 1000, maxRequests: 200 }));
 
-// Health check endpoint
-const healthHandler = (req, res) => {
+// Health check endpoint. Status/HTTP code stay 'healthy'/200 as long as the process is up
+// (unchanged from before, so existing monitors/tests don't break); `database` is an added,
+// non-blocking diagnostic field showing whether the configured database (Postgres or the
+// SQLite fallback) is actually reachable right now.
+const healthHandler = async (req, res) => {
+  const database = await pingDatabase();
   res.json({
-    status: 'healthy',
+    status: database.connected ? 'healthy' : 'degraded',
     service: 'Look System API',
     timestamp: new Date().toISOString(),
     version: '1.0.0',
+    database
   });
 };
 app.get('/health', healthHandler);
