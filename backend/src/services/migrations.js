@@ -1,4 +1,4 @@
-const { db, all, run } = require('./db');
+const { all, run, get } = require('./db');
 
 /**
  * Database migration system for KeyFlow
@@ -39,12 +39,7 @@ async function runMigrations() {
 }
 
 async function runMigration(name, migrationFunc) {
-  const existing = await new Promise((resolve, reject) => {
-    db.get('SELECT * FROM schema_migrations WHERE migration_name = ?', [name], (err, row) => {
-      if (err) return reject(err);
-      resolve(row);
-    });
-  });
+  const existing = await get('SELECT * FROM schema_migrations WHERE migration_name = ?', [name]);
 
   if (existing) {
     console.log(`[Migration] ${name} already applied, skipping`);

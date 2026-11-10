@@ -59,10 +59,13 @@ const CATEGORY_MAP = {
 };
 
 // Sensitive patterns: credit cards, SSN, passwords, auth secrets
+// NOTE: no `g` flag on any of these. They are module-level singletons reused across every
+// call via `.test()` for an existence check; a `g` flag makes `.test()` stateful (it advances
+// `lastIndex` on each call), which silently skips matches depending on call order/history.
 const SENSITIVE_PATTERNS = [
-  /\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{1,4}\b/g, // Credit card numbers
-  /\b\d{3}-\d{2}-\d{4}\b/g, // SSN
-  /\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret)\s*[:=]\s*[^\s,;]+/gi,
+  /\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{1,4}\b/, // Credit card numbers
+  /\b\d{3}-\d{2}-\d{4}\b/, // SSN
+  /\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret)\s*[:=]\s*[^\s,;]+/i,
 ];
 
 // Banking & payment app identifiers where text capture is automatically excluded
@@ -172,12 +175,12 @@ async function startSession({ userId, deviceId, deviceName }) {
 }
 
 async function pauseSession({ sessionId, userId }) {
-  await run('UPDATE sessions SET status = "paused" WHERE id = ? AND user_id = ?', [sessionId, userId]);
+  await run(`UPDATE sessions SET status = 'paused' WHERE id = ? AND user_id = ?`, [sessionId, userId]);
   return { sessionId, status: 'paused' };
 }
 
 async function resumeSession({ sessionId, userId }) {
-  await run('UPDATE sessions SET status = "active" WHERE id = ? AND user_id = ?', [sessionId, userId]);
+  await run(`UPDATE sessions SET status = 'active' WHERE id = ? AND user_id = ?`, [sessionId, userId]);
   return { sessionId, status: 'active' };
 }
 
@@ -191,7 +194,7 @@ async function stopSession({ sessionId, userId }) {
 
   await run(
     `UPDATE sessions 
-     SET status = "completed", ended_at = datetime('now'), total_active_seconds = ?
+     SET status = 'completed', ended_at = datetime('now'), total_active_seconds = ?
      WHERE id = ? AND user_id = ?`,
     [durationSec, sessionId, userId]
   );
@@ -282,7 +285,7 @@ async function ingestBatchActivity({ userId, deviceId, sessionId, entries }) {
   // Ensure active session exists or create/reuse
   let activeSessionId = sessionId;
   if (!activeSessionId) {
-    const active = await get('SELECT id FROM sessions WHERE user_id = ? AND status = "active" ORDER BY started_at DESC LIMIT 1', [userId]);
+    const active = await get(`SELECT id FROM sessions WHERE user_id = ? AND status = 'active' ORDER BY started_at DESC LIMIT 1`, [userId]);
     if (active) {
       activeSessionId = active.id;
     } else {

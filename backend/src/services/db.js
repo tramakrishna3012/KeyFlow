@@ -1,34 +1,169 @@
-const sqlite3 = require('sqlite3').verbose();
-const { DB_PATH, JWT_SECRET } = require('../config/env');
+const { DB_PATH, DATABASE_URL, DATABASE_SSL, JWT_SECRET } = require('../config/env');
 const crypto = require('node:crypto');
 
-const db = new sqlite3.Database(DB_PATH);
+// ---------------------------------------------------------------------------
+// Driver selection
+//
+// If DATABASE_URL is set (e.g. a Supabase/Neon Postgres connection string),
+// the backend talks to real Postgres via `pg`. Otherwise it falls back to a
+// local SQLite file — the zero-config default used in dev and in tests.
+//
+// Every call site in this codebase (routes/*, services/*) only ever uses the
+// run/get/all helpers exported below with SQLite-flavored SQL (`?` positional
+// placeholders, `datetime('now')`, `PRAGMA table_info`, `INTEGER PRIMARY KEY
+// AUTOINCREMENT`). Rather than hand-porting ~2000 lines of SQL spread across
+// a dozen files, the Postgres branch below translates that same SQL on the
+// fly. This keeps a single source of truth for the SQL and means callers
+// never need to know which driver is active.
+// ---------------------------------------------------------------------------
 
-function run(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) return reject(err);
-      resolve({ id: this.lastID, changes: this.changes });
-    });
+const usePostgres = Boolean(DATABASE_URL);
+
+let run;
+let get;
+let all;
+let db;
+let closeDb;
+
+if (usePostgres) {
+  const { Pool, types } = require('pg');
+
+  // Postgres's SUM()/COUNT() over integer columns returns `bigint`, which `pg` parses as a
+  // JS string by default (OID 20) rather than a number, to avoid silent precision loss above
+  // 2^53. Every call site in this codebase (durations, counts, byte sizes) stays well within
+  // safe-integer range and already treats these as plain numbers (Math.round, arithmetic,
+  // comparisons), matching what the SQLite driver has always returned. Parsing bigint as a
+  // number here keeps that behavior identical across both drivers instead of special-casing
+  // every aggregate query call site.
+  types.setTypeParser(20, (value) => parseInt(value, 10));
+
+  const pool = new Pool({
+    connectionString: DATABASE_URL,
+    ssl: DATABASE_SSL ? { rejectUnauthorized: false } : false
   });
+
+  // Translates the SQLite-flavored SQL used throughout this codebase into
+  // Postgres-compatible SQL:
+  //   - datetime('now') / datetime("now")      -> keyflow_now()  (defined in initDB)
+  //   - INTEGER PRIMARY KEY AUTOINCREMENT       -> SERIAL PRIMARY KEY
+  //   - LIKE                                    -> ILIKE  (SQLite's LIKE is case-insensitive
+  //                                                by default; Postgres's is not)
+  //   - `AS camelCaseAlias`                     -> `AS "camelCaseAlias"`  (Postgres folds
+  //                                                unquoted identifiers to lowercase; SQLite
+  //                                                preserves them as written. Without this,
+  //                                                every camelCase SELECT alias this codebase
+  //                                                relies on, e.g. `is_excluded as isExcluded`,
+  //                                                comes back as `isexcluded` and silently
+  //                                                reads as `undefined` in the JS result row)
+  //   - positional `?` placeholders             -> $1, $2, ... (skipping `?` inside
+  //                                                single-quoted string literals)
+  function translateSql(sql) {
+    let text = sql
+      .replace(/datetime\(\s*["']now["']\s*\)/gi, 'keyflow_now()')
+      .replace(/INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT/gi, 'SERIAL PRIMARY KEY')
+      .replace(/\bLIKE\b/gi, 'ILIKE')
+      .replace(/\bAS\s+([A-Za-z_][A-Za-z0-9_]*)\b/gi, (match, alias) =>
+        /[A-Z]/.test(alias) ? `AS "${alias}"` : match
+      );
+
+    let out = '';
+    let paramIndex = 0;
+    let inString = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === "'") {
+        inString = !inString;
+        out += ch;
+        continue;
+      }
+      if (ch === '?' && !inString) {
+        paramIndex += 1;
+        out += `$${paramIndex}`;
+      } else {
+        out += ch;
+      }
+    }
+    return out;
+  }
+
+  // `PRAGMA table_info(table)` has no Postgres equivalent; it's only used (in
+  // migrations.js) to check whether a column already exists before adding
+  // it. Intercepted here and answered from information_schema, returning the
+  // same `{ name }` shape the SQLite PRAGMA result rows have.
+  const pragmaTableInfoPattern = /^\s*PRAGMA\s+table_info\(\s*["'`]?([A-Za-z0-9_]+)["'`]?\s*\)/i;
+
+  async function pgAll(sql, params = []) {
+    const pragmaMatch = sql.match(pragmaTableInfoPattern);
+    if (pragmaMatch) {
+      const result = await pool.query(
+        'SELECT column_name AS name FROM information_schema.columns WHERE table_name = $1',
+        [pragmaMatch[1]]
+      );
+      return result.rows;
+    }
+    const result = await pool.query(translateSql(sql), params);
+    return result.rows;
+  }
+
+  run = async (sql, params = []) => {
+    const result = await pool.query(translateSql(sql), params);
+    return { id: null, changes: result.rowCount };
+  };
+
+  get = async (sql, params = []) => {
+    const rows = await pgAll(sql, params);
+    return rows[0];
+  };
+
+  all = pgAll;
+
+  db = pool;
+  closeDb = () => pool.end();
+} else {
+  const sqlite3 = require('sqlite3').verbose();
+  const sqliteDb = new sqlite3.Database(DB_PATH);
+
+  run = (sql, params = []) =>
+    new Promise((resolve, reject) => {
+      sqliteDb.run(sql, params, function (err) {
+        if (err) return reject(err);
+        resolve({ id: this.lastID, changes: this.changes });
+      });
+    });
+
+  get = (sql, params = []) =>
+    new Promise((resolve, reject) => {
+      sqliteDb.get(sql, params, (err, row) => {
+        if (err) return reject(err);
+        resolve(row);
+      });
+    });
+
+  all = (sql, params = []) =>
+    new Promise((resolve, reject) => {
+      sqliteDb.all(sql, params, (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows);
+      });
+    });
+
+  db = sqliteDb;
+  closeDb = () => new Promise((resolve) => sqliteDb.close(() => resolve()));
 }
 
-function get(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) return reject(err);
-      resolve(row);
-    });
-  });
+function getDriverName() {
+  return usePostgres ? 'postgres' : 'sqlite';
 }
 
-function all(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) return reject(err);
-      resolve(rows);
-    });
-  });
+// Lightweight connectivity check for the health endpoint. Never throws.
+async function pingDatabase() {
+  const startedAt = Date.now();
+  try {
+    await get('SELECT 1 AS ok');
+    return { driver: getDriverName(), connected: true, latencyMs: Date.now() - startedAt };
+  } catch (err) {
+    return { driver: getDriverName(), connected: false, error: err.message };
+  }
 }
 
 // AES-256-GCM record-level encryption helpers
@@ -64,6 +199,17 @@ function decryptRecord(ciphertext, ivHex, authTagHex) {
 }
 
 async function initDB() {
+  if (usePostgres) {
+    // Backs the translated `keyflow_now()` calls used as column defaults below,
+    // producing the same ISO-8601 shape the rest of the app already expects
+    // from `datetime('now')` / `new Date().toISOString()`.
+    await run(`
+      CREATE OR REPLACE FUNCTION keyflow_now() RETURNS text AS $KEYFLOW$
+        SELECT to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+      $KEYFLOW$ LANGUAGE SQL;
+    `);
+  }
+
   await run(`
     CREATE TABLE IF NOT EXISTS organizations (
       id TEXT PRIMARY KEY,
@@ -295,5 +441,8 @@ module.exports = {
   all,
   initDB,
   encryptRecord,
-  decryptRecord
+  decryptRecord,
+  getDriverName,
+  pingDatabase,
+  closeDb
 };

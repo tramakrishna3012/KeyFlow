@@ -8,11 +8,15 @@ import 'models/history_entry.dart';
 import 'supabase_history_repository.dart';
 
 class SyncService {
-  SyncService({required this.cloudRepo, http.Client? httpClient})
+  // `cloudRepo` is nullable: Supabase is optional cloud storage, not a prerequisite for
+  // reaching the web dashboard. The dashboard is fed by `_syncToBackend` (the Express API),
+  // which works independently of Supabase and runs whether or not `cloudRepo` is set. Keeping
+  // them independent means a Supabase outage/misconfiguration never silently stops captured
+  // text from reaching the dashboard.
+  SyncService({this.cloudRepo, http.Client? httpClient})
     : _client = httpClient ?? http.Client();
 
-  final SupabaseHistoryRepository cloudRepo;
-  SupabaseHistoryRepository get _cloudRepo => cloudRepo;
+  final SupabaseHistoryRepository? cloudRepo;
   final http.Client _client;
   final List<HistoryEntry> _retryQueue = [];
   Timer? _retryTimer;
@@ -27,8 +31,10 @@ class SyncService {
   }
 
   Future<void> _syncToSupabase(HistoryEntry entry) async {
+    final repo = cloudRepo;
+    if (repo == null) return;
     try {
-      await _cloudRepo.upsertEntry(entry);
+      await repo.upsertEntry(entry);
       debugPrint('SyncService: Entry ${entry.id} synced to Supabase');
       _retryCount = 0;
     } on Exception catch (e) {
@@ -88,8 +94,10 @@ class SyncService {
   }
 
   Future<void> deleteEntry(String id) async {
+    final repo = cloudRepo;
+    if (repo == null) return;
     try {
-      await _cloudRepo.deleteEntry(id);
+      await repo.deleteEntry(id);
       debugPrint('SyncService: Entry $id deleted from cloud');
     } on Exception catch (e) {
       debugPrint('SyncService: Failed to delete entry $id from cloud: $e');
@@ -97,8 +105,10 @@ class SyncService {
   }
 
   Future<void> deleteAllEntries() async {
+    final repo = cloudRepo;
+    if (repo == null) return;
     try {
-      await _cloudRepo.deleteAllEntries();
+      await repo.deleteAllEntries();
       debugPrint('SyncService: All entries deleted from cloud');
     } on Exception catch (e) {
       debugPrint('SyncService: Failed to delete all entries from cloud: $e');
@@ -106,8 +116,10 @@ class SyncService {
   }
 
   Future<List<HistoryEntry>> pullFromCloud() async {
+    final repo = cloudRepo;
+    if (repo == null) return [];
     try {
-      final entries = await _cloudRepo.getAllEntries();
+      final entries = await repo.getAllEntries();
       debugPrint('SyncService: Pulled ${entries.length} entries from cloud');
       return entries;
     } on Exception catch (e) {
@@ -117,8 +129,10 @@ class SyncService {
   }
 
   Future<int> purgeCloudOlderThan(int retentionDays) async {
+    final repo = cloudRepo;
+    if (repo == null) return 0;
     try {
-      final count = await _cloudRepo.purgeOlderThan(retentionDays);
+      final count = await repo.purgeOlderThan(retentionDays);
       debugPrint(
         'SyncService: Purged $count cloud entries older than $retentionDays days',
       );
@@ -156,13 +170,18 @@ class SyncService {
 
   Future<void> _processRetryQueue() async {
     if (_retryQueue.isEmpty) return;
+    final repo = cloudRepo;
+    if (repo == null) {
+      _retryQueue.clear();
+      return;
+    }
 
     final pending = List<HistoryEntry>.from(_retryQueue);
     _retryQueue.clear();
 
     for (final entry in pending) {
       try {
-        await _cloudRepo.upsertEntry(entry);
+        await repo.upsertEntry(entry);
         debugPrint(
           'SyncService: Retried entry ${entry.id} synced successfully',
         );
