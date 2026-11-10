@@ -123,9 +123,60 @@ class KeyflowAccessibilityService : AccessibilityService() {
         }
     }
 
-    // Tracks whether the overlay is currently hidden for an excluded app, so we only
-    // post a show/hide when the state actually changes instead of on every keystroke.
+    // Whether the app the user is currently in is excluded. Updated for every
+    // foreground app (including launchers and KeyFlow itself), independently of
+    // whether its text is captured. Drives both the clipboard guard and the overlay.
+    @Volatile
+    private var foregroundAppExcluded = false
+
+    // Tracks whether the overlay is currently hidden, so we only post a show/hide
+    // when the state actually changes instead of on every keystroke.
     private var overlayHiddenForExcludedApp = false
+
+    // Packages of every keyboard (IME) enabled on the device, read from the system
+    // rather than guessed from package names. Refreshed at most every 10s so a
+    // newly enabled keyboard is picked up without querying on every event.
+    @Volatile
+    private var imePackages: Set<String> = emptySet()
+    private var imePackagesLoadedAt = 0L
+
+    private fun enabledImePackages(): Set<String> {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (imePackagesLoadedAt == 0L || now - imePackagesLoadedAt > 10_000L) {
+            imePackagesLoadedAt = now
+            try {
+                val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                    as? android.view.inputmethod.InputMethodManager
+                val list = imm?.enabledInputMethodList
+                if (list != null) {
+                    imePackages = list.mapNotNull { it.packageName?.lowercase() }.toSet()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("KeyflowA11y", "Failed to read enabled keyboards: $e")
+            }
+        }
+        return imePackages
+    }
+
+    private fun isInputMethodPackage(pkg: String): Boolean {
+        val lower = pkg.lowercase()
+        if (enabledImePackages().contains(lower)) return true
+        // Fallback if the system list is unavailable.
+        return lower.contains("inputmethod") || lower.contains("keyboard") ||
+            lower == "com.touchtype.swiftkey" || lower.startsWith("com.samsung.android.honeyboard")
+    }
+
+    private fun updateForegroundExclusion(excluded: Boolean) {
+        foregroundAppExcluded = excluded
+        if (excluded && !overlayHiddenForExcludedApp) {
+            overlayHiddenForExcludedApp = true
+            // Hide overlay to avoid Android filterTouchesWhenObscured tapjacking protections
+            try { KeyflowOverlayService.hideOverlay() } catch (_: Exception) {}
+        } else if (!excluded && overlayHiddenForExcludedApp) {
+            overlayHiddenForExcludedApp = false
+            try { KeyflowOverlayService.restoreOverlay() } catch (_: Exception) {}
+        }
+    }
 
     private val isDebuggable: Boolean by lazy {
         (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
@@ -162,7 +213,7 @@ class KeyflowAccessibilityService : AccessibilityService() {
                 try {
                     if (isPaused) return@addPrimaryClipChangedListener
                     // Never record clipboard content copied inside an excluded app
-                    if (overlayHiddenForExcludedApp) return@addPrimaryClipChangedListener
+                    if (foregroundAppExcluded) return@addPrimaryClipChangedListener
                     val clip = clipboard.primaryClip
                     if (clip != null && clip.itemCount > 0) {
                         val item = clip.getItemAt(0)
@@ -249,21 +300,21 @@ class KeyflowAccessibilityService : AccessibilityService() {
         val packageName = event.packageName?.toString() ?: "unknown"
         if (isPaused) return
 
-        // 1. Ignore system UI, launchers, and KeyFlow itself
-        if (ignoredPackages.contains(packageName)) return
+        // Keyboard (IME) windows emit events while the user is still inside the
+        // target app, so they must not change the foreground-app decision.
+        val isIme = isInputMethodPackage(packageName)
+
+        // 1. Ignore system UI, launchers, and KeyFlow itself — but still record that
+        //    the user has left any excluded app (re-enables clipboard + overlay).
+        if (ignoredPackages.contains(packageName)) {
+            if (packageName != "com.android.systemui") updateForegroundExclusion(false)
+            return
+        }
 
         // 2. User exclusions + strict financial filter (Zero-Interference Filter)
-        if (isFinancialOrExcluded(packageName)) {
-            // Hide overlay to avoid Android filterTouchesWhenObscured tapjacking protections
-            if (!overlayHiddenForExcludedApp) {
-                overlayHiddenForExcludedApp = true
-                try { KeyflowOverlayService.hideOverlay() } catch (_: Exception) {}
-            }
-            return
-        } else if (overlayHiddenForExcludedApp) {
-            overlayHiddenForExcludedApp = false
-            try { KeyflowOverlayService.restoreOverlay() } catch (_: Exception) {}
-        }
+        val excluded = isFinancialOrExcluded(packageName)
+        if (!isIme) updateForegroundExclusion(excluded)
+        if (excluded) return
 
         // 3. Ignore pure focus events when no text has been typed
         if (event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
