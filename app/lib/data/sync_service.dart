@@ -21,7 +21,12 @@ class SyncService {
   static const int _maxRetries = 5;
 
   Future<void> syncEntry(HistoryEntry entry) async {
-    // 1. Primary sync to online Supabase PostgreSQL table
+    // Both destinations are independent, so push to them concurrently so the
+    // web dashboard sees new text without waiting on the Supabase round-trip.
+    await Future.wait<void>([_syncToSupabase(entry), _syncToBackend(entry)]);
+  }
+
+  Future<void> _syncToSupabase(HistoryEntry entry) async {
     try {
       await _cloudRepo.upsertEntry(entry);
       debugPrint('SyncService: Entry ${entry.id} synced to Supabase');
@@ -32,8 +37,9 @@ class SyncService {
       );
       _queueForRetry(entry);
     }
+  }
 
-    // 2. Also send telemetry batch to Express backend for Web Dashboard
+  Future<void> _syncToBackend(HistoryEntry entry) async {
     try {
       final token = AuthService.instance.token;
       if (token != null && token.isNotEmpty) {
