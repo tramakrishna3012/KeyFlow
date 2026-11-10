@@ -19,6 +19,8 @@ const String kKeyBankingAutoExcluded = 'banking_auto_excluded_v1';
 // database write and native sync happen in the background.
 class ExclusionListNotifier extends AsyncNotifier<List<String>> {
   Future<void> _pending = Future<void>.value();
+  int _outstandingWrites = 0;
+  bool _hadWriteFailure = false;
 
   @override
   Future<List<String>> build() {
@@ -46,6 +48,7 @@ class ExclusionListNotifier extends AsyncNotifier<List<String>> {
 
     // 2. Persist; writes are chained so rapid taps are applied in order.
     final repo = ref.read(historyRepositoryProvider);
+    _outstandingWrites++;
     final op = _pending.then((_) async {
       try {
         if (excluded) {
@@ -54,10 +57,26 @@ class ExclusionListNotifier extends AsyncNotifier<List<String>> {
           await repo.removeExclusion(appIdentifier);
         }
       } on Object catch (_) {
-        // Roll back on failure so UI and native engine match the database.
-        final persisted = await repo.getExclusionList();
-        state = AsyncData(persisted);
-        await captureService.syncExclusionList(persisted);
+        _hadWriteFailure = true;
+      } finally {
+        _outstandingWrites--;
+        // Reconcile only once the queue has drained, so a failed write never
+        // discards later toggles that are still queued (or that succeeded).
+        if (_outstandingWrites == 0 && _hadWriteFailure) {
+          _hadWriteFailure = false;
+          try {
+            final persisted = await repo.getExclusionList();
+            if (_outstandingWrites == 0) {
+              state = AsyncData(persisted);
+              await captureService.syncExclusionList(persisted);
+            } else {
+              // User toggled again while we were reading: reconcile after that drains.
+              _hadWriteFailure = true;
+            }
+          } on Object catch (_) {
+            // Keep the optimistic state; the next toggle or reload reconciles.
+          }
+        }
       }
     });
     _pending = op;
