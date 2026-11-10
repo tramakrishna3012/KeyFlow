@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -231,7 +232,10 @@ class AuthService extends ChangeNotifier {
       );
     }
 
-    final endpoints = <String>[
+    // De-duplicated endpoint list (on release builds several entries resolve to
+    // the same URL). All candidates are tried IN PARALLEL and the first success
+    // wins, so pairing takes one round-trip instead of up to N x timeout.
+    final endpoints = <String>{
       if (kDebugMode) ...[
         'http://localhost:4000/api/v1/auth/verify-pairing',
         'http://localhost:4000/api/auth/verify-pairing',
@@ -240,80 +244,94 @@ class AuthService extends ChangeNotifier {
       '${_apiBase.replaceAll('/api/v1', '/api')}/auth/verify-pairing',
       'https://keyflow-dnsd.onrender.com/api/v1/auth/verify-pairing',
       'https://keyflow-dnsd.onrender.com/api/auth/verify-pairing',
-    ];
+    }.toList();
 
+    final body = jsonEncode({'pairing_token': cleanToken, 'token': cleanToken});
+    final winner = Completer<http.Response?>();
     String? lastErrorMsg;
+    var remaining = endpoints.length;
 
     for (final urlStr in endpoints) {
-      try {
-        final url = Uri.parse(urlStr);
-        final response = await _client
-            .post(
-              url,
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({
-                'pairing_token': cleanToken,
-                'token': cleanToken,
-              }),
-            )
-            .timeout(const Duration(seconds: 4));
-
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          final data = jsonDecode(response.body) as Map<String, dynamic>;
-          final tokenStr = (data['token'] as String?) ?? '';
-          final userJson = data['user'] as Map<String, dynamic>?;
-          final encryptionSeed =
-              (data['encryption_seed'] ?? data['encryptionSeed']) as String?;
-
-          UserModel? userObj;
-          if (userJson != null) {
-            userObj = UserModel.fromJson(userJson);
-          } else {
-            userObj = UserModel(
-              id: 'usr_paired_${DateTime.now().millisecondsSinceEpoch}',
-              email: 'paired_user@keyflow.dev',
-              fullName: 'Paired User',
-              createdAt: DateTime.now().toIso8601String(),
-            );
+      unawaited(() async {
+        try {
+          final response = await _client
+              .post(
+                Uri.parse(urlStr),
+                headers: {'Content-Type': 'application/json'},
+                body: body,
+              )
+              // Generous timeout: hosted backend may be cold-starting.
+              .timeout(const Duration(seconds: 15));
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            if (!winner.isCompleted) winner.complete(response);
+            return;
           }
-
-          _token = tokenStr.isNotEmpty
-              ? tokenStr
-              : 'kf_jwt_paired_${userObj.id}';
-          _currentUser = userObj;
-
-          // Store session securely in FlutterSecureStorage (Hardware Keystore)
-          await _storage.write(key: _tokenKey, value: _token!);
-          await _storage.write(
-            key: _userKey,
-            value: jsonEncode(userObj.toJson()),
-          );
-
-          if (encryptionSeed != null && encryptionSeed.isNotEmpty) {
-            await _storage.write(
-              key: 'keyflow_encryption_salt',
-              value: base64Encode(utf8.encode(encryptionSeed)),
-            );
-            await _storage.write(
-              key: 'keyflow_encryption_seed',
-              value: encryptionSeed,
-            );
-          }
-
-          notifyListeners();
-          return AuthResponse(success: true, token: _token!, user: userObj);
-        } else if (response.statusCode == 404 || response.statusCode == 410) {
-          try {
-            final data = jsonDecode(response.body) as Map<String, dynamic>?;
-            if (data != null && data.containsKey('error')) {
-              lastErrorMsg = data['error']?.toString();
+          if (response.statusCode == 404 || response.statusCode == 410) {
+            try {
+              final data = jsonDecode(response.body) as Map<String, dynamic>?;
+              if (data != null && data.containsKey('error')) {
+                lastErrorMsg = data['error']?.toString();
+              }
+            } on Object catch (_) {
+              // Non-JSON response; keep waiting for other endpoints.
             }
-          } on Object catch (_) {
-            // Non-JSON response, continue trying remaining endpoints
           }
+        } on Object catch (e) {
+          debugPrint('verifyAndPair endpoint $urlStr attempt note: $e');
+        } finally {
+          remaining--;
+          if (remaining == 0 && !winner.isCompleted) winner.complete(null);
         }
+      }());
+    }
+
+    final response = await winner.future;
+    if (response != null) {
+      try {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final tokenStr = (data['token'] as String?) ?? '';
+        final userJson = data['user'] as Map<String, dynamic>?;
+        final encryptionSeed =
+            (data['encryption_seed'] ?? data['encryptionSeed']) as String?;
+
+        UserModel? userObj;
+        if (userJson != null) {
+          userObj = UserModel.fromJson(userJson);
+        } else {
+          userObj = UserModel(
+            id: 'usr_paired_${DateTime.now().millisecondsSinceEpoch}',
+            email: 'paired_user@keyflow.dev',
+            fullName: 'Paired User',
+            createdAt: DateTime.now().toIso8601String(),
+          );
+        }
+
+        _token = tokenStr.isNotEmpty ? tokenStr : 'kf_jwt_paired_${userObj.id}';
+        _currentUser = userObj;
+
+        // Store session securely in FlutterSecureStorage (Hardware Keystore)
+        await _storage.write(key: _tokenKey, value: _token!);
+        await _storage.write(
+          key: _userKey,
+          value: jsonEncode(userObj.toJson()),
+        );
+
+        if (encryptionSeed != null && encryptionSeed.isNotEmpty) {
+          await _storage.write(
+            key: 'keyflow_encryption_salt',
+            value: base64Encode(utf8.encode(encryptionSeed)),
+          );
+          await _storage.write(
+            key: 'keyflow_encryption_seed',
+            value: encryptionSeed,
+          );
+        }
+
+        notifyListeners();
+        return AuthResponse(success: true, token: _token!, user: userObj);
       } on Object catch (e) {
-        debugPrint('verifyAndPair endpoint $urlStr attempt note: $e');
+        debugPrint('verifyAndPair response handling error: $e');
+        lastErrorMsg = 'Invalid response from pairing server.';
       }
     }
 

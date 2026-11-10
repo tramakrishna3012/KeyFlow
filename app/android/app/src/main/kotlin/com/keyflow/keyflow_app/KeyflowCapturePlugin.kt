@@ -123,7 +123,7 @@ class KeyflowCapturePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
             "setExclusionList" -> {
                 val list = (call.arguments as? List<*>)?.filterIsInstance<String>()
                 if (list != null) {
-                    KeyflowAccessibilityService.updateExclusions(list)
+                    KeyflowAccessibilityService.updateExclusions(list, context)
                 }
                 result.success(true)
             }

@@ -159,6 +159,27 @@ void main() {
     },
   );
 
+  test('isAppExcluded matches exact package ids and keywords', () async {
+    await captureService.syncExclusionList([
+      'com.whatsapp',
+      'bank',
+      '1password.exe',
+    ]);
+    expect(captureService.isAppExcluded('com.whatsapp'), isTrue);
+    expect(captureService.isAppExcluded('COM.WHATSAPP'), isTrue);
+    expect(captureService.isAppExcluded('com.whatsapp.w4b'), isFalse);
+    expect(captureService.isAppExcluded('com.mybank.mobile'), isTrue);
+    expect(captureService.isAppExcluded('1Password.exe'), isTrue);
+    expect(captureService.isAppExcluded('com.google.android.gm'), isFalse);
+  });
+
+  test('removing an app from the exclusion list re-enables capture', () async {
+    await captureService.syncExclusionList(['com.whatsapp']);
+    expect(captureService.isAppExcluded('com.whatsapp'), isTrue);
+    await captureService.syncExclusionList([]);
+    expect(captureService.isAppExcluded('com.whatsapp'), isFalse);
+  });
+
   test('setAutostart and isAutostartEnabled call native channel', () async {
     final autoResult = await captureService.setAutostart(true);
     expect(autoResult, isTrue);

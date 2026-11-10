@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
-import '../capture/capture_service.dart';
+import '../settings/settings_providers.dart';
 import 'onboarding_providers.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -65,9 +65,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Mark onboarding completed in settings
     await ref.read(onboardingControllerProvider.notifier).completeOnboarding();
 
-    // Now start the native capture engine
-    final captureService = CaptureService(repo);
-    await captureService.initialize();
+    // Refresh the shared exclusion state, then (re)start the app-wide capture
+    // service. Creating a second CaptureService here would hijack the native
+    // channel and bypass sync + history refresh.
+    ref.invalidate(exclusionListProvider);
+    await ref.read(captureServiceProvider).initialize();
 
     if (mounted) {
       context.go('/home');

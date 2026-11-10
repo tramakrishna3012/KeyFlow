@@ -18,7 +18,23 @@ class KeyflowAccessibilityService : AccessibilityService() {
                 } catch (_: Exception) {}
             }
         var eventListener: ((Map<String, Any?>) -> Unit)? = null
-        val exclusionSet = mutableSetOf<String>()
+
+        private const val PREFS_NAME = "keyflow_capture_prefs"
+        private const val PREFS_KEY_EXCLUSIONS = "excluded_apps"
+
+        // Immutable snapshots swapped atomically so reads on the accessibility
+        // thread never race with writes coming from the Flutter method channel.
+        @Volatile
+        private var exactExclusions: Set<String> = emptySet()
+        @Volatile
+        private var keywordExclusions: List<String> = emptyList()
+        @Volatile
+        private var exclusionsLoaded = false
+
+        // Per-package decision cache: the regex + set checks run once per app,
+        // not once per keystroke.
+        private val decisionCache = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+
         private var lastDispatchedText: String = ""
         private var lastDispatchedPackage: String = ""
         private var lastDispatchedTime: Long = 0L
@@ -36,26 +52,89 @@ class KeyflowAccessibilityService : AccessibilityService() {
         )
         private val financialRegex = Regex(".*(bank|upi|payment|wallet|creditcard|authenticator).*", RegexOption.IGNORE_CASE)
 
+        private val ignoredPackages = setOf(
+            "com.android.systemui",
+            "android",
+            "com.motorola.launcher3",
+            "com.android.launcher3",
+            "com.google.android.apps.nexuslauncher",
+            "com.keyflow.keyflow_app"
+        )
+
         fun isFinancialOrExcluded(pkg: String): Boolean {
             val lower = pkg.lowercase()
+            decisionCache[lower]?.let { return it }
+            val excluded = computeExcluded(lower)
+            decisionCache[lower] = excluded
+            return excluded
+        }
+
+        private fun computeExcluded(lower: String): Boolean {
             if (knownFinancialPackages.contains(lower)) return true
-            if (exclusionSet.contains(pkg) || exclusionSet.contains(lower)) return true
+            if (exactExclusions.contains(lower)) return true
+            // Entries without a dot (e.g. "bank") are keywords: match anywhere in the package id.
+            if (keywordExclusions.any { lower.contains(it) }) return true
             if (financialRegex.matches(lower)) return true
             return false
         }
 
-        fun updateExclusions(exclusions: List<String>) {
-            exclusionSet.clear()
-            exclusionSet.addAll(exclusions)
-            android.util.Log.i("KeyflowA11y", "Updated exclusion set: $exclusionSet")
+        fun updateExclusions(exclusions: List<String>, context: android.content.Context? = null) {
+            applyExclusions(exclusions)
+            val ctx = context ?: instance
+            if (ctx != null) {
+                try {
+                    ctx.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+                        .edit()
+                        .putStringSet(PREFS_KEY_EXCLUSIONS, exclusions.toSet())
+                        .apply()
+                } catch (e: Exception) {
+                    android.util.Log.e("KeyflowA11y", "Failed to persist exclusions: $e")
+                }
+            }
+            android.util.Log.i("KeyflowA11y", "Updated exclusion set (${exclusions.size} entries)")
+        }
+
+        private fun applyExclusions(exclusions: Collection<String>) {
+            val exact = HashSet<String>()
+            val keywords = ArrayList<String>()
+            for (raw in exclusions) {
+                val entry = raw.trim().lowercase()
+                if (entry.isEmpty()) continue
+                // Desktop executables (e.g. "1password.exe") never match Android packages.
+                if (entry.endsWith(".exe")) continue
+                if (entry.contains('.')) exact.add(entry) else keywords.add(entry)
+            }
+            exactExclusions = exact
+            keywordExclusions = keywords
+            exclusionsLoaded = true
+            decisionCache.clear()
+        }
+
+        /** Loads the persisted list so exclusions apply even when the Flutter UI is not running. */
+        fun loadPersistedExclusions(context: android.content.Context) {
+            if (exclusionsLoaded) return
+            try {
+                val stored = context.getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+                    .getStringSet(PREFS_KEY_EXCLUSIONS, null)
+                if (stored != null) applyExclusions(stored)
+            } catch (e: Exception) {
+                android.util.Log.e("KeyflowA11y", "Failed to load persisted exclusions: $e")
+            }
         }
     }
 
+    // Tracks whether the overlay is currently hidden for an excluded app, so we only
+    // post a show/hide when the state actually changes instead of on every keystroke.
+    private var overlayHiddenForExcludedApp = false
 
+    private val isDebuggable: Boolean by lazy {
+        (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         instance = this
+        loadPersistedExclusions(this)
         val info = AccessibilityServiceInfo().apply {
             eventTypes = AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED or
                     AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED or
@@ -82,6 +161,8 @@ class KeyflowAccessibilityService : AccessibilityService() {
             clipboard?.addPrimaryClipChangedListener {
                 try {
                     if (isPaused) return@addPrimaryClipChangedListener
+                    // Never record clipboard content copied inside an excluded app
+                    if (overlayHiddenForExcludedApp) return@addPrimaryClipChangedListener
                     val clip = clipboard.primaryClip
                     if (clip != null && clip.itemCount > 0) {
                         val item = clip.getItemAt(0)
@@ -101,7 +182,9 @@ class KeyflowAccessibilityService : AccessibilityService() {
                                 "timestamp" to now,
                                 "isCopied" to true
                             )
-                            android.util.Log.i("KeyflowA11y", "Captured user copied text: '$text'")
+                            if (isDebuggable) {
+                                android.util.Log.d("KeyflowA11y", "Captured copied text: len=${text.length}")
+                            }
                             if (eventListener != null) {
                                 eventListener?.invoke(payload)
                             } else {
@@ -167,27 +250,19 @@ class KeyflowAccessibilityService : AccessibilityService() {
         if (isPaused) return
 
         // 1. Ignore system UI, launchers, and KeyFlow itself
-        if (packageName == "com.android.systemui" ||
-            packageName == "android" ||
-            packageName == "com.motorola.launcher3" ||
-            packageName == "com.android.launcher3" ||
-            packageName == "com.google.android.apps.nexuslauncher" ||
-            packageName == "com.keyflow.keyflow_app") {
-            return
-        }
+        if (ignoredPackages.contains(packageName)) return
 
-        // 2. Strict Financial App Exclusions (Zero-Interference Filter)
+        // 2. User exclusions + strict financial filter (Zero-Interference Filter)
         if (isFinancialOrExcluded(packageName)) {
-            // Immediately hide overlay to prevent Android filterTouchesWhenObscured tapjacking protections
-            try {
-                KeyflowOverlayService.hideOverlay()
-            } catch (_: Exception) {}
+            // Hide overlay to avoid Android filterTouchesWhenObscured tapjacking protections
+            if (!overlayHiddenForExcludedApp) {
+                overlayHiddenForExcludedApp = true
+                try { KeyflowOverlayService.hideOverlay() } catch (_: Exception) {}
+            }
             return
-        } else {
-            // Restore overlay when outside financial apps
-            try {
-                KeyflowOverlayService.restoreOverlay()
-            } catch (_: Exception) {}
+        } else if (overlayHiddenForExcludedApp) {
+            overlayHiddenForExcludedApp = false
+            try { KeyflowOverlayService.restoreOverlay() } catch (_: Exception) {}
         }
 
         // 3. Ignore pure focus events when no text has been typed
@@ -227,7 +302,9 @@ class KeyflowAccessibilityService : AccessibilityService() {
             "text" to text,
             "timestamp" to now
         )
-        android.util.Log.i("KeyflowA11y", "Captured user typing: pkg=$packageName, text='$text'")
+        if (isDebuggable) {
+            android.util.Log.d("KeyflowA11y", "Captured typing: pkg=$packageName, len=${text.length}")
+        }
         if (eventListener != null) {
             eventListener?.invoke(payload)
         } else {
@@ -276,7 +353,7 @@ class KeyflowAccessibilityService : AccessibilityService() {
             val file = java.io.File(filesDir, "pending_events.jsonl")
             val json = org.json.JSONObject(payload).toString() + "\n"
             file.appendText(json)
-            android.util.Log.i("KeyflowA11y", "Buffered event to disk ($file): $json")
+
         } catch (e: Exception) {
             android.util.Log.e("KeyflowA11y", "Error saving native buffer: $e")
         }
