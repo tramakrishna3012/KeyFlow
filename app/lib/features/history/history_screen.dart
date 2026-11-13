@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/keyflow_search_bar.dart';
 import '../../data/models/history_entry.dart';
 import 'history_providers.dart';
+import 'save_snippet_dialog.dart';
 
 /// Redesigned KeyFlow History Screen matching the approved 2-level grouped layout:
 /// Level 1: Date Section Header (Today, Yesterday, Mon, 24 Aug) + count badge
@@ -53,10 +55,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Snippet History',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                  Expanded(
+                    child: Text(
+                      'Snippet History',
+                      style: Theme.of(context).textTheme.headlineMedium,
+                    ),
                   ),
+                  if (defaultTargetPlatform == TargetPlatform.iOS)
+                    IconButton(
+                      onPressed: () => SaveSnippetDialog.show(context),
+                      icon: const Icon(Icons.add),
+                      tooltip: 'Save Snippet',
+                    ),
                   IconButton(
                     icon: const Icon(
                       Icons.refresh_rounded,
@@ -448,7 +458,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Start typing in any app to build your history',
+          defaultTargetPlatform == TargetPlatform.iOS
+              ? 'Use Save Snippet to add text to your history'
+              : 'Start typing in any app to build your history',
           style: TextStyle(
             color: AppColors.textMuted.withValues(alpha: 0.7),
             fontSize: 12,

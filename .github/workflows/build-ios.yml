@@ -6,7 +6,11 @@ on:
     branches: [ main ]
     paths:
       - 'app/ios/**'
+      - 'app/lib/**'
+      - 'app/test/**'
       - 'app/pubspec.yaml'
+      - 'app/pubspec.lock'
+      - '.github/workflows/build-ios.yml'
 
 env:
   FLUTTER_VERSION: '3.44.7'
@@ -78,3 +82,30 @@ jobs:
       run: |
         cd app
         flutter test --coverage
+
+    - name: Build iOS Simulator app
+      working-directory: app
+      run: |
+        flutter build ios --simulator --debug
+        ditto -c -k --keepParent build/ios/iphonesimulator/Runner.app build/ios/KeyFlow-Simulator.zip
+
+    - name: Smoke test on an iPhone simulator
+      working-directory: app
+      run: |
+        device=$(xcrun simctl list devices booted available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid // empty')
+        if [ -z "$device" ]; then
+          device=$(xcrun simctl list devices available -j | jq -er '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          xcrun simctl boot "$device"
+        fi
+        xcrun simctl bootstatus "$device" -b
+        app=build/ios/iphonesimulator/Runner.app
+        bundle_id=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
+        xcrun simctl install "$device" "$app"
+        xcrun simctl launch "$device" "$bundle_id"
+
+    - name: Upload simulator app
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+      with:
+        name: KeyFlow-iOS-Simulator
+        path: app/build/ios/KeyFlow-Simulator.zip
+        if-no-files-found: error

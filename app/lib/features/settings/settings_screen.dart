@@ -34,7 +34,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
       ref.invalidate(accessibilityServiceEnabledProvider);
       ref.read(capturePausedProvider.notifier).syncWithNative();
     }
@@ -42,9 +43,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final exclusionAsync = ref.watch(exclusionListProvider);
+    final supportsCapture = defaultTargetPlatform != TargetPlatform.iOS;
     final retentionAsync = ref.watch(retentionDaysProvider);
-    final autocorrectAsync = ref.watch(autocorrectEnabledProvider);
     final targetLangAsync = ref.watch(targetLanguageProvider);
 
     return Scaffold(
@@ -62,21 +62,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             const SizedBox(height: 24),
 
-            // 1. TYPING CAPTURE CONTROL SECTION
-            _buildSectionHeader('TYPING CAPTURE CONTROL'),
-            const SizedBox(height: 8),
-            _buildPauseCaptureCard(),
-            const SizedBox(height: 12),
-            _buildFloatingBubbleCard(),
-
-            const SizedBox(height: 24),
-
-            // 2. EXCLUSION LIST SECTION
-            _buildSectionHeader('EXCLUSION LIST'),
-            const SizedBox(height: 8),
-            _buildExclusionCard(exclusionAsync),
-
-            const SizedBox(height: 24),
+            if (supportsCapture) ...[
+              _buildSectionHeader('TYPING CAPTURE CONTROL'),
+              const SizedBox(height: 8),
+              _buildPauseCaptureCard(),
+              const SizedBox(height: 12),
+              _buildFloatingBubbleCard(),
+              const SizedBox(height: 24),
+              _buildSectionHeader('EXCLUSION LIST'),
+              const SizedBox(height: 8),
+              _buildExclusionCard(ref.watch(exclusionListProvider)),
+              const SizedBox(height: 24),
+            ],
 
             // 3. RETENTION POLICY SECTION
             _buildSectionHeader('DATA RETENTION'),
@@ -85,12 +82,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             const SizedBox(height: 24),
 
-            // 4. AUTOCORRECT & TYPING SECTION
-            _buildSectionHeader('AUTOCORRECT & TYPING'),
-            const SizedBox(height: 8),
-            _buildAutocorrectCard(autocorrectAsync),
-
-            const SizedBox(height: 24),
+            if (supportsCapture) ...[
+              _buildSectionHeader('AUTOCORRECT & TYPING'),
+              const SizedBox(height: 8),
+              _buildAutocorrectCard(ref.watch(autocorrectEnabledProvider)),
+              const SizedBox(height: 24),
+            ],
 
             // 5. TRANSLATION SECTION
             _buildSectionHeader('TRANSLATION'),

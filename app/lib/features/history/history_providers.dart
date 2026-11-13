@@ -3,6 +3,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/history_entry.dart';
 import '../../data/providers.dart';
 
+final pendingSnippetsProvider = StateProvider<List<HistoryEntry>>(
+  (ref) => const [],
+);
+
+List<HistoryEntry> _withPending(
+  List<HistoryEntry> stored,
+  List<HistoryEntry> pending,
+) {
+  final pendingIds = pending.map((entry) => entry.id).toSet();
+  return [
+    ...pending,
+    ...stored.where((entry) => !pendingIds.contains(entry.id)),
+  ];
+}
+
 class AppVisualMeta {
   const AppVisualMeta({
     required this.displayName,
@@ -121,7 +136,8 @@ final availableAppChipsProvider = FutureProvider.autoDispose<List<String>>((
   ref,
 ) async {
   final repository = ref.watch(historyRepositoryProvider);
-  final entries = await repository.getAllEntries();
+  final pending = ref.watch(pendingSnippetsProvider);
+  final entries = _withPending(await repository.getAllEntries(), pending);
   final appNames = <String>{'All Apps'};
   for (final e in entries) {
     final meta = getAppVisualMeta(e.sourceApp);
@@ -138,7 +154,18 @@ final historyEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((
   final query = ref.watch(searchQueryProvider);
   final tag = ref.watch(activeTagProvider);
 
-  final entries = await repository.search(query);
+  final normalizedQuery = query.toLowerCase();
+  final pending = ref
+      .watch(pendingSnippetsProvider)
+      .where(
+        (entry) =>
+            entry.text.toLowerCase().contains(normalizedQuery) ||
+            entry.sourceApp.toLowerCase().contains(normalizedQuery),
+      );
+  final entries = _withPending(
+    await repository.search(query),
+    pending.toList(),
+  );
 
   if (tag == 'All' || tag == 'All Apps') {
     return entries;
@@ -157,7 +184,8 @@ final historyEntriesProvider = FutureProvider.autoDispose<List<HistoryEntry>>((
 final allHistoryEntriesProvider =
     FutureProvider.autoDispose<List<HistoryEntry>>((ref) async {
       final repository = ref.watch(historyRepositoryProvider);
-      return repository.getAllEntries();
+      final pending = ref.watch(pendingSnippetsProvider);
+      return _withPending(await repository.getAllEntries(), pending);
     });
 
 /// Controller to perform history entry deletions.
@@ -165,6 +193,23 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
   HistoryNotifier(this.ref) : super(const AsyncValue.data(null));
 
   final Ref ref;
+
+  Future<void> saveLocalSnippet(HistoryEntry entry) async {
+    final pending = ref.read(pendingSnippetsProvider.notifier);
+    final repository = ref.read(historyRepositoryProvider);
+    pending.update((entries) => [entry, ...entries]);
+    try {
+      await repository.addEntry(entry);
+      ref
+        ..invalidate(historyEntriesProvider)
+        ..invalidate(allHistoryEntriesProvider)
+        ..invalidate(availableAppChipsProvider);
+    } finally {
+      pending.update(
+        (entries) => entries.where((e) => e.id != entry.id).toList(),
+      );
+    }
+  }
 
   Future<void> deleteEntry(String id) async {
     state = const AsyncValue.loading();

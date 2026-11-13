@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -22,6 +25,15 @@ class DeepLinkService {
     if (_initialized) return;
     _initialized = true;
 
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      // AppLinks emits the initial URL and subsequent URLs in the same stream.
+      AppLinks().uriLinkStream.listen(
+        (uri) => unawaited(handleLink(uri.toString())),
+        onError: (Object _) => debugPrint('Could not read the incoming link.'),
+      );
+      return;
+    }
+
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'onDeepLink') {
         final link = call.arguments as String?;
@@ -34,9 +46,6 @@ class DeepLinkService {
     try {
       final initialLink = await _channel.invokeMethod<String>('getInitialLink');
       if (initialLink != null && initialLink.isNotEmpty) {
-        debugPrint(
-          '[DeepLinkService] Initial deep link detected: $initialLink',
-        );
         await handleLink(initialLink);
       }
     } on PlatformException catch (e) {
@@ -64,8 +73,9 @@ class DeepLinkService {
       final token =
           uri.queryParameters['token'] ?? uri.queryParameters['pairing_token'];
       if (token != null && token.isNotEmpty) {
-        debugPrint('[DeepLinkService] Navigating to /pair with token: $token');
-        appRouter.go('/pair?token=$token');
+        appRouter.go(
+          Uri(path: '/pair', queryParameters: {'token': token}).toString(),
+        );
         return true;
       }
     }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import '../../core/widgets/keyflow_card.dart';
 import '../../data/models/history_entry.dart';
 import '../../data/providers.dart';
 import '../history/history_providers.dart';
+import '../history/save_snippet_dialog.dart';
 import '../history/snippet_detail_screen.dart';
 import '../profile/profile_modal.dart';
 
@@ -25,6 +27,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || defaultTargetPlatform == TargetPlatform.iOS) return;
       try {
         await ref.read(captureServiceProvider).initialize();
       } on Exception catch (e) {
@@ -47,6 +50,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final historyAsync = ref.watch(allHistoryEntriesProvider);
 
     return Scaffold(
+      floatingActionButton: defaultTargetPlatform == TargetPlatform.iOS
+          ? FloatingActionButton.extended(
+              onPressed: () => SaveSnippetDialog.show(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Save Snippet'),
+            )
+          : null,
       body: SafeArea(
         child: historyAsync.when(
           data: (entries) => _buildDashboard(context, ref, entries),
@@ -114,7 +124,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           color: AppColors.primary,
           onRefresh: () async => ref.refresh(allHistoryEntriesProvider),
           child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              16,
+              20,
+              defaultTargetPlatform == TargetPlatform.iOS ? 88 : 16,
+            ),
             children: [
               _buildHeader(context),
               const SizedBox(height: 20),
@@ -393,12 +408,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: 10),
         Text(
-          'No snippets captured yet',
+          defaultTargetPlatform == TargetPlatform.iOS
+              ? 'No saved snippets yet'
+              : 'No snippets captured yet',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 6),
         Text(
-          'Start typing in any app or software to see your live snippets and history appear right here!',
+          defaultTargetPlatform == TargetPlatform.iOS
+              ? 'Tap Save Snippet to add text to your history.'
+              : 'Start typing in any app or software to see your live snippets and history appear right here!',
           textAlign: TextAlign.center,
           style: Theme.of(
             context,

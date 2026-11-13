@@ -16,6 +16,7 @@ class SecureKeyStorage {
           );
 
   final FlutterSecureStorage _storage;
+  final _pendingKeys = <String, Future<String>>{};
 
   static const String _dbKeyName = 'keyflow_db_encryption_key';
   static const String _sessionKeyPrefix = 'keyflow_user_db_key_';
@@ -26,22 +27,18 @@ class SecureKeyStorage {
         ? '$_sessionKeyPrefix${userEntropy.hashCode}'
         : _dbKeyName;
 
-    try {
-      final existingKey = await _storage.read(key: keyName);
-      if (existingKey != null && existingKey.isNotEmpty) {
-        return existingKey;
-      }
-    } on Object catch (_) {
+    return _pendingKeys.putIfAbsent(keyName, () async {
       try {
-        await _storage.deleteAll();
-      } on Object catch (_) {}
-    }
+        final existingKey = await _storage.read(key: keyName);
+        if (existingKey != null && existingKey.isNotEmpty) return existingKey;
 
-    final newKey = _generate256BitKey(userEntropy);
-    try {
-      await _storage.write(key: keyName, value: newKey);
-    } on Object catch (_) {}
-    return newKey;
+        final newKey = _generate256BitKey(userEntropy);
+        await _storage.write(key: keyName, value: newKey);
+        return newKey;
+      } finally {
+        _pendingKeys.remove(keyName);
+      }
+    });
   }
 
   Future<void> deleteDatabaseKey([String? userEntropy]) async {

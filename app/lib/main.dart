@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,6 +63,7 @@ class _KeyFlowAppState extends ConsumerState<KeyFlowApp> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || defaultTargetPlatform == TargetPlatform.iOS) return;
       try {
         await ref.read(captureServiceProvider).initialize();
       } on Exception catch (e) {
@@ -96,6 +98,7 @@ class _MainHomeScreenState extends ConsumerState<MainHomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || defaultTargetPlatform == TargetPlatform.iOS) return;
       ref.read(captureServiceProvider).startCapture();
     });
   }

@@ -8,13 +8,21 @@ class DatabaseHelper {
   final String? customPath;
   final DatabaseFactory? databaseFactoryOverride;
   Database? _db;
+  Future<Database>? _opening;
 
   Future<Database> getDatabase(String password) async {
     if (_db != null && _db!.isOpen) {
       return _db!;
     }
-    _db = await initDatabase(password);
-    return _db!;
+    return _opening ??= _open(password);
+  }
+
+  Future<Database> _open(String password) async {
+    try {
+      return _db = await initDatabase(password);
+    } finally {
+      _opening = null;
+    }
   }
 
   Future<Database> initDatabase(String password) async {
@@ -28,24 +36,12 @@ class DatabaseHelper {
       );
     }
 
-    try {
-      return await openDatabase(
-        path,
-        password: password,
-        version: 1,
-        onCreate: _onCreate,
-      );
-    } on Object catch (_) {
-      try {
-        await deleteDatabase(path);
-      } on Object catch (_) {}
-      return openDatabase(
-        path,
-        password: password,
-        version: 1,
-        onCreate: _onCreate,
-      );
-    }
+    return openDatabase(
+      path,
+      password: password,
+      version: 1,
+      onCreate: _onCreate,
+    );
   }
 
   Future<String> _getDatabasePath() async {

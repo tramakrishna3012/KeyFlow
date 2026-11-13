@@ -55,19 +55,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _finishOnboarding() async {
-    final repo = ref.read(historyRepositoryProvider);
-
-    // Save TRD S-3 default exclusions to database
-    for (final app in _exclusions) {
-      await repo.addExclusion(app);
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      final repo = ref.read(historyRepositoryProvider);
+      for (final app in _exclusions) {
+        await repo.addExclusion(app);
+      }
+      if (!mounted) return;
+      await CaptureService(repo).initialize();
+      if (!mounted) return;
     }
-
-    // Mark onboarding completed in settings
     await ref.read(onboardingControllerProvider.notifier).completeOnboarding();
-
-    // Now start the native capture engine
-    final captureService = CaptureService(repo);
-    await captureService.initialize();
 
     if (mounted) {
       context.go('/home');
@@ -76,6 +73,30 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Save snippets on this iPhone'),
+                  const Text(
+                    'Open Save Snippet to type or paste text into your local history.',
+                  ),
+                  FilledButton(
+                    onPressed: _finishOnboarding,
+                    child: const Text('Continue'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     final currentStep = ref.watch(onboardingControllerProvider);
 
     return Scaffold(

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/secure_key_storage.dart';
 import 'package:keyflow_app/features/translate/translation_service.dart';
@@ -8,13 +9,18 @@ void main() {
 
   group('Security Hardening Pass Verification Tests (SRS S-1 through S-7)', () {
     test(
-      'S-1 Verification: SecureKeyStorage retrieves key from OS-native store without hardcoding',
+      'S-1 Verification: concurrent reads share a key persisted in secure storage',
       () async {
+        FlutterSecureStorage.setMockInitialValues({});
         final keyStorage = SecureKeyStorage();
-        final key = await keyStorage.getOrCreateDatabaseKey();
+        final keys = await Future.wait([
+          keyStorage.getOrCreateDatabaseKey(),
+          keyStorage.getOrCreateDatabaseKey(),
+        ]);
+        final persistedKey = await SecureKeyStorage().getOrCreateDatabaseKey();
 
-        expect(key, isNotEmpty);
-        expect(key.length, greaterThanOrEqualTo(16));
+        expect(keys.first, isNotEmpty);
+        expect(keys, everyElement(persistedKey));
       },
     );
 

@@ -231,98 +231,56 @@ class AuthService extends ChangeNotifier {
       );
     }
 
-    final endpoints = <String>[
-      if (kDebugMode) ...[
-        'http://localhost:4000/api/v1/auth/verify-pairing',
-        'http://localhost:4000/api/auth/verify-pairing',
-      ],
-      '$_apiBase/auth/verify-pairing',
-      '${_apiBase.replaceAll('/api/v1', '/api')}/auth/verify-pairing',
-      'https://keyflow-dnsd.onrender.com/api/v1/auth/verify-pairing',
-      'https://keyflow-dnsd.onrender.com/api/auth/verify-pairing',
-    ];
-
-    String? lastErrorMsg;
-
-    for (final urlStr in endpoints) {
-      try {
-        final url = Uri.parse(urlStr);
-        final response = await _client
-            .post(
-              url,
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({
-                'pairing_token': cleanToken,
-                'token': cleanToken,
-              }),
-            )
-            .timeout(const Duration(seconds: 4));
-
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          final data = jsonDecode(response.body) as Map<String, dynamic>;
-          final tokenStr = (data['token'] as String?) ?? '';
-          final userJson = data['user'] as Map<String, dynamic>?;
-          final encryptionSeed =
-              (data['encryption_seed'] ?? data['encryptionSeed']) as String?;
-
-          UserModel? userObj;
-          if (userJson != null) {
-            userObj = UserModel.fromJson(userJson);
-          } else {
-            userObj = UserModel(
-              id: 'usr_paired_${DateTime.now().millisecondsSinceEpoch}',
-              email: 'paired_user@keyflow.dev',
-              fullName: 'Paired User',
-              createdAt: DateTime.now().toIso8601String(),
-            );
-          }
-
-          _token = tokenStr.isNotEmpty
-              ? tokenStr
-              : 'kf_jwt_paired_${userObj.id}';
-          _currentUser = userObj;
-
-          // Store session securely in FlutterSecureStorage (Hardware Keystore)
-          await _storage.write(key: _tokenKey, value: _token!);
-          await _storage.write(
-            key: _userKey,
-            value: jsonEncode(userObj.toJson()),
-          );
-
-          if (encryptionSeed != null && encryptionSeed.isNotEmpty) {
-            await _storage.write(
-              key: 'keyflow_encryption_salt',
-              value: base64Encode(utf8.encode(encryptionSeed)),
-            );
-            await _storage.write(
-              key: 'keyflow_encryption_seed',
-              value: encryptionSeed,
-            );
-          }
-
-          notifyListeners();
-          return AuthResponse(success: true, token: _token!, user: userObj);
-        } else if (response.statusCode == 404 || response.statusCode == 410) {
-          try {
-            final data = jsonDecode(response.body) as Map<String, dynamic>?;
-            if (data != null && data.containsKey('error')) {
-              lastErrorMsg = data['error']?.toString();
-            }
-          } on Object catch (_) {
-            // Non-JSON response, continue trying remaining endpoints
-          }
-        }
-      } on Object catch (e) {
-        debugPrint('verifyAndPair endpoint $urlStr attempt note: $e');
+    try {
+      final response = await _client
+          .post(
+            Uri.parse('$_apiBase/auth/verify-pairing'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'pairing_token': cleanToken}),
+          )
+          .timeout(const Duration(seconds: 15));
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final token = data['token'] as String?;
+      final userJson = data['user'] as Map<String, dynamic>?;
+      if (response.statusCode != 200 ||
+          token == null ||
+          token.isEmpty ||
+          userJson == null ||
+          userJson['id'] is! String ||
+          (userJson['id'] as String).isEmpty) {
+        return AuthResponse(
+          success: false,
+          errorMessage:
+              data['error']?.toString() ?? 'Pairing verification failed.',
+        );
       }
-    }
 
-    return AuthResponse(
-      success: false,
-      errorMessage:
-          lastErrorMsg ??
-          'Could not connect to authentication server to verify pairing.',
-    );
+      final user = UserModel.fromJson(userJson);
+      final encryptionSeed =
+          (data['encryption_seed'] ?? data['encryptionSeed']) as String?;
+      if (encryptionSeed != null && encryptionSeed.isNotEmpty) {
+        await _storage.write(
+          key: 'keyflow_encryption_salt',
+          value: base64Encode(utf8.encode(encryptionSeed)),
+        );
+        await _storage.write(
+          key: 'keyflow_encryption_seed',
+          value: encryptionSeed,
+        );
+      }
+      await _storage.write(key: _userKey, value: jsonEncode(user.toJson()));
+      await _storage.write(key: _tokenKey, value: token);
+      _token = token;
+      _currentUser = user;
+      notifyListeners();
+      return AuthResponse(success: true, token: token, user: user);
+    } on Object {
+      return const AuthResponse(
+        success: false,
+        errorMessage:
+            'Could not complete pairing. Request a new link and try again.',
+      );
+    }
   }
 
   /// Register a new account against the online Supabase PostgreSQL database.
