@@ -13,7 +13,12 @@ services:
       - PORT=4000
       - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET environment variable is required}
+      # Default: SQLite on the persistent `look_db_data` volume below (survives container
+      # restarts/rebuilds as long as the volume isn't removed). To use real Postgres (e.g. a
+      # free Supabase project) instead, set DATABASE_URL in your shell/.env before `docker
+      # compose up` — see backend/.env.example — and DB_PATH below is simply unused.
       - DB_PATH=/app/data/look_system.db
+      - DATABASE_URL=${DATABASE_URL:-}
     volumes:
       - look_db_data:/app/data
     healthcheck:

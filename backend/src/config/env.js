@@ -25,5 +25,13 @@ module.exports = {
   MAX_FAILED_LOGIN_ATTEMPTS: 5,
   LOCKOUT_DURATION_MINUTES: 15,
   DEFAULT_RETENTION_DAYS: 90,
-  DB_PATH: process.env.DB_PATH || './look_system.db'
+  DB_PATH: process.env.DB_PATH || './look_system.db',
+  // When set (e.g. a Supabase Postgres connection string), the backend uses
+  // Postgres via `pg` instead of the local SQLite file. Unset = SQLite (dev/test default).
+  DATABASE_URL: process.env.DATABASE_URL || null,
+  // Set to the literal string "false" to disable TLS for a local/self-hosted Postgres
+  // that doesn't terminate SSL. Supabase and most managed Postgres require SSL, so the
+  // default is to use it (with certificate validation relaxed for managed poolers whose
+  // chain Node doesn't always validate cleanly).
+  DATABASE_SSL: process.env.DATABASE_SSL !== 'false'
 };

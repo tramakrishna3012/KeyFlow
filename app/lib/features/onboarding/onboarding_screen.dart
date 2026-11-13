@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
-import '../capture/capture_service.dart';
+import '../settings/settings_providers.dart';
 import 'onboarding_providers.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -61,7 +61,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         await repo.addExclusion(app);
       }
       if (!mounted) return;
-      await CaptureService(repo).initialize();
+      ref.invalidate(exclusionListProvider);
+      await ref.read(captureServiceProvider).initialize();
       if (!mounted) return;
     }
     await ref.read(onboardingControllerProvider.notifier).completeOnboarding();

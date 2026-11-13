@@ -41,11 +41,7 @@ class _PairingScreenState extends State<PairingScreen> {
       if (!mounted) return;
 
       if (response.success) {
-        setState(() => _isLoading = false);
-        await Future<void>.delayed(const Duration(milliseconds: 350));
-        if (mounted) {
-          context.go('/home');
-        }
+        context.go('/home');
       } else {
         setState(() {
           _isLoading = false;

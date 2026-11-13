@@ -178,4 +178,42 @@ void main() {
       expect(syncService.pendingRetryCount, equals(0));
     });
   });
+
+  group('SyncService with no Supabase repository configured (cloudRepo: null)', () {
+    // Supabase is optional cloud storage; it must never be a prerequisite for the backend
+    // sync that feeds the web dashboard. These prove every Supabase-touching method is a
+    // safe, cheap no-op (not a crash) when cloudRepo is null.
+    late SyncService nullCloudSyncService;
+
+    setUp(() {
+      nullCloudSyncService = SyncService();
+    });
+
+    tearDown(() {
+      nullCloudSyncService.dispose();
+    });
+
+    test('syncEntry completes without throwing', () async {
+      await nullCloudSyncService.syncEntry(_makeEntry());
+      expect(nullCloudSyncService.pendingRetryCount, equals(0));
+    });
+
+    test('deleteEntry completes without throwing', () async {
+      await nullCloudSyncService.deleteEntry('some-id');
+    });
+
+    test('deleteAllEntries completes without throwing', () async {
+      await nullCloudSyncService.deleteAllEntries();
+    });
+
+    test('pullFromCloud returns an empty list', () async {
+      final entries = await nullCloudSyncService.pullFromCloud();
+      expect(entries, isEmpty);
+    });
+
+    test('purgeCloudOlderThan returns 0', () async {
+      final purged = await nullCloudSyncService.purgeCloudOlderThan(30);
+      expect(purged, equals(0));
+    });
+  });
 }

@@ -11,6 +11,7 @@ import 'session_aggregator.dart';
 class CaptureService {
   CaptureService(
     this._repository, {
+    this.typingDebounceMs = 1000,
     this.syncService,
     this.syncServiceGetter,
     LookWindowSanitizer? sanitizer,
@@ -20,6 +21,7 @@ class CaptureService {
     _sessionAggregator = DartSessionAggregator(
       onSessionUpdate: _onSessionAggregatorUpdate,
       onSessionFinalize: _onSessionAggregatorUpdate,
+      inactivityDebounceMs: typingDebounceMs,
     );
   }
 
@@ -29,6 +31,9 @@ class CaptureService {
   );
 
   final HistoryRepository _repository;
+
+  /// How long typing must pause before a draft is saved to history.
+  final int typingDebounceMs;
   final SyncService? syncService;
   final SyncService? Function()? syncServiceGetter;
   final LookWindowSanitizer _sanitizer;
@@ -48,15 +53,55 @@ class CaptureService {
   final Map<String, String> _lastSavedTextPerApp = {};
   final Map<String, int> _lastSavedTimePerApp = {};
 
+  // Local copy of the exclusion list so events are filtered on the Dart side too
+  // (covers events buffered on disk before an app was excluded, and platforms
+  // whose native engine has not received the list yet).
+  Set<String> _exactExclusions = {};
+  List<String> _keywordExclusions = [];
+
+  /// Returns true when [appIdentifier] matches the user's exclusion list.
+  /// Entries containing a dot are matched exactly (package / bundle id / exe);
+  /// entries without a dot (e.g. "bank") match as a substring.
+  bool isAppExcluded(String appIdentifier) {
+    final id = appIdentifier.trim().toLowerCase();
+    if (id.isEmpty) return false;
+    if (_exactExclusions.contains(id)) return true;
+    for (final keyword in _keywordExclusions) {
+      if (id.contains(keyword)) return true;
+    }
+    return false;
+  }
+
+  void _applyLocalExclusions(List<String> exclusions) {
+    final exact = <String>{};
+    final keywords = <String>[];
+    for (final raw in exclusions) {
+      final entry = raw.trim().toLowerCase();
+      if (entry.isEmpty) continue;
+      if (entry.contains('.')) {
+        exact.add(entry);
+      } else {
+        keywords.add(entry);
+      }
+    }
+    _exactExclusions = exact;
+    _keywordExclusions = keywords;
+  }
+
   Future<void> initialize() async {
-    await startCapture();
-    await _flushPendingNativeEvents();
+    // Load & push exclusions BEFORE capture starts so no excluded keystroke slips through.
     try {
       final exclusions = await _repository.getExclusionList();
       await syncExclusionList(exclusions);
     } on Exception catch (e) {
       debugPrint('Sync exclusions error: $e');
     }
+    await startCapture();
+  }
+
+  /// Saves any in-progress typing immediately (e.g. when the app goes to background).
+  void flushPendingTyping() {
+    _sessionAggregator.finalizeAll();
   }
 
   Future<void> _flushPendingNativeEvents() async {
@@ -269,6 +314,7 @@ class CaptureService {
   }
 
   Future<void> setExclusionList(List<String> exclusions) async {
+    _applyLocalExclusions(exclusions);
     try {
       await _methodChannel.invokeMethod('setExclusionList', exclusions);
     } on PlatformException catch (e) {
@@ -301,13 +347,14 @@ class CaptureService {
 
   void dispose() {
     stopCapture();
-    _sessionAggregator.dispose();
+    _sessionAggregator
+      ..finalizeAll()
+      ..dispose();
     _subscription?.cancel();
     _subscription = null;
   }
 
   void _onNativeEvent(dynamic event) {
-    debugPrint('[CaptureService] _onNativeEvent: $event');
     if (event is! Map) return;
 
     final appName = (event['appName'] as String?) ?? 'Unknown App';
@@ -320,13 +367,16 @@ class CaptureService {
 
     if (text.trim().isEmpty) return;
 
+    // Drop anything coming from an excluded application.
+    if (isAppExcluded(appName)) return;
+
     // For clipboard copied events, save immediately
     if (isCopied) {
       _saveDirectEntry(appName, text.trim(), timestamp);
       return;
     }
 
-    // Pass to DartSessionAggregator with 2.5s debouncing & 60s termination timeout
+    // Pass to DartSessionAggregator with debouncing & 60s termination timeout
     _sessionAggregator.handleTypingInput(
       appName: appName,
       windowTitle: windowTitle,
@@ -339,6 +389,9 @@ class CaptureService {
   Future<void> _onSessionAggregatorUpdate(
     AggregatedTypingSession session,
   ) async {
+    // App may have been excluded while this session was still pending.
+    if (isAppExcluded(session.appName)) return;
+
     final sanitizedText = _sanitizer.sanitizeTextRecord(
       session.content,
       appName: session.appName,

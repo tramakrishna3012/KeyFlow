@@ -59,9 +59,17 @@ class KeyFlowApp extends ConsumerStatefulWidget {
 }
 
 class _KeyFlowAppState extends ConsumerState<KeyFlowApp> {
+  AppLifecycleListener? _lifecycleListener;
+
   @override
   void initState() {
     super.initState();
+    if (defaultTargetPlatform == TargetPlatform.iOS) return;
+    // Save in-progress typing immediately when the app is backgrounded so
+    // nothing is lost if the OS kills the process before the debounce fires.
+    _lifecycleListener = AppLifecycleListener(
+      onHide: () => ref.read(captureServiceProvider).flushPendingTyping(),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || defaultTargetPlatform == TargetPlatform.iOS) return;
       try {
@@ -75,6 +83,12 @@ class _KeyFlowAppState extends ConsumerState<KeyFlowApp> {
         handlePermissionDegradation(context, statuses);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _lifecycleListener?.dispose();
+    super.dispose();
   }
 
   @override

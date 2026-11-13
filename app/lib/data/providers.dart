@@ -69,10 +69,13 @@ final supabaseHistoryRepositoryProvider = Provider<SupabaseHistoryRepository?>((
   }
 });
 
-final syncServiceProvider = Provider<SyncService?>((ref) {
+// Always returns a SyncService so captured text keeps reaching the web dashboard
+// (via the Express backend inside SyncService) even when Supabase isn't configured.
+// `cloudRepo` is passed through as-is (nullable) — SyncService treats a null cloudRepo
+// as "no Supabase cloud storage configured" and simply skips that half of the sync,
+// without affecting the backend sync the dashboard depends on.
+final syncServiceProvider = Provider<SyncService>((ref) {
   final cloudRepo = ref.watch(supabaseHistoryRepositoryProvider);
-  if (cloudRepo == null) return null;
-
   return SyncService(cloudRepo: cloudRepo);
 });
 
