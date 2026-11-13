@@ -146,9 +146,6 @@ router.post('/verify-pairing', async (req, res, next) => {
       return res.status(410).json({ error: 'Pairing token has expired' });
     }
 
-    // Immediately invalidate the token upon consumption
-    await run('UPDATE pairing_tokens SET used = 1 WHERE id = ?', [record.id]);
-
     const user = await get(
       'SELECT id, organization_id, email, full_name, role, is_active FROM users WHERE id = ?',
       [record.user_id]
@@ -156,6 +153,14 @@ router.post('/verify-pairing', async (req, res, next) => {
 
     if (!user || !user.is_active) {
       return res.status(403).json({ error: 'User account is inactive or not found' });
+    }
+
+    const claimed = await run(
+      'UPDATE pairing_tokens SET used = 1 WHERE id = ? AND used = 0 AND expires_at > ?',
+      [record.id, new Date().toISOString()]
+    );
+    if (claimed.changes !== 1) {
+      return res.status(410).json({ error: 'Pairing token is expired or already used' });
     }
 
     const sessionToken = jwt.sign(

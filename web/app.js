@@ -44,6 +44,12 @@ function safeRemoveItem(key) {
   }
 }
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
 let authToken = safeGetItem('keyflow_jwt_token') || safeGetItem('look_jwt_token');
 let currentUser = null;
 
@@ -65,30 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await verifyAuthOrPrompt();
 
   const urlParams = new URLSearchParams(window.location.search);
-  const testUser = urlParams.get('test_user');
-  const autoAuth = urlParams.get('auto_auth') === 'true';
-
-  if (autoAuth) {
-    const userEmail = testUser || 'user@keyflow.dev';
-    const cleanName = userEmail.split('@')[0];
-    currentUser = {
-      id: 'usr_' + btoa(userEmail).replace(/=/g, ''),
-      email: userEmail,
-      fullName: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
-      role: 'admin'
-    };
-    authToken = 'kf_jwt_' + btoa(userEmail).replace(/=/g, '');
-    safeSetItem('keyflow_jwt_token', authToken);
-    updateUserUI();
-    document.body.classList.add('dashboard-mode');
-    await refreshAllDashboardData();
-    
-    const tabParam = urlParams.get('tab');
-    if (tabParam) {
-      const tabBtn = document.querySelector(`[data-tab="${tabParam}"]`);
-      if (tabBtn) tabBtn.click();
-    }
-  } else if (currentUser) {
+  if (currentUser) {
     if (urlParams.get('view') === 'dashboard' || window.location.hash === '#dashboard' || window.location.pathname === '/dashboard') {
       document.body.classList.add('dashboard-mode');
       const tabParam = urlParams.get('tab');
@@ -158,7 +141,7 @@ function showAuthAlert(message, type = 'error') {
   };
 
   alertBox.className = `alert-box ${type}`;
-  alertBox.innerHTML = `<span>${icons[type] || '⚠️'}</span><span>${message}</span>`;
+  alertBox.innerHTML = `<span>${icons[type] || '⚠️'}</span><span>${escapeHtml(message)}</span>`;
   alertBox.style.display = 'flex';
 }
 
@@ -330,41 +313,15 @@ async function requestPairingToken() {
     throw new Error('Authentication required');
   }
 
-  const endpoints = [
-    `${API_BASE}/auth/pairing-token`,
-    API_BASE.replace('/api/v1', '/api') + '/auth/pairing-token',
-    'http://localhost:4000/api/auth/pairing-token',
-    'http://127.0.0.1:4000/api/auth/pairing-token'
-  ];
-
-  let lastErr;
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (e) {
-      lastErr = e;
-    }
+  const response = await fetch(`${API_BASE}/auth/pairing-token`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${authToken}` }
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data?.pairing_url || !data?.expires_at) {
+    throw new Error(data?.error || 'Pairing is unavailable. Please try again.');
   }
-
-  // Graceful fallback for disconnected local environments
-  const fallbackToken = 'kf_pair_' + Math.random().toString(36).substring(2, 12) + Date.now().toString(36);
-  return {
-    success: true,
-    pairing_token: fallbackToken,
-    token: fallbackToken,
-    expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-    pairing_url: `keyflow://pair?token=${fallbackToken}`,
-    pairingUrl: `keyflow://pair?token=${fallbackToken}`
-  };
+  return data;
 }
 
 function startPairingCountdown(expiresAt) {
@@ -409,8 +366,7 @@ async function initiatePairingFlow(source = 'downloads') {
 
   try {
     const data = await requestPairingToken();
-    const token = data.pairing_token || data.token;
-    const pairingUrl = data.pairing_url || `keyflow://pair?token=${token}`;
+    const pairingUrl = data.pairing_url;
 
     // Update all .btn-pair anchors
     const directBtn = document.getElementById('btn-pair-mobile-direct');
@@ -459,7 +415,7 @@ async function initiatePairingFlow(source = 'downloads') {
     renderQRCode(qrGraphic, pairingUrl, 160);
     renderQRCode(modalQr, pairingUrl, 180);
 
-    startPairingCountdown(data.expires_at || new Date(Date.now() + 10 * 60 * 1000));
+    startPairingCountdown(data.expires_at);
 
     if (source === 'dashboard') {
       const modal = document.getElementById('pairing-modal');
@@ -578,31 +534,14 @@ function setupAuthModal() {
     }
 
     try {
-      let data = null;
-      try {
-        const res = await fetch(`${API_BASE}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        if (res.ok) {
-          data = await res.json();
-        }
-      } catch (netErr) {
-        console.warn('Backend login endpoint unavailable, using direct auth session:', netErr);
-      }
-
-      if (!data || !data.token) {
-        const cleanName = (email || 'user@keyflow.dev').split('@')[0];
-        data = {
-          token: 'kf_jwt_' + btoa(email || 'user@keyflow.dev').replace(/=/g, ''),
-          user: {
-            id: 'usr_' + btoa(email || 'user@keyflow.dev').replace(/=/g, ''),
-            email: email || 'user@keyflow.dev',
-            fullName: cleanName.charAt(0).toUpperCase() + cleanName.slice(1),
-            role: 'admin'
-          }
-        };
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.token || !data?.user) {
+        throw new Error(data?.error || 'Sign-in failed. Please try again.');
       }
 
       authToken = data.token;
@@ -709,7 +648,7 @@ async function verifyAuthOrPrompt() {
         headers: { Authorization: `Bearer ${authToken}` }
       });
       const data = await res.json();
-      if (data.user) {
+      if (res.ok && data.user) {
         currentUser = data.user;
         updateUserUI();
       } else {
@@ -1182,11 +1121,11 @@ async function loadTypingHistory(q = '', appName = '') {
                 ${meta.icon}
               </div>
               <div style="display: flex; flex-direction: column;">
-                <strong style="font-size: 14px; color: var(--text-primary);">${meta.displayName}</strong>
-                <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${appKey}</span>
+                <strong style="font-size: 14px; color: var(--text-primary);">${escapeHtml(meta.displayName)}</strong>
+                <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">${escapeHtml(appKey)}</span>
               </div>
               <span style="margin-left: auto; font-size: 11px; background: rgba(99, 102, 241, 0.1); color: var(--accent-indigo); font-weight: 600; padding: 3px 8px; border-radius: 10px;">
-                📱 ${items[0].deviceName || 'Motorola Edge 40'}
+                📱 ${escapeHtml(items[0].deviceName || 'Device')}
               </span>
             </div>
 
@@ -1195,7 +1134,7 @@ async function loadTypingHistory(q = '', appName = '') {
               ${items.map((item, idx) => {
                 const timeStr = new Date(item.capturedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 const text = item.content || '—';
-                const escaped = text.replace(/"/g, '&quot;');
+                const escaped = escapeHtml(text);
                 const charCount = text.length;
                 const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
                 const hasDraft = item.draftHistory && item.draftHistory.length > 1;
@@ -1213,7 +1152,7 @@ async function loadTypingHistory(q = '', appName = '') {
                       </div>
 
                       <div style="display: flex; align-items: center; gap: 6px;">
-                        <button class="btn btn-sm btn-outline btn-replay-draft" data-session-index="${idx}" data-session-app="${appKey}" data-session-date="${dateTitle}" title="Replay draft writing steps" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface);">
+                        <button class="btn btn-sm btn-outline btn-replay-draft" data-session-index="${idx}" data-session-app="${escapeHtml(appKey)}" data-session-date="${dateTitle}" title="Replay draft writing steps" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface);">
                           <span>🎬</span> Replay Draft
                         </button>
                         <button class="btn btn-sm btn-outline btn-copy-snippet" data-copy="${escaped}" title="Copy Snippet" style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-surface); white-space: nowrap;">
@@ -1223,7 +1162,7 @@ async function loadTypingHistory(q = '', appName = '') {
                     </div>
 
                     <div style="font-size: 14px; line-height: 1.6; color: var(--text-primary); word-break: break-word; font-family: inherit; white-space: pre-wrap; background: var(--bg-surface); padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(226, 232, 240, 0.6);">
-                      ${text}
+                      ${escaped}
                     </div>
                   </div>
                 `;
@@ -1298,69 +1237,23 @@ async function loadClipboardHistory(q = '', contentType = 'all') {
   if (!container) return;
 
   try {
-    let entries = [];
-    if (authToken) {
-      try {
-        const url = new URL(`${API_BASE}/clipboard`);
-        if (q) url.searchParams.append('q', q);
-        if (contentType && contentType !== 'all') url.searchParams.append('contentType', contentType);
-        const res = await fetch(url.toString(), {
-          headers: { Authorization: `Bearer ${authToken}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          entries = data.entries || [];
-        }
-      } catch (_) {}
-    }
-
-    if (entries.length === 0) {
-      // Fallback mock items if empty
-      entries = [
-        {
-          id: 'clip-mock-1',
-          deviceName: 'Motorola Edge 40',
-          sourceApp: 'Chrome',
-          content: 'https://keyflow.tramakrishna3012.workers.dev',
-          content_type: 'url',
-          is_pinned: true,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 'clip-mock-2',
-          deviceName: 'Desktop',
-          sourceApp: 'VS Code',
-          content: 'export class SessionAggregator {\n  private debounceMs = 2500;\n}',
-          content_type: 'code',
-          is_pinned: false,
-          created_at: new Date(Date.now() - 3600000).toISOString()
-        },
-        {
-          id: 'clip-mock-3',
-          deviceName: 'Motorola Edge 40',
-          sourceApp: 'Slack',
-          content: 'KeyFlow captures text recovery and multi-device clipboard synchronization seamlessly.',
-          content_type: 'text',
-          is_pinned: false,
-          created_at: new Date(Date.now() - 7200000).toISOString()
-        }
-      ];
-
-      if (contentType && contentType !== 'all') {
-        entries = entries.filter(e => e.content_type === contentType);
-      }
-      if (q) {
-        const qLow = q.toLowerCase();
-        entries = entries.filter(e => e.content.toLowerCase().includes(qLow));
-      }
-    }
+    if (!authToken) throw new Error('Sign-in required');
+    const url = new URL(`${API_BASE}/clipboard`);
+    if (q) url.searchParams.append('q', q);
+    if (contentType && contentType !== 'all') url.searchParams.append('contentType', contentType);
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${authToken}` }
+    });
+    if (!res.ok) throw new Error('Clipboard request failed');
+    const data = await res.json();
+    const entries = data.entries || [];
 
     if (entries.length === 0) {
       container.innerHTML = `
         <div class="text-muted text-center py-5" style="background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 40px 20px;">
           <div style="font-size: 32px; margin-bottom: 8px;">📋</div>
           <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No clipboard entries found</div>
-          <div style="font-size: 13px; color: var(--text-muted);">Copied text, links, and code snippets on any device will appear here instantly.</div>
+          <div style="font-size: 13px; color: var(--text-muted);">Synced clipboard entries appear here.</div>
         </div>
       `;
       return;
@@ -1370,7 +1263,7 @@ async function loadClipboardHistory(q = '', contentType = 'all') {
       const type = entry.content_type || 'text';
       const isPinned = Boolean(entry.is_pinned);
       const timeStr = new Date(entry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const escaped = (entry.content || '').replace(/"/g, '&quot;');
+      const escaped = escapeHtml(entry.content);
 
       let typeBadge = '';
       if (type === 'code') {
@@ -1382,11 +1275,12 @@ async function loadClipboardHistory(q = '', contentType = 'all') {
       }
 
       let bodyHtml = '';
-      if (type === 'url') {
+      if (type === 'url' && /^(https?:\/\/|www\.)\S+$/i.test(entry.content)) {
+        const href = entry.content.toLowerCase().startsWith('www.') ? 'https://' + entry.content : entry.content;
         bodyHtml = `
           <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-family: monospace; font-size: 13px; color: var(--accent-indigo); word-break: break-all;">${entry.content}</span>
-            <a href="${entry.content.startsWith('http') ? entry.content : 'https://' + entry.content}" target="_blank" rel="noopener noreferrer" style="font-size: 12px; font-weight: 600; color: var(--accent-indigo); text-decoration: none; margin-left: 12px; white-space: nowrap;">Open ↗</a>
+            <span style="font-family: monospace; font-size: 13px; color: var(--accent-indigo); word-break: break-all;">${escaped}</span>
+            <a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" style="font-size: 12px; font-weight: 600; color: var(--accent-indigo); text-decoration: none; margin-left: 12px; white-space: nowrap;">Open ↗</a>
           </div>
         `;
       } else if (type === 'code') {
@@ -1397,13 +1291,13 @@ async function loadClipboardHistory(q = '', contentType = 'all') {
               <span>Snippet (${lines.length} lines)</span>
               <span>Code Block</span>
             </div>
-            <pre style="padding: 12px; margin: 0; overflow-x: auto; color: #E5E7EB; line-height: 1.6;"><code>${entry.content}</code></pre>
+            <pre style="padding: 12px; margin: 0; overflow-x: auto; color: #E5E7EB; line-height: 1.6;"><code>${escaped}</code></pre>
           </div>
         `;
       } else {
         bodyHtml = `
           <div style="background: var(--bg-surface); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap;">
-            ${entry.content}
+            ${escaped}
           </div>
         `;
       }
@@ -1413,8 +1307,8 @@ async function loadClipboardHistory(q = '', contentType = 'all') {
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="display: flex; align-items: center; gap: 8px;">
               ${typeBadge}
-              <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">${entry.source_app || entry.sourceApp || 'System Clipboard'}</span>
-              <span style="font-size: 11px; background: rgba(99, 102, 241, 0.08); color: var(--accent-indigo); padding: 2px 6px; border-radius: 6px;">📱 ${entry.device_name || entry.deviceName || 'Device'}</span>
+              <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">${escapeHtml(entry.source_app || entry.sourceApp || 'Clipboard')}</span>
+              <span style="font-size: 11px; background: rgba(99, 102, 241, 0.08); color: var(--accent-indigo); padding: 2px 6px; border-radius: 6px;">📱 ${escapeHtml(entry.device_name || entry.deviceName || 'Device')}</span>
             </div>
             <div style="display: flex; align-items: center; gap: 6px;">
               <span style="font-size: 11px; color: var(--text-muted);">⏱️ ${timeStr}</span>

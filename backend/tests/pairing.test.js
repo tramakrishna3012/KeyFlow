@@ -126,4 +126,18 @@ test('Web-to-Mobile Pairing Handshake Protocol', async (t) => {
 
     assert.strictEqual(res.status, 404);
   });
+
+  await t.test('concurrent redemption issues exactly one mobile session', async () => {
+    const issued = await request('/api/auth/pairing-token', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${userJwt}` }
+    });
+    assert.strictEqual(issued.status, 201);
+    const redeem = () => request('/api/auth/verify-pairing', {
+      method: 'POST',
+      body: { pairing_token: issued.body.pairing_token }
+    });
+    const attempts = await Promise.all([redeem(), redeem()]);
+    assert.deepStrictEqual(attempts.map(result => result.status).sort(), [200, 410]);
+  });
 });
