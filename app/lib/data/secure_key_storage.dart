@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
@@ -36,7 +37,7 @@ class SecureKeyStorage {
         await _storage.write(key: keyName, value: newKey);
         return newKey;
       } finally {
-        _pendingKeys.remove(keyName);
+        unawaited(_pendingKeys.remove(keyName));
       }
     });
   }
