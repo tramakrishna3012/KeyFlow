@@ -29,8 +29,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted ||
           defaultTargetPlatform == TargetPlatform.iOS ||
-          defaultTargetPlatform == TargetPlatform.macOS)
+          defaultTargetPlatform == TargetPlatform.macOS) {
         return;
+      }
       try {
         await ref.read(captureServiceProvider).initialize();
       } on Exception catch (e) {
