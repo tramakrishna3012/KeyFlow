@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -8,15 +9,21 @@ import '../../data/providers.dart';
 import '../auth/auth_modal.dart';
 import '../look_monitor/look_window_sanitizer.dart';
 import 'history_providers.dart';
+import 'shared_snippets.dart';
 
 class SaveSnippetDialog extends ConsumerStatefulWidget {
-  const SaveSnippetDialog({super.key});
+  const SaveSnippetDialog({super.key, this.sharedSnippet});
 
-  static Future<void> show(BuildContext context) async {
+  final HistoryEntry? sharedSnippet;
+
+  static Future<void> show(
+    BuildContext context, {
+    HistoryEntry? sharedSnippet,
+  }) async {
     final message = await showDialog<String>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const SaveSnippetDialog(),
+      builder: (context) => SaveSnippetDialog(sharedSnippet: sharedSnippet),
     );
     if (message != null && context.mounted) {
       ScaffoldMessenger.of(
@@ -30,14 +37,34 @@ class SaveSnippetDialog extends ConsumerStatefulWidget {
 }
 
 class _SaveSnippetDialogState extends ConsumerState<SaveSnippetDialog> {
-  final _controller = TextEditingController();
-  final _draftId = const Uuid().v4();
+  late final _controller = TextEditingController(
+    text: widget.sharedSnippet?.text,
+  );
+  late final _draftId = widget.sharedSnippet?.id ?? const Uuid().v4();
   HistoryEntry? _savedEntry;
   String? _syncOwnerId;
   bool _syncRequested = false;
   bool _requiresSignIn = false;
+  bool _synced = false;
   bool _saving = false;
   String? _error;
+
+  Future<void> _finishImport() async {
+    final shared = widget.sharedSnippet;
+    if (shared != null) await SharedSnippets.remove(shared.id);
+  }
+
+  Future<void> _discardImport() async {
+    setState(() => _saving = true);
+    try {
+      await _finishImport();
+      if (mounted) Navigator.of(context).pop('Shared text discarded');
+    } on PlatformException {
+      if (mounted) setState(() => _error = 'Could not discard. Try again.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   Future<void> _save({required bool sync}) async {
     if (_saving) return;
@@ -87,18 +114,20 @@ class _SaveSnippetDialogState extends ConsumerState<SaveSnippetDialog> {
         final entry = HistoryEntry(
           id: _draftId,
           text: text,
-          sourceApp: 'Manual entry',
-          capturedAt: DateTime.now(),
+          sourceApp: widget.sharedSnippet?.sourceApp ?? 'Manual entry',
+          capturedAt: widget.sharedSnippet?.capturedAt ?? DateTime.now(),
         );
         await ref
             .read(historyNotifierProvider.notifier)
             .saveLocalSnippet(entry);
         _savedEntry = entry;
       }
-      if (sync) {
+      if (sync && !_synced) {
         _syncRequested = true;
         await auth.publishManualSnippet(_savedEntry!, ownerId: _syncOwnerId);
+        _synced = true;
       }
+      await _finishImport();
       if (mounted) {
         Navigator.of(
           context,
@@ -114,6 +143,8 @@ class _SaveSnippetDialogState extends ConsumerState<SaveSnippetDialog> {
               : 'Sync failed. Tap Retry Sync to try again.';
           _error = _savedEntry == null
               ? 'Could not save your snippet. Please try again.'
+              : (!_syncRequested || _synced)
+              ? 'Saved on this device. Could not clear the shared item. Try again.'
               : 'Saved on this device. $syncMessage';
         });
       }
@@ -138,8 +169,10 @@ class _SaveSnippetDialogState extends ConsumerState<SaveSnippetDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Type text to save. Leave out passwords, PINs, and payment details.',
+          Text(
+            widget.sharedSnippet == null
+                ? 'Type text to save. Leave out passwords, PINs, and payment details.'
+                : 'Review the shared text. Leave out passwords, PINs, and payment details.',
           ),
           const SizedBox(height: 12),
           TextField(
@@ -166,7 +199,13 @@ class _SaveSnippetDialogState extends ConsumerState<SaveSnippetDialog> {
           onPressed: _saving ? null : () => Navigator.of(context).pop(),
           child: Text(_savedEntry == null ? 'Cancel' : 'Done'),
         ),
-        if (_savedEntry == null)
+        if (widget.sharedSnippet != null && _savedEntry == null)
+          TextButton(
+            onPressed: _saving ? null : _discardImport,
+            child: const Text('Discard'),
+          ),
+        if (_savedEntry == null ||
+            (widget.sharedSnippet != null && !_syncRequested))
           OutlinedButton(
             onPressed: _saving ? null : () => _save(sync: false),
             child: const Text('Save'),

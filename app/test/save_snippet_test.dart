@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +14,7 @@ import 'package:keyflow_app/data/models/user_model.dart';
 import 'package:keyflow_app/data/providers.dart';
 import 'package:keyflow_app/features/history/history_providers.dart';
 import 'package:keyflow_app/features/history/save_snippet_dialog.dart';
+import 'package:uuid/uuid.dart';
 
 import 'capture_service_test.dart' show MockHistoryRepository;
 
@@ -58,6 +60,84 @@ class SyncTestAuth extends AuthService {
 }
 
 void main() {
+  testWidgets('shared text is kept until a successful save or discard', (
+    tester,
+  ) async {
+    final repository = ControlledHistoryRepository();
+    final removals = <String>[];
+    const channel = MethodChannel('com.keyflow.app/shared-snippets');
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      expect(call.method, 'remove');
+      removals.add(call.arguments as String);
+      return null;
+    });
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    final shared = HistoryEntry(
+      id: const Uuid().v4(),
+      text: 'A shared selection',
+      sourceApp: 'Shared text',
+      capturedAt: DateTime.utc(2026),
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [historyRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () =>
+                    SaveSnippetDialog.show(context, sharedSnippet: shared),
+                child: const Text('Review'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Review'));
+    await tester.pumpAndSettle();
+    expect(find.text(shared.text), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(removals, isEmpty);
+
+    await tester.tap(find.text('Review'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'password: example');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(repository.attempts, isEmpty);
+    expect(removals, isEmpty);
+
+    const edited = 'Edited selection';
+    await tester.enterText(find.byType(TextField), edited);
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    expect(removals, isEmpty);
+    repository.write.completeError(StateError('Test write failure'));
+    await tester.pumpAndSettle();
+    expect(removals, isEmpty);
+
+    repository.write = Completer<void>();
+    await tester.tap(find.text('Save'));
+    repository.write.complete();
+    await tester.pumpAndSettle();
+    final saved = repository.entries.single;
+    expect(saved.text, edited);
+    expect(saved.id, shared.id);
+    expect(saved.capturedAt, shared.capturedAt);
+    expect(removals, [shared.id]);
+
+    await tester.tap(find.text('Review'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard'));
+    await tester.pumpAndSettle();
+    expect(repository.entries, [saved]);
+    expect(removals, [shared.id, shared.id]);
+  });
+
   test(
     'publishing uses the signed-in account and the same id after failure',
     () async {
