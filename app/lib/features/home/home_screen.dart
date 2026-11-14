@@ -50,13 +50,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final historyAsync = ref.watch(allHistoryEntriesProvider);
 
     return Scaffold(
-      floatingActionButton: defaultTargetPlatform == TargetPlatform.iOS
-          ? FloatingActionButton.extended(
-              onPressed: () => SaveSnippetDialog.show(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Save Snippet'),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
+        onPressed: () => SaveSnippetDialog.show(context),
+        icon: const Icon(Icons.add),
+        label: const Text('Save Snippet'),
+      ),
       body: SafeArea(
         child: historyAsync.when(
           data: (entries) => _buildDashboard(context, ref, entries),
@@ -124,12 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           color: AppColors.primary,
           onRefresh: () async => ref.refresh(allHistoryEntriesProvider),
           child: ListView(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              16,
-              20,
-              defaultTargetPlatform == TargetPlatform.iOS ? 88 : 16,
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 88),
             children: [
               _buildHeader(context),
               const SizedBox(height: 20),

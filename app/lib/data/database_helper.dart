@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart' as ffi;
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
 class DatabaseHelper {
@@ -28,11 +31,26 @@ class DatabaseHelper {
   Future<Database> initDatabase(String password) async {
     final path = customPath ?? await _getDatabasePath();
 
-    final dbFactory = databaseFactoryOverride;
+    final useDesktopFactory = Platform.isWindows || Platform.isLinux;
+    final dbFactory =
+        databaseFactoryOverride ??
+        (useDesktopFactory ? ffi.databaseFactoryFfi : null);
     if (dbFactory != null) {
       return dbFactory.openDatabase(
         path,
-        options: OpenDatabaseOptions(version: 1, onCreate: _onCreate),
+        options: OpenDatabaseOptions(
+          version: 1,
+          onConfigure: databaseFactoryOverride != null
+              ? null
+              : (db) async {
+                  if ((await db.rawQuery('PRAGMA cipher')).isEmpty) {
+                    throw StateError('Encrypted SQLite is unavailable');
+                  }
+                  final escaped = password.replaceAll("'", "''");
+                  await db.execute("PRAGMA key = '$escaped'");
+                },
+          onCreate: _onCreate,
+        ),
       );
     }
 

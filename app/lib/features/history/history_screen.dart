@@ -61,12 +61,11 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                   ),
-                  if (defaultTargetPlatform == TargetPlatform.iOS)
-                    IconButton(
-                      onPressed: () => SaveSnippetDialog.show(context),
-                      icon: const Icon(Icons.add),
-                      tooltip: 'Save Snippet',
-                    ),
+                  IconButton(
+                    onPressed: () => SaveSnippetDialog.show(context),
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Save Snippet',
+                  ),
                   IconButton(
                     icon: const Icon(
                       Icons.refresh_rounded,
