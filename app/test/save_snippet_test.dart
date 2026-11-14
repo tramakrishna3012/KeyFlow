@@ -66,13 +66,19 @@ void main() {
     final repository = ControlledHistoryRepository();
     final removals = <String>[];
     const channel = MethodChannel('com.keyflow.app/shared-snippets');
-    final messenger = tester.binding.defaultBinaryMessenger;
-    messenger.setMockMethodCallHandler(channel, (call) async {
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(channel, (
+      call,
+    ) async {
       expect(call.method, 'remove');
       removals.add(call.arguments as String);
       return null;
     });
-    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        channel,
+        null,
+      ),
+    );
     final shared = HistoryEntry(
       id: const Uuid().v4(),
       text: 'A shared selection',
