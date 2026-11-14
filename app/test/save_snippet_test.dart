@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/models/history_entry.dart';
 import 'package:keyflow_app/data/providers.dart';
+import 'package:keyflow_app/data/sync_service.dart';
 import 'package:keyflow_app/features/history/history_providers.dart';
 import 'package:keyflow_app/features/history/save_snippet_dialog.dart';
 
 import 'capture_service_test.dart' show MockHistoryRepository;
+import 'data/sync_service_test.dart' show FakeSupabaseHistoryRepository;
 
 class ControlledHistoryRepository extends MockHistoryRepository {
   Completer<void> write = Completer<void>();
@@ -86,4 +88,37 @@ void main() {
       expect(find.text('Snippet saved'), findsOneWidget);
     },
   );
+
+  test('manual save pushes the snippet to the dashboard sync path, same as a '
+      'captured entry', () async {
+    final repository = MockHistoryRepository();
+    final fakeCloudRepo = FakeSupabaseHistoryRepository();
+    final container = ProviderContainer(
+      overrides: [
+        historyRepositoryProvider.overrideWithValue(repository),
+        syncServiceProvider.overrideWithValue(
+          SyncService(cloudRepo: fakeCloudRepo),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final entry = HistoryEntry(
+      id: 'manual-1',
+      text: 'Saved from iPhone',
+      sourceApp: 'Manual entry',
+      capturedAt: DateTime.now(),
+    );
+    await container
+        .read(historyNotifierProvider.notifier)
+        .saveLocalSnippet(entry);
+
+    // syncEntry is fired-and-forgotten by saveLocalSnippet; give its
+    // microtasks a tick to run before asserting.
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+
+    expect(repository.entries.single.text, 'Saved from iPhone');
+    expect(fakeCloudRepo.upsertedEntries, hasLength(1));
+    expect(fakeCloudRepo.upsertedEntries.single.id, 'manual-1');
+  });
 }
