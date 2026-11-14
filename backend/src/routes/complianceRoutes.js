@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('node:crypto');
 const { authenticateToken } = require('../middleware/auth');
-const { run, get, all } = require('../services/db');
+const { run, get, all, decryptRecord } = require('../services/db');
 const { logAudit } = require('../services/auditService');
 
 router.use(authenticateToken);
@@ -63,6 +63,16 @@ router.get('/export', async (req, res, next) => {
     const activityLogs = await all('SELECT * FROM activity_logs WHERE user_id = ? ORDER BY started_at DESC', [req.user.id]);
     const sessions = await all('SELECT * FROM sessions WHERE user_id = ? ORDER BY started_at DESC', [req.user.id]);
     const typingSessions = await all('SELECT * FROM typing_sessions WHERE user_id = ? ORDER BY updated_at DESC', [req.user.id]);
+    const manualRows = await all(
+      'SELECT id, platform, captured_at, encrypted_content, iv, auth_tag FROM manual_typing_snippets WHERE user_id = ? ORDER BY captured_at DESC',
+      [req.user.id]
+    );
+    const manualSnippets = manualRows.map((row) => ({
+      id: row.id,
+      platform: row.platform,
+      capturedAt: row.captured_at,
+      content: decryptRecord(row.encrypted_content, row.iv, row.auth_tag)
+    }));
     const clipboardEntries = await all('SELECT id, device_name, source_app, content_type, is_pinned, created_at FROM clipboard_entries WHERE user_id = ? ORDER BY created_at DESC', [req.user.id]);
 
     await logAudit({
@@ -71,7 +81,7 @@ router.get('/export', async (req, res, next) => {
       action: 'DATA_EXPORT_DOWNLOADED',
       resourceType: 'user_data',
       resourceId: req.user.id,
-      metadata: { recordCount: activityLogs.length + typingSessions.length + clipboardEntries.length, format }
+      metadata: { recordCount: activityLogs.length + typingSessions.length + manualSnippets.length + clipboardEntries.length, format }
     });
 
     const exportPayload = {
@@ -81,6 +91,7 @@ router.get('/export', async (req, res, next) => {
       sessions,
       activityLogs,
       typingSessions,
+      manualSnippets,
       clipboardEntries
     };
 
@@ -108,6 +119,7 @@ router.post('/delete-my-data', async (req, res, next) => {
     const deletedActivity = await run('DELETE FROM activity_logs WHERE user_id = ?', [req.user.id]);
     const deletedSessions = await run('DELETE FROM sessions WHERE user_id = ?', [req.user.id]);
     const deletedTyping = await run('DELETE FROM typing_sessions WHERE user_id = ?', [req.user.id]);
+    const deletedManual = await run('DELETE FROM manual_typing_snippets WHERE user_id = ?', [req.user.id]);
     const deletedClipboard = await run('DELETE FROM clipboard_entries WHERE user_id = ?', [req.user.id]);
     const deletedExclusions = await run('DELETE FROM privacy_exclusions WHERE user_id = ?', [req.user.id]);
 
@@ -121,6 +133,7 @@ router.post('/delete-my-data', async (req, res, next) => {
         deletedActivityCount: deletedActivity.changes,
         deletedSessionsCount: deletedSessions.changes,
         deletedTypingCount: deletedTyping.changes,
+        deletedManualCount: deletedManual.changes,
         deletedClipboardCount: deletedClipboard.changes,
         deletedExclusionsCount: deletedExclusions.changes
       }
@@ -132,6 +145,7 @@ router.post('/delete-my-data', async (req, res, next) => {
       deletedActivityCount: deletedActivity.changes,
       deletedSessionsCount: deletedSessions.changes,
       deletedTypingCount: deletedTyping.changes,
+      deletedManualCount: deletedManual.changes,
       deletedClipboardCount: deletedClipboard.changes,
       deletedExclusionsCount: deletedExclusions.changes
     });

@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthResponse;
 
+import 'models/history_entry.dart';
 import 'models/user_model.dart';
 
 /// Unified Authentication Service connecting to the online Supabase PostgreSQL backend.
@@ -43,6 +44,52 @@ class AuthService extends ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
   bool get isInitialized => _isInitialized;
+
+  Future<void> publishManualSnippet(
+    HistoryEntry entry, {
+    required String? ownerId,
+  }) async {
+    final token = _token;
+    if (token == null ||
+        token.isEmpty ||
+        ownerId == null ||
+        ownerId.isEmpty ||
+        _currentUser?.id != ownerId) {
+      throw const SnippetSyncException(
+        'Sign in to the original account to sync this snippet.',
+      );
+    }
+    final response = await _client
+        .put(
+          Uri.parse(
+            '$_apiBase/sessions/manual/${Uri.encodeComponent(entry.id)}',
+          ),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            'content': entry.text,
+            'capturedAt': entry.capturedAt.toUtc().toIso8601String(),
+            'platform': defaultTargetPlatform.name,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const SnippetSyncException(
+        'Sign in again to sync this snippet.',
+        requiresSignIn: true,
+      );
+    }
+    if (response.statusCode == 422) {
+      throw const SnippetSyncException(
+        'Remove credentials or payment details before syncing.',
+      );
+    }
+    if (response.statusCode != 204) {
+      throw const SnippetSyncException('Dashboard sync failed. Try again.');
+    }
+  }
 
   /// Restores persisted session from secure storage or Supabase on app launch.
   Future<bool> initialize() async {
@@ -668,4 +715,11 @@ class AuthService extends ChangeNotifier {
     } on Object catch (_) {}
     notifyListeners();
   }
+}
+
+class SnippetSyncException implements Exception {
+  const SnippetSyncException(this.message, {this.requiresSignIn = false});
+
+  final String message;
+  final bool requiresSignIn;
 }

@@ -25,6 +25,12 @@ async function runRetentionPurgeJob() {
       [cutoffDate, policy.organization_id]
     );
 
+    const deletedManual = await run(
+      `DELETE FROM manual_typing_snippets WHERE captured_at < ?
+       AND user_id IN (SELECT id FROM users WHERE organization_id = ?)`,
+      [cutoffDate, policy.organization_id]
+    );
+
     await run('UPDATE retention_policies SET last_purged_at = datetime("now") WHERE id = ?', [policy.id]);
 
     await logAudit({
@@ -36,7 +42,8 @@ async function runRetentionPurgeJob() {
         retentionDays: days,
         cutoffDate,
         deletedActivityCount: deletedActivity.changes,
-        deletedSessionsCount: deletedSessions.changes
+        deletedSessionsCount: deletedSessions.changes,
+        deletedManualCount: deletedManual.changes
       }
     });
 
@@ -44,7 +51,8 @@ async function runRetentionPurgeJob() {
       organizationId: policy.organization_id,
       retentionDays: days,
       deletedActivityCount: deletedActivity.changes,
-      deletedSessionsCount: deletedSessions.changes
+      deletedSessionsCount: deletedSessions.changes,
+      deletedManualCount: deletedManual.changes
     });
   }
 

@@ -2,7 +2,8 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('http');
 const app = require('../src/app');
-const { initDB } = require('../src/services/db');
+const { initDB, get } = require('../src/services/db');
+const { randomUUID } = require('node:crypto');
 const { runMigrations } = require('../src/services/migrations');
 const { SessionAggregator } = require('./helpers/SessionAggregator');
 
@@ -82,6 +83,44 @@ test.after(async () => {
   if (server) {
     await new Promise(resolve => server.close(resolve));
   }
+});
+
+test('Approved typing sync encrypts text, retries safely, and isolates accounts', async () => {
+  const id = randomUUID();
+  const path = `/api/v1/sessions/manual/${id}`;
+  const history = '/api/v1/sessions/manual';
+  const owner = { Authorization: `Bearer ${userToken}` };
+  const body = {
+    content: '  A multiline snippet\nwith Unicode 👋  ',
+    capturedAt: new Date().toISOString(),
+    platform: 'iOS'
+  };
+  const write = (headers, content = body.content) => request(path, {
+    method: 'PUT',
+    headers: { ...headers },
+    body: { ...body, content }
+  });
+
+  assert.equal((await write({})).status, 401);
+  assert.equal((await write(owner, 'password: test-only')).status, 422);
+  assert.deepEqual((await get('SELECT id FROM manual_typing_snippets WHERE id = ?', [id])), undefined);
+  const retries = await Promise.all([write(owner), write(owner)]);
+  assert.deepEqual(retries.map(response => response.status), [204, 204]);
+  const stored = await get('SELECT encrypted_content FROM manual_typing_snippets WHERE id = ?', [id]);
+  assert.ok(stored.encrypted_content);
+  assert.notEqual(stored.encrypted_content, body.content);
+
+  const second = await request('/api/v1/auth/register', {
+    method: 'POST',
+    body: { email: `other_${id}@example.test`, password: testPassword, fullName: 'Second Account' }
+  });
+  assert.equal(second.status, 201);
+  const other = { Authorization: `Bearer ${second.body.token}` };
+  assert.equal((await write(other, 'Cannot overwrite')).status, 404);
+  assert.equal((await request(history, { headers: other })).body.snippets.length, 0);
+  const result = await request(history, { headers: owner });
+  assert.equal(result.status, 200);
+  assert.deepEqual(result.body.snippets.filter(item => item.id === id), [{ id, ...body }]);
 });
 
 test('SessionAggregator (Client Engine): Inactivity Debounce and Upsert Paradigm', async (t) => {

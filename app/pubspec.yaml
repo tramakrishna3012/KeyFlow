@@ -15,6 +15,7 @@ dependencies:
   go_router: ^15.1.2
   google_fonts: ^6.2.1
   sqflite_sqlcipher: ^3.1.0
+  sqflite_common_ffi: ^2.4.2
   flutter_secure_storage: ^9.2.2
   path: ^1.9.0
   path_provider: ^2.1.4
@@ -31,8 +32,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  sqflite_common_ffi: ^2.3.4
   flutter_launcher_icons: ^0.13.1
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc
 
 flutter:
   uses-material-design: true

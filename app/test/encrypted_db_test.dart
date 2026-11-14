@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -41,6 +42,37 @@ void main() {
   });
 
   group('Encrypted Storage & Security Tests (SRS FR-6, Security S-1)', () {
+    test('desktop history persists and rejects the wrong key', () async {
+      if (!Platform.isWindows && !Platform.isLinux) return;
+      final desktop = DatabaseHelper(customPath: dbPath);
+      addTearDown(desktop.close);
+      final key = await SecureKeyStorage().getOrCreateDatabaseKey();
+      final db = await desktop.getDatabase(key);
+      final entry = HistoryEntry(
+        id: 'manual-entry',
+        text: 'A desktop snippet',
+        sourceApp: 'Manual entry',
+        capturedAt: DateTime.now(),
+      );
+      await db.insert('history_entries', entry.toMap());
+      await desktop.close();
+      final wrongKey = DatabaseHelper(customPath: dbPath);
+      addTearDown(wrongKey.close);
+      await expectLater(
+        wrongKey.getDatabase('${key}wrong'),
+        throwsA(isA<Exception>()),
+      );
+      final reopened = await desktop.getDatabase(key);
+      expect(
+        (await reopened.query('history_entries')).single['text'],
+        entry.text,
+      );
+      expect(
+        latin1.decode(await File(dbPath).readAsBytes()),
+        isNot(contains(entry.text)),
+      );
+      await desktop.close();
+    });
     test(
       'Key generation on first run stored securely via FlutterSecureStorage',
       () async {
