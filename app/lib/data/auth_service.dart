@@ -76,7 +76,10 @@ class AuthService extends ChangeNotifier {
         )
         .timeout(const Duration(seconds: 15));
     if (response.statusCode == 401 || response.statusCode == 403) {
-      throw const SnippetSyncException('Sign in again to sync this snippet.');
+      throw const SnippetSyncException(
+        'Sign in again to sync this snippet.',
+        requiresSignIn: true,
+      );
     }
     if (response.statusCode == 422) {
       throw const SnippetSyncException(
@@ -715,7 +718,8 @@ class AuthService extends ChangeNotifier {
 }
 
 class SnippetSyncException implements Exception {
-  const SnippetSyncException(this.message);
+  const SnippetSyncException(this.message, {this.requiresSignIn = false});
 
   final String message;
+  final bool requiresSignIn;
 }

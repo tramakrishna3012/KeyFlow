@@ -35,6 +35,7 @@ class _SaveSnippetDialogState extends ConsumerState<SaveSnippetDialog> {
   HistoryEntry? _savedEntry;
   String? _syncOwnerId;
   bool _syncRequested = false;
+  bool _requiresSignIn = false;
   bool _saving = false;
   String? _error;
 
@@ -60,9 +61,18 @@ class _SaveSnippetDialogState extends ConsumerState<SaveSnippetDialog> {
     try {
       if (sync) {
         _syncOwnerId ??= auth.currentUser?.id;
-        if (!auth.isAuthenticated || auth.currentUser == null) {
-          await AuthModal.show(context);
+        if (_requiresSignIn ||
+            !auth.isAuthenticated ||
+            auth.currentUser == null) {
+          final signedIn = await AuthModal.show(context);
           if (!mounted) return;
+          if (signedIn != true) {
+            setState(
+              () => _error = 'Sign in to sync or choose Save for a local copy.',
+            );
+            return;
+          }
+          _requiresSignIn = false;
           _syncOwnerId ??= auth.currentUser?.id;
         }
         if (!auth.isAuthenticated ||
@@ -96,11 +106,16 @@ class _SaveSnippetDialogState extends ConsumerState<SaveSnippetDialog> {
       }
     } on Object catch (error) {
       if (mounted) {
-        setState(
-          () => _error = _savedEntry == null
+        setState(() {
+          _requiresSignIn =
+              error is SnippetSyncException && error.requiresSignIn;
+          final syncMessage = error is SnippetSyncException
+              ? error.message
+              : 'Sync failed. Tap Retry Sync to try again.';
+          _error = _savedEntry == null
               ? 'Could not save your snippet. Please try again.'
-              : 'Saved on this device. ${error is SnippetSyncException ? error.message : 'Sync failed. Tap Retry Sync to try again.'}',
-        );
+              : 'Saved on this device. $syncMessage';
+        });
       }
     } finally {
       if (mounted) setState(() => _saving = false);
