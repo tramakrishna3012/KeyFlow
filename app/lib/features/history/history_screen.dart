@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -457,9 +456,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          defaultTargetPlatform == TargetPlatform.iOS
-              ? 'Use Save Snippet to add text to your history'
-              : 'Start typing in any app to build your history',
+          'Use Save Snippet to add text to your history',
           style: TextStyle(
             color: AppColors.textMuted.withValues(alpha: 0.7),
             fontSize: 12,

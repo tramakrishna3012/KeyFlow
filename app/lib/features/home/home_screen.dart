@@ -27,7 +27,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || defaultTargetPlatform == TargetPlatform.iOS) return;
+      if (!mounted ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS)
+        return;
       try {
         await ref.read(captureServiceProvider).initialize();
       } on Exception catch (e) {
@@ -402,16 +405,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: 10),
         Text(
-          defaultTargetPlatform == TargetPlatform.iOS
-              ? 'No saved snippets yet'
-              : 'No snippets captured yet',
+          'No saved snippets yet',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 6),
         Text(
-          defaultTargetPlatform == TargetPlatform.iOS
-              ? 'Tap Save Snippet to add text to your history.'
-              : 'Start typing in any app or software to see your live snippets and history appear right here!',
+          'Tap Save Snippet to add text to your history.',
           textAlign: TextAlign.center,
           style: Theme.of(
             context,
