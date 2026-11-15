@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthResponse;
 
+import '../core/services/device_info_service.dart';
 import 'models/user_model.dart';
 
 /// Unified Authentication Service connecting to the online Supabase PostgreSQL backend.
@@ -13,6 +14,7 @@ class AuthService extends ChangeNotifier {
     String? apiBase,
     http.Client? httpClient,
     FlutterSecureStorage? secureStorage,
+    DeviceInfoService? deviceInfoService,
   }) : _apiBase = apiBase ?? _defaultApiBase,
        _client = httpClient ?? http.Client(),
        _storage =
@@ -22,7 +24,8 @@ class AuthService extends ChangeNotifier {
              iOptions: IOSOptions(
                accessibility: KeychainAccessibility.first_unlock,
              ),
-           );
+           ),
+       _deviceInfo = deviceInfoService ?? sharedDeviceInfoService;
 
   static final AuthService instance = AuthService();
 
@@ -34,6 +37,7 @@ class AuthService extends ChangeNotifier {
   final String _apiBase;
   final http.Client _client;
   final FlutterSecureStorage _storage;
+  final DeviceInfoService _deviceInfo;
 
   String? _token;
   UserModel? _currentUser;
@@ -499,29 +503,19 @@ class AuthService extends ChangeNotifier {
       }
     }
 
-    // Default active session list (Current Device + active session entries)
+    // The backend has no session record for us (offline, or the request above
+    // failed), so there is nothing real to report for any other device. Show
+    // only this device, with its real name/OS — never fabricate sessions for
+    // devices that were never actually connected.
+    final deviceName = await _deviceInfo.getDeviceName();
+    final osInfo = await _deviceInfo.getOsInfo();
     return [
-      const UserSession(
+      UserSession(
         id: 'sess_current',
-        deviceName: 'Motorola Edge 40',
-        osInfo: 'Android 15 (KeyFlow Mobile)',
+        deviceName: deviceName,
+        osInfo: osInfo,
         lastActive: 'Active now',
         isCurrent: true,
-        ipAddress: '192.168.1.45',
-      ),
-      const UserSession(
-        id: 'sess_macbook',
-        deviceName: 'MacBook Pro 16"',
-        osInfo: 'macOS 14.5 (KeyFlow Desktop)',
-        lastActive: '2 hours ago',
-        ipAddress: '192.168.1.12',
-      ),
-      const UserSession(
-        id: 'sess_workstation',
-        deviceName: 'Windows Workstation',
-        osInfo: 'Windows 11 (KeyFlow Desktop)',
-        lastActive: 'Yesterday',
-        ipAddress: '10.0.4.88',
       ),
     ];
   }

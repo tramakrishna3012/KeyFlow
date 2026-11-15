@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/models/history_entry.dart';
 import 'package:keyflow_app/data/supabase_history_repository.dart';
@@ -217,29 +216,4 @@ void main() {
       expect(purged, equals(0));
     });
   });
-
-  group(
-    'SyncService dashboard device-metadata fallback '
-    '(used when a HistoryEntry has no deviceId, e.g. an iOS manual save)',
-    () {
-      final originalPlatform = debugDefaultTargetPlatformOverride;
-
-      tearDown(() {
-        debugDefaultTargetPlatformOverride = originalPlatform;
-      });
-
-      test('defaults to iPhone/iOS on iOS, so an iPhone snippet with no '
-          'deviceId is never mislabeled as the Android device', () {
-        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-        expect(SyncService.defaultDeviceName, 'iPhone');
-        expect(SyncService.defaultOsInfo, 'iOS');
-      });
-
-      test('keeps the existing Android defaults on Android', () {
-        debugDefaultTargetPlatformOverride = TargetPlatform.android;
-        expect(SyncService.defaultDeviceName, 'Motorola Edge 40');
-        expect(SyncService.defaultOsInfo, 'Android 15');
-      });
-    },
-  );
 }

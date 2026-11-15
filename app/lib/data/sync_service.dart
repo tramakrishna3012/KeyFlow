@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/services/device_info_service.dart';
 import 'auth_service.dart';
 import 'models/history_entry.dart';
 import 'supabase_history_repository.dart';
@@ -13,30 +14,21 @@ class SyncService {
   // which works independently of Supabase and runs whether or not `cloudRepo` is set. Keeping
   // them independent means a Supabase outage/misconfiguration never silently stops captured
   // text from reaching the dashboard.
-  SyncService({this.cloudRepo, http.Client? httpClient})
-    : _client = httpClient ?? http.Client();
+  SyncService({
+    this.cloudRepo,
+    http.Client? httpClient,
+    DeviceInfoService? deviceInfoService,
+  }) : _client = httpClient ?? http.Client(),
+       _deviceInfo = deviceInfoService ?? sharedDeviceInfoService;
 
   final SupabaseHistoryRepository? cloudRepo;
   final http.Client _client;
+  final DeviceInfoService _deviceInfo;
   final List<HistoryEntry> _retryQueue = [];
   Timer? _retryTimer;
 
   int _retryCount = 0;
   static const int _maxRetries = 5;
-
-  // Exposed (not underscore-prefixed) and marked @visibleForTesting rather than kept
-  // fully private, so the device-metadata fallback this PR's review flagged can be
-  // unit-tested directly without needing to drive AuthService's singleton token through
-  // a full login flow just to reach the HTTP call that uses it.
-  @visibleForTesting
-  static String get defaultDeviceName =>
-      defaultTargetPlatform == TargetPlatform.iOS
-      ? 'iPhone'
-      : 'Motorola Edge 40';
-
-  @visibleForTesting
-  static String get defaultOsInfo =>
-      defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android 15';
 
   Future<void> syncEntry(HistoryEntry entry) async {
     // Both destinations are independent, so push to them concurrently so the
@@ -66,15 +58,16 @@ class SyncService {
         final url = Uri.parse(
           'https://keyflow-dnsd.onrender.com/api/v1/activity/batch',
         );
+        // Android's CaptureService always sets entry.deviceId to the real device model
+        // (via DeviceInfoService), so this keeps that value. iOS's manually-saved
+        // snippets leave deviceId null (there is no capture-time device context to
+        // stamp), so this reads the real device directly instead of guessing — never
+        // a hardcoded placeholder, and never another device's name.
+        final deviceName = entry.deviceId ?? await _deviceInfo.getDeviceName();
+        final osInfo = await _deviceInfo.getOsInfo();
         final payload = {
-          // Android's CaptureService always sets entry.deviceId, so this keeps today's
-          // behavior there unchanged. iOS's manually-saved snippets leave deviceId null
-          // (there is no capture-time device context to stamp), so they fall back to an
-          // iOS-appropriate default instead of being mislabeled as the Android device —
-          // otherwise the dashboard attributes/merges iPhone snippets into that device's
-          // history.
-          'deviceName': entry.deviceId ?? defaultDeviceName,
-          'osInfo': defaultOsInfo,
+          'deviceName': deviceName,
+          'osInfo': osInfo,
           'agentVersion': '1.0.0',
           'entries': [
             {

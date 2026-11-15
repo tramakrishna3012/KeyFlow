@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keyflow_app/data/models/user_model.dart';
@@ -6,6 +7,63 @@ import 'package:keyflow_app/data/providers.dart';
 import 'package:keyflow_app/features/profile/profile_modal.dart';
 
 void main() {
+  // ProfileModal's session list is loaded via AuthService, which now reads
+  // the real device name/OS from device_info_plus instead of a hardcoded
+  // string. Mock its platform channel so that read resolves immediately in
+  // this widget test instead of leaving a real, unmockable platform-channel
+  // call pending (which pumpAndSettle can never settle on its own).
+  const deviceInfoChannel = MethodChannel(
+    'dev.fluttercommunity.plus/device_info',
+  );
+
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(deviceInfoChannel, (call) async {
+          if (call.method == 'getDeviceInfo') {
+            return {
+              'version': <String, dynamic>{
+                'codename': 'REL',
+                'incremental': '1',
+                'previewSdkInt': 0,
+                'release': '15',
+                'sdkInt': 34,
+              },
+              'board': 'board',
+              'bootloader': 'bootloader',
+              'brand': 'brand',
+              'device': 'device',
+              'display': 'display',
+              'fingerprint': 'fingerprint',
+              'hardware': 'hardware',
+              'host': 'host',
+              'id': 'id',
+              'manufacturer': 'manufacturer',
+              'model': 'Test Device',
+              'product': 'product',
+              'name': 'name',
+              'supported32BitAbis': <String>[],
+              'supported64BitAbis': <String>[],
+              'supportedAbis': <String>[],
+              'tags': 'tags',
+              'type': 'type',
+              'isPhysicalDevice': true,
+              'freeDiskSize': 0,
+              'totalDiskSize': 0,
+              'systemFeatures': <String>[],
+              'isLowRamDevice': false,
+              'physicalRamSize': 0,
+              'availableRamSize': 0,
+            };
+          }
+          return null;
+        });
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(deviceInfoChannel, null);
+  });
+
   testWidgets(
     'ProfileModal displays user profile, security with Encrypted Cloud Sync, and sessions',
     (tester) async {
