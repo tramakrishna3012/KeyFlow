@@ -24,6 +24,20 @@ class SyncService {
   int _retryCount = 0;
   static const int _maxRetries = 5;
 
+  // Exposed (not underscore-prefixed) and marked @visibleForTesting rather than kept
+  // fully private, so the device-metadata fallback this PR's review flagged can be
+  // unit-tested directly without needing to drive AuthService's singleton token through
+  // a full login flow just to reach the HTTP call that uses it.
+  @visibleForTesting
+  static String get defaultDeviceName =>
+      defaultTargetPlatform == TargetPlatform.iOS
+      ? 'iPhone'
+      : 'Motorola Edge 40';
+
+  @visibleForTesting
+  static String get defaultOsInfo =>
+      defaultTargetPlatform == TargetPlatform.iOS ? 'iOS' : 'Android 15';
+
   Future<void> syncEntry(HistoryEntry entry) async {
     // Both destinations are independent, so push to them concurrently so the
     // web dashboard sees new text without waiting on the Supabase round-trip.
@@ -53,8 +67,14 @@ class SyncService {
           'https://keyflow-dnsd.onrender.com/api/v1/activity/batch',
         );
         final payload = {
-          'deviceName': 'Motorola Edge 40',
-          'osInfo': 'Android 15',
+          // Android's CaptureService always sets entry.deviceId, so this keeps today's
+          // behavior there unchanged. iOS's manually-saved snippets leave deviceId null
+          // (there is no capture-time device context to stamp), so they fall back to an
+          // iOS-appropriate default instead of being mislabeled as the Android device —
+          // otherwise the dashboard attributes/merges iPhone snippets into that device's
+          // history.
+          'deviceName': entry.deviceId ?? defaultDeviceName,
+          'osInfo': defaultOsInfo,
           'agentVersion': '1.0.0',
           'entries': [
             {
