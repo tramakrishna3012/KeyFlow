@@ -95,24 +95,17 @@ void main() {
       },
     );
 
-    test(
-      '3b. Privacy Sanitizer: Redacts natural-language OTP/code phrasing, '
-      'not just key:value pairs',
-      () {
-        expect(
-          sanitizer.containsSensitiveContent('Your OTP is 483921'),
-          isTrue,
-        );
-        expect(
-          sanitizer.containsSensitiveContent('verification code 483921'),
-          isTrue,
-        );
-        expect(
-          sanitizer.containsSensitiveContent('just a normal sentence'),
-          isFalse,
-        );
-      },
-    );
+    test('3b. Privacy Sanitizer: Redacts natural-language OTP phrasing', () {
+      expect(sanitizer.containsSensitiveContent('Your OTP is 483921'), isTrue);
+      expect(
+        sanitizer.containsSensitiveContent('verification code 483921'),
+        isTrue,
+      );
+      expect(
+        sanitizer.containsSensitiveContent('just a normal sentence'),
+        isFalse,
+      );
+    });
 
     test(
       '4. Privacy Exclusions: Completely blocks configured applications',
