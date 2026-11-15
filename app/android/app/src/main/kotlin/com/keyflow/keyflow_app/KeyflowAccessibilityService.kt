@@ -2,9 +2,6 @@ package com.keyflow.keyflow_app
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
-import android.os.Build
 import android.text.InputType
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -78,30 +75,7 @@ class KeyflowAccessibilityService : AccessibilityService() {
             // Entries without a dot (e.g. "bank") are keywords: match anywhere in the package id.
             if (keywordExclusions.any { lower.contains(it) }) return true
             if (financialRegex.matches(lower)) return true
-            // Package-name keyword lists can never cover every bank in India (or
-            // elsewhere) by name — e.g. Canara Bank's "ai1" or Kotak's "811" app
-            // have no "bank"-like substring in their package id. Instead of
-            // chasing an ever-growing name list, ask Android itself: any app
-            // that *declares* the Finance Play Store category is excluded,
-            // whatever it's called. This only covers apps that set the
-            // category correctly, so the explicit lists above remain as a
-            // backstop for ones that don't.
-            if (isFinanceCategoryApp(lower)) return true
             return false
-        }
-
-        private fun isFinanceCategoryApp(packageName: String): Boolean {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
-            val pm = instance?.packageManager ?: return false
-            return try {
-                val info = pm.getApplicationInfo(packageName, 0)
-                info.category == ApplicationInfo.CATEGORY_FINANCE
-            } catch (e: PackageManager.NameNotFoundException) {
-                false
-            } catch (e: Exception) {
-                android.util.Log.w("KeyflowA11y", "Finance category lookup failed for $packageName: $e")
-                false
-            }
         }
 
         fun updateExclusions(exclusions: List<String>, context: android.content.Context? = null) {

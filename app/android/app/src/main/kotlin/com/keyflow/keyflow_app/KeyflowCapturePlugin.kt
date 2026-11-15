@@ -318,7 +318,7 @@ class KeyflowCapturePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
             }
 
             val iconBytes = drawableToByteArray(info.loadIcon(pm))
-            val isBanking = isLikelyBankingApp(packageName, appName, info.activityInfo.applicationInfo)
+            val isBanking = isLikelyBankingApp(packageName, appName)
 
             appList.add(
                 mapOf(
@@ -335,26 +335,10 @@ class KeyflowCapturePlugin : FlutterPlugin, MethodChannel.MethodCallHandler, Eve
         return appList
     }
 
-    private fun isLikelyBankingApp(
-        packageName: String,
-        appName: String,
-        applicationInfo: ApplicationInfo
-    ): Boolean {
-        // Ask Android first: an app that declares the Play Store "Finance"
-        // category is a bank/payment app whatever it's called — this covers
-        // the hundreds of Indian (and other) banks we'd otherwise have to
-        // name one by one, including ones with no "bank"-like word in their
-        // package id (e.g. Canara's "ai1", Kotak's "811").
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            applicationInfo.category == ApplicationInfo.CATEGORY_FINANCE
-        ) {
-            return true
-        }
-
+    private fun isLikelyBankingApp(packageName: String, appName: String): Boolean {
         val lowerPkg = packageName.lowercase()
         val lowerName = appName.lowercase()
 
-        // Backstop for apps that don't declare the category correctly.
         val keywords = listOf(
             "bank", "pay", "upi", "wallet", "finance", "money", "crypto",
             "credit", "paisa", "phonepe", "paytm", "gpay", "dreamplug",
