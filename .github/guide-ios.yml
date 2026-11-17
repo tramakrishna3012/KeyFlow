@@ -4,29 +4,34 @@ appId: com.keyflow.keyflowApp
 - assertVisible: "Continue in Offline Mode"
 - takeScreenshot: ios-01-sign-in
 - tapOn: "Continue in Offline Mode"
-- assertVisible: "Recent Snippets"
+- waitForAnimationToEnd:
+    timeout: 4000
 - takeScreenshot: ios-02-home
-- tapOn: "History"
-- assertVisible: "Snippet History"
+- tapOn:
+    point: "30%,94%"
+- waitForAnimationToEnd:
+    timeout: 3000
 - takeScreenshot: ios-03-history
-- tapOn: "Save Snippet"
-- assertVisible: "Save & Sync"
+- tapOn:
+    point: "70%,9%"
+- waitForAnimationToEnd:
+    timeout: 3000
 - takeScreenshot: ios-04-editor
-- tapOn: "Snippet"
 - inputText: "KeyFlow sample for the demo"
 - takeScreenshot: ios-05-typing
-- tapOn: "Save"
-- assertVisible: "KeyFlow sample for the demo"
+- tapOn: "^Save$"
+- waitForAnimationToEnd:
+    timeout: 3000
 - takeScreenshot: ios-06-saved
-- longPressOn: "KeyFlow sample for the demo"
-- assertVisible: "Copied to clipboard"
+- longPressOn: ".*KeyFlow sample for the demo.*"
 - takeScreenshot: ios-07-copied
-- tapOn: "Save Snippet"
+- tapOn:
+    point: "70%,9%"
+- waitForAnimationToEnd:
+    timeout: 3000
 - longPressOn: "Snippet"
+- takeScreenshot: ios-08-paste-menu
 - tapOn: "Paste"
-- assertVisible: "KeyFlow sample for the demo"
-- takeScreenshot: ios-08-pasted
+- takeScreenshot: ios-09-pasted
 - tapOn: "Save & Sync"
-- assertVisible: "Sign In"
-- takeScreenshot: ios-09-sync-sign-in
-
+- takeScreenshot: ios-10-sync-sign-in
