@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import '../../core/services/device_info_service.dart';
 import '../../data/history_repository.dart';
 import '../../data/models/history_entry.dart';
 import '../../data/sync_service.dart';
@@ -15,14 +16,19 @@ class CaptureService {
     this.syncService,
     this.syncServiceGetter,
     LookWindowSanitizer? sanitizer,
+    DeviceInfoService? deviceInfoService,
     this.onEntryCaptured,
-  }) : _sanitizer = sanitizer ?? const LookWindowSanitizer() {
+  }) : _sanitizer = sanitizer ?? const LookWindowSanitizer(),
+       _deviceInfo = deviceInfoService ?? sharedDeviceInfoService {
     _methodChannel.setMethodCallHandler(_handleNativeMethodCall);
     _sessionAggregator = DartSessionAggregator(
       onSessionUpdate: _onSessionAggregatorUpdate,
       onSessionFinalize: _onSessionAggregatorUpdate,
       inactivityDebounceMs: typingDebounceMs,
     );
+    // Fire-and-forget: resolves almost immediately and is cached from then on.
+    // _deviceName already has a safe, honest default, so nothing waits on this.
+    unawaited(_deviceInfo.getDeviceName().then((name) => _deviceName = name));
   }
 
   static const MethodChannel _methodChannel = MethodChannel('keyflow/capture');
@@ -37,8 +43,13 @@ class CaptureService {
   final SyncService? syncService;
   final SyncService? Function()? syncServiceGetter;
   final LookWindowSanitizer _sanitizer;
+  final DeviceInfoService _deviceInfo;
   final void Function(HistoryEntry entry)? onEntryCaptured;
   late final DartSessionAggregator _sessionAggregator;
+
+  // Safe, honest default until the real device model resolves (near-instant;
+  // see the constructor). Never a different device's name.
+  String _deviceName = 'this device';
   StreamSubscription<dynamic>? _subscription;
 
   SyncService? get activeSyncService =>
@@ -96,6 +107,9 @@ class CaptureService {
     } on Exception catch (e) {
       debugPrint('Sync exclusions error: $e');
     }
+    // Make sure the real device name is resolved before capture starts, in case
+    // the constructor's fire-and-forget fetch hasn't finished yet.
+    _deviceName = await _deviceInfo.getDeviceName();
     await startCapture();
   }
 
@@ -380,7 +394,7 @@ class CaptureService {
     _sessionAggregator.handleTypingInput(
       appName: appName,
       windowTitle: windowTitle,
-      deviceName: 'Motorola Edge 40',
+      deviceName: _deviceName,
       text: text,
       isPasswordField: isPasswordField,
     );
@@ -450,7 +464,7 @@ class CaptureService {
       text: sanitizedText,
       sourceApp: appName,
       capturedAt: DateTime.fromMillisecondsSinceEpoch(timestamp),
-      deviceId: 'Motorola Edge 40',
+      deviceId: _deviceName,
     );
     await _repository.addEntry(entry);
     onEntryCaptured?.call(entry);
