@@ -27,7 +27,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!mounted || defaultTargetPlatform == TargetPlatform.iOS) return;
+      if (!mounted ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS) {
+        return;
+      }
       try {
         await ref.read(captureServiceProvider).initialize();
       } on Exception catch (e) {
@@ -50,13 +54,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final historyAsync = ref.watch(allHistoryEntriesProvider);
 
     return Scaffold(
-      floatingActionButton: defaultTargetPlatform == TargetPlatform.iOS
-          ? FloatingActionButton.extended(
-              onPressed: () => SaveSnippetDialog.show(context),
-              icon: const Icon(Icons.add),
-              label: const Text('Save Snippet'),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
+        onPressed: () => SaveSnippetDialog.show(context),
+        icon: const Icon(Icons.add),
+        label: const Text('Save Snippet'),
+      ),
       body: SafeArea(
         child: historyAsync.when(
           data: (entries) => _buildDashboard(context, ref, entries),
@@ -124,12 +127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           color: AppColors.primary,
           onRefresh: () async => ref.refresh(allHistoryEntriesProvider),
           child: ListView(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              16,
-              20,
-              defaultTargetPlatform == TargetPlatform.iOS ? 88 : 16,
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 88),
             children: [
               _buildHeader(context),
               const SizedBox(height: 20),
@@ -408,16 +406,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         const SizedBox(height: 10),
         Text(
-          defaultTargetPlatform == TargetPlatform.iOS
-              ? 'No saved snippets yet'
-              : 'No snippets captured yet',
+          'No saved snippets yet',
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 6),
         Text(
-          defaultTargetPlatform == TargetPlatform.iOS
-              ? 'Tap Save Snippet to add text to your history.'
-              : 'Start typing in any app or software to see your live snippets and history appear right here!',
+          'Tap Save Snippet to add text to your history.',
           textAlign: TextAlign.center,
           style: Theme.of(
             context,

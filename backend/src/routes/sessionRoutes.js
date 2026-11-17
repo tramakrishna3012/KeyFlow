@@ -2,7 +2,68 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('node:crypto');
 const { authenticateToken } = require('../middleware/auth');
-const { run, get, all } = require('../services/db');
+const { run, get, all, encryptRecord, decryptRecord } = require('../services/db');
+const { isSensitiveFieldOrText } = require('../services/activityService');
+
+router.put('/manual/:id', authenticateToken, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { content, capturedAt, platform } = req.body || {};
+    const timestamp = typeof capturedAt === 'string' ? Date.parse(capturedAt) : NaN;
+    if (!/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(id) ||
+        typeof content !== 'string' || !content.trim() ||
+        typeof platform !== 'string' || !/^[a-z]+$/i.test(platform) ||
+        !Number.isFinite(timestamp)) {
+      return res.status(400).json({ error: 'Valid snippet text and metadata are required' });
+    }
+    if (isSensitiveFieldOrText('Manual entry', content)) {
+      return res.status(422).json({ error: 'Remove credentials or payment details before syncing' });
+    }
+
+    const encrypted = encryptRecord(content);
+    const result = await run(
+      `INSERT INTO manual_typing_snippets (id, user_id, platform, encrypted_content, iv, auth_tag, captured_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (id) DO UPDATE SET platform = excluded.platform,
+         encrypted_content = excluded.encrypted_content, iv = excluded.iv,
+         auth_tag = excluded.auth_tag, captured_at = excluded.captured_at
+       WHERE manual_typing_snippets.user_id = excluded.user_id`,
+      [id, req.user.id, platform, encrypted.ciphertext, encrypted.iv, encrypted.authTag,
+        new Date(timestamp).toISOString()]
+    );
+    if (result.changes !== 1) {
+      return res.status(404).json({ error: 'Snippet not found' });
+    }
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/manual', authenticateToken, async (req, res, next) => {
+  try {
+    const limit = Number.parseInt(req.query.limit, 10);
+    const offset = Number.parseInt(req.query.offset, 10);
+    if (!Number.isSafeInteger(offset) && req.query.offset !== undefined) {
+      return res.status(400).json({ error: 'Invalid offset' });
+    }
+    const rows = await all(
+      `SELECT id, platform, encrypted_content, iv, auth_tag, captured_at
+       FROM manual_typing_snippets WHERE user_id = ?
+       ORDER BY captured_at DESC, id LIMIT ? OFFSET ?`,
+      [req.user.id, limit > 0 ? Math.min(limit, 200) : 50, offset > 0 ? offset : 0]
+    );
+    const snippets = rows.map((row) => ({
+      id: row.id,
+      platform: row.platform,
+      capturedAt: row.captured_at,
+      content: decryptRecord(row.encrypted_content, row.iv, row.auth_tag)
+    }));
+    res.set('Cache-Control', 'no-store').json({ snippets });
+  } catch (err) {
+    next(err);
+  }
+});
 
 function calculateWordCount(text) {
   if (!text || !text.trim()) return 0;

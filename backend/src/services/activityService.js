@@ -65,7 +65,7 @@ const CATEGORY_MAP = {
 const SENSITIVE_PATTERNS = [
   /\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{1,4}\b/, // Credit card numbers
   /\b\d{3}-\d{2}-\d{4}\b/, // SSN
-  /\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret)\s*[:=]\s*[^\s,;]+/i,
+  /\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret|password)\s*[:=]\s*[^\s,;]+/i,
 ];
 
 // Banking & payment app identifiers where text capture is automatically excluded

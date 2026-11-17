@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/history_entry.dart';
@@ -206,10 +204,6 @@ class HistoryNotifier extends StateNotifier<AsyncValue<void>> {
         ..invalidate(historyEntriesProvider)
         ..invalidate(allHistoryEntriesProvider)
         ..invalidate(availableAppChipsProvider);
-      // Push to the web dashboard too, same as Android's captured entries.
-      // Fire-and-forget: a slow/failed sync must never block or fail the
-      // local save — SyncService already retries on its own.
-      unawaited(ref.read(syncServiceProvider).syncEntry(entry));
     } finally {
       pending.update(
         (entries) => entries.where((e) => e.id != entry.id).toList(),

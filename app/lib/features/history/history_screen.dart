@@ -7,6 +7,7 @@ import '../../core/widgets/keyflow_search_bar.dart';
 import '../../data/models/history_entry.dart';
 import 'history_providers.dart';
 import 'save_snippet_dialog.dart';
+import 'shared_snippets.dart';
 
 /// Redesigned KeyFlow History Screen matching the approved 2-level grouped layout:
 /// Level 1: Date Section Header (Today, Yesterday, Mon, 24 Aug) + count badge
@@ -21,6 +22,32 @@ class HistoryScreen extends ConsumerStatefulWidget {
 class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String? _selectedEntryId;
+  bool _reviewingSharedText = false;
+
+  Future<void> _reviewSharedText() async {
+    if (_reviewingSharedText) return;
+    setState(() => _reviewingSharedText = true);
+    try {
+      final snippet = await SharedSnippets.next();
+      if (!mounted) return;
+      if (snippet != null) {
+        await SaveSnippetDialog.show(context, sharedSnippet: snippet);
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Use Share → Save to KeyFlow from another app.'),
+        ),
+      );
+    } on PlatformException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open shared text. Try again.')),
+      );
+    } finally {
+      if (mounted) setState(() => _reviewingSharedText = false);
+    }
+  }
 
   @override
   void initState() {
@@ -61,11 +88,18 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                   ),
-                  if (defaultTargetPlatform == TargetPlatform.iOS)
+                  IconButton(
+                    onPressed: () => SaveSnippetDialog.show(context),
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Save Snippet',
+                  ),
+                  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)
                     IconButton(
-                      onPressed: () => SaveSnippetDialog.show(context),
-                      icon: const Icon(Icons.add),
-                      tooltip: 'Save Snippet',
+                      onPressed: _reviewingSharedText
+                          ? null
+                          : _reviewSharedText,
+                      icon: const Icon(Icons.inbox_outlined),
+                      tooltip: 'Review Shared Text',
                     ),
                   IconButton(
                     icon: const Icon(
@@ -458,9 +492,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          defaultTargetPlatform == TargetPlatform.iOS
-              ? 'Use Save Snippet to add text to your history'
-              : 'Start typing in any app to build your history',
+          'Use Save Snippet to add text to your history',
           style: TextStyle(
             color: AppColors.textMuted.withValues(alpha: 0.7),
             fontSize: 12,

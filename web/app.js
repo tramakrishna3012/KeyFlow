@@ -911,14 +911,33 @@ async function loadTypingHistory(q = '', appName = '') {
   if (!container) return;
 
   try {
-    let backendHistory = [];
-    if (authToken) {
+    const requestToken = authToken;
+    const backendHistory = [];
+    let manualHistoryUnavailable = false;
+    if (requestToken) {
+      const manualHistory = fetch(`${API_BASE}/sessions/manual`, {
+        headers: { Authorization: `Bearer ${requestToken}` }
+      }).then(async response => {
+        if (!response.ok) throw new Error('Manual history request failed');
+        const data = await response.json();
+        return data.snippets.map(item => ({
+          id: item.id,
+          appName: 'Manual entry',
+          content: item.content,
+          capturedAt: item.capturedAt,
+          deviceName: item.platform
+        }));
+      }).catch(() => {
+        manualHistoryUnavailable = true;
+        return [];
+      });
+
       try {
         const url = new URL(`${API_BASE}/activity/typing-history`);
         if (q) url.searchParams.append('q', q);
         if (appName) url.searchParams.append('appName', appName);
         const res = await fetch(url.toString(), {
-          headers: { Authorization: `Bearer ${authToken}` }
+          headers: { Authorization: `Bearer ${requestToken}` }
         });
         if (res.ok) {
           const data = await res.json();
@@ -940,7 +959,7 @@ async function loadTypingHistory(q = '', appName = '') {
         if (q) sessUrl.searchParams.append('q', q);
         if (appName) sessUrl.searchParams.append('appName', appName);
         const sessRes = await fetch(sessUrl.toString(), {
-          headers: { Authorization: `Bearer ${authToken}` }
+          headers: { Authorization: `Bearer ${requestToken}` }
         });
         if (sessRes.ok) {
           const sessData = await sessRes.json();
@@ -957,8 +976,10 @@ async function loadTypingHistory(q = '', appName = '') {
           }
         }
       } catch (_) {}
+      backendHistory.push(...await manualHistory);
     }
 
+    if (requestToken !== authToken) return;
     const supaEntries = await fetchSupabaseEntries();
     const formattedSupa = [];
 
@@ -996,7 +1017,7 @@ async function loadTypingHistory(q = '', appName = '') {
     // Combine and deduplicate
     const combinedMap = new Map();
     for (const item of backendHistory) {
-      if (item.content && !item.content.startsWith('[Encrypted')) {
+      if (!item.isExcluded && item.content && !item.content.startsWith('[Encrypted Activity Record]')) {
         combinedMap.set(item.id || item.capturedAt, item);
       }
     }
@@ -1056,7 +1077,9 @@ async function loadTypingHistory(q = '', appName = '') {
     `;
 
     if (history.length === 0) {
-      container.innerHTML = chipsHtml + `
+      container.innerHTML = chipsHtml + (manualHistoryUnavailable
+        ? '<p class="text-muted">Could not load synced snippets. Retrying while this tab is open.</p>'
+        : '') + `
         <div class="text-muted text-center py-5" style="background: var(--bg-surface); border-radius: 16px; border: 1px solid var(--border-color); padding: 40px 20px;">
           <div style="font-size: 32px; margin-bottom: 8px;">⌨️</div>
           <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">No typing snippets recorded yet</div>
@@ -1173,7 +1196,9 @@ async function loadTypingHistory(q = '', appName = '') {
       }
     }
 
-    container.innerHTML = chipsHtml + cardsHtml;
+    container.innerHTML = chipsHtml + (manualHistoryUnavailable
+      ? '<p class="text-muted">Could not load synced snippets. Retrying while this tab is open.</p>'
+      : '') + cardsHtml;
     _bindChipEvents();
     _bindReplayEvents(dateGroups);
   } catch (err) {

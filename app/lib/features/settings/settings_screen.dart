@@ -20,6 +20,10 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with WidgetsBindingObserver {
+  bool get _supportsCapture =>
+      defaultTargetPlatform != TargetPlatform.iOS &&
+      defaultTargetPlatform != TargetPlatform.macOS;
+
   @override
   void initState() {
     super.initState();
@@ -34,8 +38,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed &&
-        defaultTargetPlatform != TargetPlatform.iOS) {
+    if (state == AppLifecycleState.resumed && _supportsCapture) {
       ref.invalidate(accessibilityServiceEnabledProvider);
       ref.read(capturePausedProvider.notifier).syncWithNative();
     }
@@ -43,7 +46,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final supportsCapture = defaultTargetPlatform != TargetPlatform.iOS;
     final retentionAsync = ref.watch(retentionDaysProvider);
     final targetLangAsync = ref.watch(targetLanguageProvider);
 
@@ -62,7 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             const SizedBox(height: 24),
 
-            if (supportsCapture) ...[
+            if (_supportsCapture) ...[
               _buildSectionHeader('TYPING CAPTURE CONTROL'),
               const SizedBox(height: 8),
               _buildPauseCaptureCard(),
@@ -82,7 +84,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
             const SizedBox(height: 24),
 
-            if (supportsCapture) ...[
+            if (_supportsCapture) ...[
               _buildSectionHeader('AUTOCORRECT & TYPING'),
               const SizedBox(height: 8),
               _buildAutocorrectCard(ref.watch(autocorrectEnabledProvider)),

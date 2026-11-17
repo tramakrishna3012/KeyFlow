@@ -393,6 +393,24 @@ async function initDB() {
   `);
 
   await run(`
+    CREATE TABLE IF NOT EXISTS manual_typing_snippets (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      platform TEXT NOT NULL,
+      encrypted_content TEXT NOT NULL,
+      iv TEXT NOT NULL,
+      auth_tag TEXT NOT NULL,
+      captured_at TEXT NOT NULL
+    );
+  `);
+
+  if (usePostgres) {
+    // The API connection owns this table. Deny direct reads by other roles,
+    // including Supabase Data API roles that may receive default table grants.
+    await run('ALTER TABLE manual_typing_snippets ENABLE ROW LEVEL SECURITY');
+  }
+
+  await run(`
     CREATE TABLE IF NOT EXISTS clipboard_entries (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -430,6 +448,7 @@ async function initDB() {
   await run(`CREATE INDEX IF NOT EXISTS idx_audit_logs_org ON audit_logs(organization_id, created_at);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_typing_sessions_user ON typing_sessions(user_id, updated_at DESC);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_typing_sessions_app ON typing_sessions(user_id, app_name);`);
+  await run(`CREATE INDEX IF NOT EXISTS idx_manual_typing_snippets_user ON manual_typing_snippets(user_id, captured_at DESC, id);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_clipboard_entries_user ON clipboard_entries(user_id, is_pinned DESC, created_at DESC);`);
   await run(`CREATE INDEX IF NOT EXISTS idx_pairing_tokens ON pairing_tokens(token);`);
 }

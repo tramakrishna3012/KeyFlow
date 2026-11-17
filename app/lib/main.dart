@@ -64,7 +64,10 @@ class _KeyFlowAppState extends ConsumerState<KeyFlowApp> {
   @override
   void initState() {
     super.initState();
-    if (defaultTargetPlatform == TargetPlatform.iOS) return;
+    if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      return;
+    }
     // Save in-progress typing immediately when the app is backgrounded so
     // nothing is lost if the OS kills the process before the debounce fires.
     _lifecycleListener = AppLifecycleListener(

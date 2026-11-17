@@ -14,8 +14,11 @@ import 'sqlite_history_repository.dart';
 import 'supabase_history_repository.dart';
 import 'sync_service.dart';
 
-final authServiceProvider = ChangeNotifierProvider<AuthService>((ref) {
-  final service = AuthService()..initialize();
+final authServiceProvider = Provider<AuthService>((ref) {
+  final service = AuthService.instance;
+  void refresh() => ref.notifyListeners();
+  service.addListener(refresh);
+  ref.onDispose(() => service.removeListener(refresh));
   return service;
 });
 

@@ -16,6 +16,10 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		DBAEEC681A944EFEB4846277 /* SharedSnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1931249E5ED6450994611C35 /* SharedSnippetStore.swift */; };
+		AC56568955724CA3A744CD2A /* SharedSnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1931249E5ED6450994611C35 /* SharedSnippetStore.swift */; };
+		BD62F54A9E744F0AA6582831 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505BF99974F94201874419C4 /* ShareViewController.swift */; };
+		7BFB31AA187847A19592E84F /* SaveToKeyFlow.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 6538B711C3F14E79968F584E /* SaveToKeyFlow.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,6 +29,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		942D52719A1D4067A07C3832 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0E75A267A631451480CBFA1C;
+			remoteInfo = SaveToKeyFlow;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -37,6 +48,17 @@
 			files = (
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BACFC9F1E75B43ECBF4B6C39 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7BFB31AA187847A19592E84F /* SaveToKeyFlow.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -59,6 +81,11 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		6538B711C3F14E79968F584E /* SaveToKeyFlow.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SaveToKeyFlow.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		505BF99974F94201874419C4 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		1931249E5ED6450994611C35 /* SharedSnippetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSnippetStore.swift; sourceTree = "<group>"; };
+		D0D45DB88BA943DBB061E360 /* ShareGroup.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShareGroup.entitlements; sourceTree = "<group>"; };
+		9735458B9CDA4C28BE6329E2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,6 +127,8 @@
 				97C146F01CF9000F007C117D /* Runner */,
 				97C146EF1CF9000F007C117D /* Products */,
 				331C8082294A63A400263BE5 /* RunnerTests */,
+				25A93CAE41974DEBBE9A5369 /* SaveToKeyFlow */,
+				42E25479C9514CD79DFEB2EF /* SharedSnippets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -108,6 +137,7 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				6538B711C3F14E79968F584E /* SaveToKeyFlow.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -126,6 +156,24 @@
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		25A93CAE41974DEBBE9A5369 /* SaveToKeyFlow */ = {
+			isa = PBXGroup;
+			children = (
+				505BF99974F94201874419C4 /* ShareViewController.swift */,
+				9735458B9CDA4C28BE6329E2 /* Info.plist */,
+			);
+			path = SaveToKeyFlow;
+			sourceTree = "<group>";
+		};
+		42E25479C9514CD79DFEB2EF /* SharedSnippets */ = {
+			isa = PBXGroup;
+			children = (
+				1931249E5ED6450994611C35 /* SharedSnippetStore.swift */,
+				D0D45DB88BA943DBB061E360 /* ShareGroup.entitlements */,
+			);
+			path = SharedSnippets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -157,11 +205,13 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
+				BACFC9F1E75B43ECBF4B6C39 /* Embed App Extensions */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A23799B389814AE2A3FFCA19 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			packageProductDependencies = (
@@ -170,6 +220,21 @@
 			productName = Runner;
 			productReference = 97C146EE1CF9000F007C117D /* Runner.app */;
 			productType = "com.apple.product-type.application";
+		};
+		0E75A267A631451480CBFA1C /* SaveToKeyFlow */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 92DE8B3949F242479090B30B /* Build configuration list for PBXNativeTarget "SaveToKeyFlow" */;
+			buildPhases = (
+				AB279FA3A386493EA72A16A2 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SaveToKeyFlow;
+			productName = SaveToKeyFlow;
+			productReference = 6538B711C3F14E79968F584E /* SaveToKeyFlow.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -209,6 +274,7 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
+				0E75A267A631451480CBFA1C /* SaveToKeyFlow */,
 			);
 		};
 /* End PBXProject section */
@@ -284,6 +350,16 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				DBAEEC681A944EFEB4846277 /* SharedSnippetStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB279FA3A386493EA72A16A2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BD62F54A9E744F0AA6582831 /* ShareViewController.swift in Sources */,
+				AC56568955724CA3A744CD2A /* SharedSnippetStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -294,6 +370,11 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		A23799B389814AE2A3FFCA19 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0E75A267A631451480CBFA1C /* SaveToKeyFlow */;
+			targetProxy = 942D52719A1D4067A07C3832 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -382,7 +463,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.keyflow.keyflowApp;
+				CODE_SIGN_ENTITLEMENTS = SharedSnippets/ShareGroup.entitlements;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(KEYFLOW_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -561,7 +643,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.keyflow.keyflowApp;
+				CODE_SIGN_ENTITLEMENTS = SharedSnippets/ShareGroup.entitlements;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(KEYFLOW_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -583,13 +666,74 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.keyflow.keyflowApp;
+				CODE_SIGN_ENTITLEMENTS = SharedSnippets/ShareGroup.entitlements;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(KEYFLOW_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
 			name = Release;
+		};
+		4DC5EA1684D542F08EE8483E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9740EEB21CF90195004384FC /* Debug.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = SharedSnippets/ShareGroup.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = SaveToKeyFlow/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(KEYFLOW_BUNDLE_IDENTIFIER).SaveToKeyFlow";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		4F3874BD9E174D9DAA5E66EE /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = SharedSnippets/ShareGroup.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = SaveToKeyFlow/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(KEYFLOW_BUNDLE_IDENTIFIER).SaveToKeyFlow";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		C484D4B7115E4FEDA87389CD /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = SharedSnippets/ShareGroup.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = SaveToKeyFlow/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(KEYFLOW_BUNDLE_IDENTIFIER).SaveToKeyFlow";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Profile;
 		};
 /* End XCBuildConfiguration section */
 
@@ -620,6 +764,16 @@
 				97C147061CF9000F007C117D /* Debug */,
 				97C147071CF9000F007C117D /* Release */,
 				249021D4217E4FDB00AE95B9 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		92DE8B3949F242479090B30B /* Build configuration list for PBXNativeTarget "SaveToKeyFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4DC5EA1684D542F08EE8483E /* Debug */,
+				4F3874BD9E174D9DAA5E66EE /* Release */,
+				C484D4B7115E4FEDA87389CD /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
