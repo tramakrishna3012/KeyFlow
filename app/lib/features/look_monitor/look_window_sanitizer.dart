@@ -19,8 +19,17 @@ class LookWindowSanitizer {
     r'\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{1,4}\b',
   );
   static final RegExp _tokenRegex = RegExp(r'\b[A-Za-z0-9-_]{24,}\b');
+  // Matches both "key: value" (otp: 1234) and natural phrasing (your OTP is
+  // 1234, verification code 1234) — not just a strict key=value pair. A bare
+  // OTP/CVV/PIN typed with NO nearby keyword at all (just "483921" alone)
+  // still can't be caught here, and can't be caught by any pattern without
+  // also redacting ordinary numbers like phone numbers, years or prices —
+  // that's a fundamental limitation of content-based filtering, not a gap
+  // in this regex specifically.
   static final RegExp _authSecretRegex = RegExp(
-    r'\b(?:cvv|cvc|exp|pin|otp|passcode|token|bearer|secret|password)\s*[:=]\s*[^\s,;]+',
+    r'\b(?:cvv|cvc|exp(?:iry)?\s*date|pin|otp|passcode|verification\s*code|'
+    r'security\s*code|access\s*code|auth(?:entication)?\s*code|token|bearer|'
+    r'secret|password)\b[\s:=-]{0,3}(?:is|are)?[\s:=-]{0,3}[A-Za-z0-9*]{3,}',
     caseSensitive: false,
   );
 

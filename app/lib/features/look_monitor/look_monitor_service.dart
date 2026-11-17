@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../../core/services/device_info_service.dart';
 import '../../data/auth_service.dart';
 import 'look_activity_models.dart';
 import 'look_window_sanitizer.dart';
@@ -16,12 +17,16 @@ import 'look_window_sanitizer.dart';
 /// - Local offline queue with automatic reconnection sync
 /// - Zero performance overhead / low CPU consumption
 class LookMonitorService extends ChangeNotifier {
-  LookMonitorService({LookWindowSanitizer? sanitizer})
-    : _sanitizer = sanitizer ?? const LookWindowSanitizer() {
+  LookMonitorService({
+    LookWindowSanitizer? sanitizer,
+    DeviceInfoService? deviceInfoService,
+  }) : _sanitizer = sanitizer ?? const LookWindowSanitizer(),
+       _deviceInfo = deviceInfoService ?? sharedDeviceInfoService {
     autoStartOnLogin();
   }
 
   LookWindowSanitizer _sanitizer;
+  final DeviceInfoService _deviceInfo;
   Timer? _pollingTimer;
   Timer? _resumeTimer;
   Timer? _syncTimer;
@@ -475,6 +480,9 @@ class LookMonitorService extends ChangeNotifier {
             )
             .toList();
 
+        final deviceName = await _deviceInfo.getDeviceName();
+        final osInfo = await _deviceInfo.getOsInfo();
+
         await http
             .post(
               url,
@@ -483,8 +491,8 @@ class LookMonitorService extends ChangeNotifier {
                 'Authorization': 'Bearer $token',
               },
               body: jsonEncode({
-                'deviceName': 'Motorola Edge 40',
-                'osInfo': 'Android 15',
+                'deviceName': deviceName,
+                'osInfo': osInfo,
                 'agentVersion': '1.0.0',
                 'entries': entries,
               }),

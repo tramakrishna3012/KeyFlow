@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../core/services/device_info_service.dart';
 import 'auth_service.dart';
 import 'models/history_entry.dart';
 import 'supabase_history_repository.dart';
@@ -13,11 +14,16 @@ class SyncService {
   // which works independently of Supabase and runs whether or not `cloudRepo` is set. Keeping
   // them independent means a Supabase outage/misconfiguration never silently stops captured
   // text from reaching the dashboard.
-  SyncService({this.cloudRepo, http.Client? httpClient})
-    : _client = httpClient ?? http.Client();
+  SyncService({
+    this.cloudRepo,
+    http.Client? httpClient,
+    DeviceInfoService? deviceInfoService,
+  }) : _client = httpClient ?? http.Client(),
+       _deviceInfo = deviceInfoService ?? sharedDeviceInfoService;
 
   final SupabaseHistoryRepository? cloudRepo;
   final http.Client _client;
+  final DeviceInfoService _deviceInfo;
   final List<HistoryEntry> _retryQueue = [];
   Timer? _retryTimer;
 
@@ -52,9 +58,16 @@ class SyncService {
         final url = Uri.parse(
           'https://keyflow-dnsd.onrender.com/api/v1/activity/batch',
         );
+        // Android's CaptureService always sets entry.deviceId to the real device model
+        // (via DeviceInfoService), so this keeps that value. iOS's manually-saved
+        // snippets leave deviceId null (there is no capture-time device context to
+        // stamp), so this reads the real device directly instead of guessing — never
+        // a hardcoded placeholder, and never another device's name.
+        final deviceName = entry.deviceId ?? await _deviceInfo.getDeviceName();
+        final osInfo = await _deviceInfo.getOsInfo();
         final payload = {
-          'deviceName': 'Motorola Edge 40',
-          'osInfo': 'Android 15',
+          'deviceName': deviceName,
+          'osInfo': osInfo,
           'agentVersion': '1.0.0',
           'entries': [
             {
