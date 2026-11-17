@@ -17,7 +17,8 @@ jobs:
           device=$(xcrun simctl list devices available -j | jq -er '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
           printf 'GUIDE_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
           xcrun simctl boot "$device" || true
-          gh release download cli-2.12.1 --repo mobile-dev-inc/maestro --pattern maestro.zip --pattern checksums_sha256.txt --dir tools
+          curl --retry 5 --retry-all-errors --connect-timeout 15 --max-time 90 --fail --silent --show-error --location https://github.com/mobile-dev-inc/maestro/releases/download/cli-2.12.1/maestro.zip --output tools/maestro.zip
+          curl --retry 5 --retry-all-errors --connect-timeout 15 --max-time 90 --fail --silent --show-error --location https://github.com/mobile-dev-inc/maestro/releases/download/cli-2.12.1/checksums_sha256.txt --output tools/checksums_sha256.txt
           cd tools
           shasum -a 256 --ignore-missing -c checksums_sha256.txt
           unzip -q maestro.zip
