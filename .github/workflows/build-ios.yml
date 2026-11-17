@@ -1,41 +1,53 @@
 name: Build iOS
-
 on: workflow_dispatch
-
 jobs:
-  capture-keyflow-screen:
+  ios-guide:
     runs-on: macos-26
+    timeout-minutes: 26
     permissions:
       actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Download the verified simulator package
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: KeyFlow-iOS-Simulator
-          run-id: 43591951613
-          github-token: ${{ github.token }}
-          path: app-artifact
-      - name: Launch KeyFlow and capture the simulator screen
+      - name: Checkout the guide test
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Prepare the iPhone simulator and test runner
         run: |
-          mkdir guide-screens
-          ditto -x -k app-artifact/KeyFlow-Simulator.zip app-artifact
-          app=app-artifact/Runner.app
+          mkdir -p ios-images tools
           device=$(xcrun simctl list devices available -j | jq -er '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
+          printf 'GUIDE_DEVICE=%s\n' "$device" >> "$GITHUB_ENV"
           xcrun simctl boot "$device" || true
-          for attempt in {1..24}; do
-            if xcrun simctl spawn "$device" launchctl print system >/dev/null 2>&1 && xcrun simctl install "$device" "$app"; then
+          gh release download cli-2.12.1 --repo mobile-dev-inc/maestro --pattern maestro.zip --pattern checksums_sha256.txt --dir tools
+          cd tools
+          shasum -a 256 --ignore-missing -c checksums_sha256.txt
+          unzip -q maestro.zip
+          echo "MAESTRO_CLI=$(find "$PWD" -type f -path '*/bin/maestro' | head -n 1)" >> "$GITHUB_ENV"
+      - name: Await the combined simulator artifact
+        run: |
+          for attempt in {1..135}; do
+            if gh run download 44153745353 --name KeyFlow-iOS-Simulator --dir app-artifact 2>/dev/null; then
               break
             fi
-            sleep 5
+            sleep 8
           done
-          xcrun simctl install "$device" "$app"
-          bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
-          xcrun simctl launch "$device" "$bundle"
-          sleep 12
-          xcrun simctl io "$device" screenshot guide-screens/ios-keyflow.png
-      - name: Upload original simulator screenshot
+          ditto -x -k app-artifact/KeyFlow-Simulator.zip app-artifact
+          xcrun simctl bootstatus "$GUIDE_DEVICE" -b
+          xcrun simctl install "$GUIDE_DEVICE" app-artifact/Runner.app
+      - name: Run the iPhone customer journey
+        run: |
+          export MAESTRO_CLI_NO_ANALYTICS=1
+          export JAVA_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null || /usr/libexec/java_home -v 17)
+          "$MAESTRO_CLI" --device "$GUIDE_DEVICE" test .github/guide-ios.yml --test-output-dir ios-images
+      - name: Collect original iPhone screenshots
+        if: always()
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
-          name: KeyFlow-iPhone-Guide-Screenshot
-          path: guide-screens/
-          if-no-files-found: error
+          name: KeyFlow-iPhone-User-Journey
+          path: |
+            ios-images/**/*.png
+            .maestro/**/*.png
+            .github/ios-*.png
+            ios-*.png
+          include-hidden-files: true
+          if-no-files-found: warn
+

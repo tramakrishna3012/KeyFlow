@@ -1,0 +1,32 @@
+appId: com.keyflow.keyflowApp
+---
+- launchApp
+- assertVisible: "Continue in Offline Mode"
+- takeScreenshot: ios-01-sign-in
+- tapOn: "Continue in Offline Mode"
+- assertVisible: "Recent Snippets"
+- takeScreenshot: ios-02-home
+- tapOn: "History"
+- assertVisible: "Snippet History"
+- takeScreenshot: ios-03-history
+- tapOn: "Save Snippet"
+- assertVisible: "Save & Sync"
+- takeScreenshot: ios-04-editor
+- tapOn: "Snippet"
+- inputText: "KeyFlow sample for the demo"
+- takeScreenshot: ios-05-typing
+- tapOn: "Save"
+- assertVisible: "KeyFlow sample for the demo"
+- takeScreenshot: ios-06-saved
+- longPressOn: "KeyFlow sample for the demo"
+- assertVisible: "Copied to clipboard"
+- takeScreenshot: ios-07-copied
+- tapOn: "Save Snippet"
+- longPressOn: "Snippet"
+- tapOn: "Paste"
+- assertVisible: "KeyFlow sample for the demo"
+- takeScreenshot: ios-08-pasted
+- tapOn: "Save & Sync"
+- assertVisible: "Sign In"
+- takeScreenshot: ios-09-sync-sign-in
+
