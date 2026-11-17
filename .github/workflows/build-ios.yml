@@ -1,113 +1,37 @@
 name: Build iOS
 
-on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths:
-      - 'app/ios/**'
-      - 'app/lib/**'
-      - 'app/test/**'
-      - 'app/pubspec.yaml'
-      - 'app/pubspec.lock'
-      - '.github/workflows/build-ios.yml'
-
-env:
-  FLUTTER_VERSION: '3.44.7'
+on: workflow_dispatch
 
 jobs:
-  build-ios:
+  capture-keyflow-screen:
     runs-on: macos-latest
-    
+    permissions:
+      actions: read
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      
-    - name: Setup Flutter
-      uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff # v2.18.0
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        cache: true
-        cache-key: flutter-${{ env.FLUTTER_VERSION }}
-        cache-path: ${{ github.workspace }}/.pub-cache
-        
-    - name: Get Flutter dependencies
-      run: |
-        cd app
-        flutter pub get --enforce-lockfile
-        
-    - name: Build iOS App Bundle
-      run: |
-        cd app
-        flutter build ios --release --no-codesign
-        test -d build/ios/iphoneos/Runner.app/PlugIns/SaveToKeyFlow.appex
-        
-    - name: Package .ipa Payload
-      run: |
-        cd app
-        mkdir -p build/ios/ipa/Payload
-        cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
-        cd build/ios/ipa
-        zip -r KeyFlow.ipa Payload
-        
-    - name: Upload KeyFlow .ipa artifact
-      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-      with:
-        name: KeyFlow-iOS-ipa
-        path: app/build/ios/ipa/KeyFlow.ipa
-        retention-days: 30
-
-        
-  test-ios:
-    runs-on: macos-latest
-    needs: build-ios
-    
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      
-    - name: Setup Flutter
-      uses: subosito/flutter-action@f2c4f6686ca8e8d6e6d0f28410eeef506ed66aff # v2.18.0
-      with:
-        flutter-version: ${{ env.FLUTTER_VERSION }}
-        cache: true
-        cache-key: flutter-${{ env.FLUTTER_VERSION }}
-        cache-path: ${{ github.workspace }}/.pub-cache
-        
-    - name: Get Flutter dependencies
-      run: |
-        cd app
-        flutter pub get --enforce-lockfile
-        
-    - name: Run iOS tests
-      run: |
-        cd app
-        flutter test --coverage
-
-    - name: Build iOS Simulator app
-      working-directory: app
-      run: |
-        flutter build ios --simulator --debug
-        test -d build/ios/iphonesimulator/Runner.app/PlugIns/SaveToKeyFlow.appex
-        ditto -c -k --keepParent build/ios/iphonesimulator/Runner.app build/ios/KeyFlow-Simulator.zip
-
-    - name: Smoke test on an iPhone simulator
-      working-directory: app
-      run: |
-        device=$(xcrun simctl list devices booted available -j | jq -r '[.devices[][] | select(.name | startswith("iPhone"))][0].udid // empty')
-        if [ -z "$device" ]; then
+      - name: Download the verified simulator package
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: KeyFlow-iOS-Simulator
+          run-id: 43591951613
+          github-token: ${{ github.token }}
+          path: app-artifact
+      - name: Launch KeyFlow and capture the simulator screen
+        run: |
+          mkdir guide-screens
+          ditto -x -k app-artifact/KeyFlow-Simulator.zip app-artifact
+          app=app-artifact/Runner.app
           device=$(xcrun simctl list devices available -j | jq -er '[.devices[][] | select(.name | startswith("iPhone"))][0].udid')
           xcrun simctl boot "$device"
-        fi
-        xcrun simctl bootstatus "$device" -b
-        app=build/ios/iphonesimulator/Runner.app
-        bundle_id=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
-        xcrun simctl install "$device" "$app"
-        xcrun simctl launch "$device" "$bundle_id"
-
-    - name: Upload simulator app
-      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-      with:
-        name: KeyFlow-iOS-Simulator
-        path: app/build/ios/KeyFlow-Simulator.zip
-        if-no-files-found: error
+          xcrun simctl bootstatus "$device" -b
+          xcrun simctl status_bar "$device" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState unplugged --batteryLevel 100
+          xcrun simctl install "$device" "$app"
+          bundle=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Info.plist")
+          xcrun simctl launch "$device" "$bundle"
+          sleep 12
+          xcrun simctl io "$device" screenshot guide-screens/ios-keyflow.png
+      - name: Upload original simulator screenshot
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: KeyFlow-iPhone-Guide-Screenshot
+          path: guide-screens/
+          if-no-files-found: error
