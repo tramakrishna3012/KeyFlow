@@ -26,7 +26,7 @@ jobs:
       - name: Await the combined simulator artifact
         run: |
           for attempt in {1..135}; do
-            if gh run download 44153745353 --name KeyFlow-iOS-Simulator --dir app-artifact 2>/dev/null; then
+            if gh run download 44258515535 --name KeyFlow-iOS-Simulator --dir app-artifact 2>/dev/null; then
               break
             fi
             sleep 8
@@ -34,6 +34,11 @@ jobs:
           ditto -x -k app-artifact/KeyFlow-Simulator.zip app-artifact
           xcrun simctl bootstatus "$GUIDE_DEVICE" -b
           xcrun simctl install "$GUIDE_DEVICE" app-artifact/Runner.app
+      - name: Capture the installed build at launch
+        run: |
+          xcrun simctl launch "$GUIDE_DEVICE" com.keyflow.keyflowApp
+          sleep 8
+          xcrun simctl io "$GUIDE_DEVICE" screenshot ios-images/ios-build-7-launch.png
       - name: Run the iPhone customer journey
         run: |
           export MAESTRO_CLI_NO_ANALYTICS=1
@@ -60,6 +65,10 @@ jobs:
           PLIST
           xcrun --sdk iphonesimulator swiftc -parse-as-library -target "$(uname -m)-apple-ios17.0-simulator" -sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" .github/QAKeyFlowShareHost.swift -o "$fixture/QAKeyFlowShareHost"
           xcrun simctl install "$GUIDE_DEVICE" "$fixture"
+          xcrun simctl launch "$GUIDE_DEVICE" com.keyflow.QAShareFixture --open-guide-share-sheet
+          sleep 8
+          xcrun simctl io "$GUIDE_DEVICE" screenshot ios-images/ios-native-share-sheet.png
+          xcrun simctl terminate "$GUIDE_DEVICE" com.keyflow.QAShareFixture
           export MAESTRO_CLI_NO_ANALYTICS=1
           export JAVA_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null || /usr/libexec/java_home -v 17)
           "$MAESTRO_CLI" --device "$GUIDE_DEVICE" test .github/guide-share.yml --test-output-dir ios-images

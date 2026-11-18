@@ -15,6 +15,19 @@ final class ShareHost: UIViewController {
         ])
     }
 
+    private var openedSheet = false
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard ProcessInfo.processInfo.arguments.contains("--open-guide-share-sheet"), !openedSheet else {
+            return
+        }
+        openedSheet = true
+        let sheet = UIActivityViewController(activityItems: ["KeyFlow share test"], applicationActivities: nil)
+        sheet.popoverPresentationController?.sourceView = view
+        present(sheet, animated: true)
+    }
+
     @objc private func showShare(_ sender: UIButton) {
         let sheet = UIActivityViewController(activityItems: ["KeyFlow share test"], applicationActivities: nil)
         sheet.popoverPresentationController?.sourceView = sender
