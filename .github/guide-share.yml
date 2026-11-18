@@ -1,0 +1,31 @@
+appId: com.keyflow.QAShareFixture
+---
+- launchApp
+- tapOn: "^Share sample text$"
+- takeScreenshot: ios-06-share-sheet
+- runFlow:
+    when:
+      notVisible: "Save to KeyFlow"
+    commands:
+      - swipe:
+          start: "84%,54%"
+          end: "12%,54%"
+      - tapOn:
+          text: "More"
+          optional: true
+      - takeScreenshot: ios-07-share-actions
+- tapOn: "Save to KeyFlow"
+- takeScreenshot: ios-08-share-action
+- tapOn:
+    text: "^Save$"
+    optional: true
+- takeScreenshot: ios-09-share-response
+- launchApp:
+    appId: com.keyflow.keyflowApp
+    stopApp: false
+- tapOn:
+    point: "30%,94%"
+- tapOn:
+    text: "Review Shared Text"
+    optional: true
+- takeScreenshot: ios-10-review-shared-text

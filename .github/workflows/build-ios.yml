@@ -39,6 +39,30 @@ jobs:
           export MAESTRO_CLI_NO_ANALYTICS=1
           export JAVA_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null || /usr/libexec/java_home -v 17)
           "$MAESTRO_CLI" --device "$GUIDE_DEVICE" test .github/guide-ios.yml --test-output-dir ios-images
+      - name: Run the iPhone Share extension journey
+        if: always()
+        run: |
+          fixture=QAKeyFlowShareHost.app
+          mkdir -p "$fixture"
+          cat > "$fixture/Info.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>CFBundleDisplayName</key><string>KeyFlow Share Test</string>
+            <key>CFBundleIdentifier</key><string>com.keyflow.QAShareFixture</string>
+            <key>CFBundleExecutable</key><string>QAKeyFlowShareHost</string>
+            <key>CFBundleName</key><string>QAKeyFlowShareHost</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>CFBundleShortVersionString</key><string>1.0</string>
+            <key>CFBundleVersion</key><string>1</string>
+            <key>UILaunchScreen</key><dict/>
+          </dict></plist>
+          PLIST
+          xcrun --sdk iphonesimulator swiftc -parse-as-library -target "$(uname -m)-apple-ios17.0-simulator" -sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" .github/QAKeyFlowShareHost.swift -o "$fixture/QAKeyFlowShareHost"
+          xcrun simctl install "$GUIDE_DEVICE" "$fixture"
+          export MAESTRO_CLI_NO_ANALYTICS=1
+          export JAVA_HOME=$(/usr/libexec/java_home -v 21 2>/dev/null || /usr/libexec/java_home -v 17)
+          "$MAESTRO_CLI" --device "$GUIDE_DEVICE" test .github/guide-share.yml --test-output-dir ios-images
       - name: Collect original iPhone screenshots
         if: always()
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
